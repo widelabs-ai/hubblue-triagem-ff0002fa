@@ -20,12 +20,24 @@ export interface Patient {
     name: string;
     cpf: string;
     age: number;
+    gender?: string;
+    healthInsurance?: string;
     canBeAttended: boolean;
   };
   triageData?: {
-    priority: 'baixa' | 'media' | 'alta' | 'urgente';
-    vitals: string;
+    priority: 'azul' | 'verde' | 'amarelo' | 'laranja' | 'vermelho';
     complaints: string;
+    symptoms?: string;
+    painScale?: string;
+    vitals?: {
+      bloodPressure?: string;
+      heartRate?: string;
+      temperature?: string;
+      oxygenSaturation?: string;
+    };
+    allergies?: string;
+    medications?: string;
+    observations?: string;
   };
 }
 
