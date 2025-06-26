@@ -179,10 +179,11 @@ const MonitoringDashboard: React.FC = () => {
                             </div>
                             {patient.triageData && (
                               <div className={`text-sm ${
-                                patient.triageData.priority === 'urgente' ? 'text-red-600' :
-                                patient.triageData.priority === 'alta' ? 'text-orange-600' :
-                                patient.triageData.priority === 'media' ? 'text-yellow-600' :
-                                'text-green-600'
+                                patient.triageData.priority === 'vermelho' ? 'text-red-600' :
+                                patient.triageData.priority === 'laranja' ? 'text-orange-600' :
+                                patient.triageData.priority === 'amarelo' ? 'text-yellow-600' :
+                                patient.triageData.priority === 'verde' ? 'text-green-600' :
+                                'text-blue-600'
                               }`}>
                                 {patient.triageData.priority}
                               </div>
