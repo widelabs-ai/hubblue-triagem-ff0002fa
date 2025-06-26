@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
+import { ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const specialties = [
   { id: 'ortopedia', name: 'Ortopedia', icon: '🦴' },
@@ -18,27 +20,19 @@ const TotemScreen: React.FC = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>('');
   const [phone, setPhone] = useState('');
   const { generatePassword } = useHospital();
+  const navigate = useNavigate();
 
   const handleGeneratePassword = () => {
-    if (!selectedSpecialty || !phone) {
+    if (!selectedSpecialty) {
       toast({
         title: "Dados incompletos",
-        description: "Por favor, selecione uma especialidade e informe seu telefone.",
+        description: "Por favor, selecione uma especialidade.",
         variant: "destructive"
       });
       return;
     }
 
-    if (phone.length < 10) {
-      toast({
-        title: "Telefone inválido",
-        description: "Por favor, informe um número de telefone válido.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const password = generatePassword(selectedSpecialty as any, phone);
+    const password = generatePassword(selectedSpecialty as any, phone || 'Não informado');
     
     toast({
       title: "Senha gerada com sucesso!",
@@ -54,8 +48,20 @@ const TotemScreen: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl shadow-2xl">
         <CardHeader className="text-center bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-t-lg">
-          <CardTitle className="text-3xl font-bold">🏥 Totem de Atendimento</CardTitle>
-          <p className="text-blue-100 mt-2">Selecione a especialidade e gere sua senha</p>
+          <div className="flex justify-between items-center">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/')}
+              className="text-white hover:bg-white/20 p-2"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
+              <CardTitle className="text-3xl font-bold">🏥 Totem de Atendimento</CardTitle>
+              <p className="text-blue-100 mt-2">Selecione a especialidade e gere sua senha</p>
+            </div>
+            <div className="w-10"></div>
+          </div>
         </CardHeader>
         <CardContent className="p-8">
           <div className="space-y-6">
@@ -84,7 +90,7 @@ const TotemScreen: React.FC = () => {
 
             <div>
               <Label htmlFor="phone" className="text-lg font-semibold">
-                Número de Celular
+                Número de Celular (Opcional)
               </Label>
               <Input
                 id="phone"
@@ -96,14 +102,14 @@ const TotemScreen: React.FC = () => {
                 maxLength={15}
               />
               <p className="text-sm text-gray-600 mt-1">
-                Necessário para comunicação sobre seu atendimento
+                Recomendado para comunicação sobre seu atendimento
               </p>
             </div>
 
             <Button
               onClick={handleGeneratePassword}
               className="w-full h-16 text-xl font-bold bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-              disabled={!selectedSpecialty || !phone}
+              disabled={!selectedSpecialty}
             >
               🎫 Gerar Senha de Atendimento
             </Button>

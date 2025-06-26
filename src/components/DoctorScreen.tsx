@@ -1,13 +1,25 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
+import { ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const DoctorScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, getTimeElapsed, isOverSLA } = useHospital();
+  const [consultationData, setConsultationData] = useState({
+    diagnosis: '',
+    treatment: '',
+    prescription: '',
+    recommendations: '',
+    followUp: ''
+  });
 
+  const navigate = useNavigate();
   const waitingPatients = getPatientsByStatus('waiting-doctor');
   const currentPatient = getPatientsByStatus('in-consultation')[0];
 
@@ -22,7 +34,23 @@ const DoctorScreen: React.FC = () => {
   const handleCompleteConsultation = () => {
     if (!currentPatient) return;
 
-    updatePatientStatus(currentPatient.id, 'completed');
+    if (!consultationData.diagnosis || !consultationData.treatment) {
+      toast({
+        title: "Dados incompletos",
+        description: "Por favor, preencha pelo menos o diagnóstico e tratamento.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    updatePatientStatus(currentPatient.id, 'completed', { consultationData });
+    setConsultationData({
+      diagnosis: '',
+      treatment: '',
+      prescription: '',
+      recommendations: '',
+      followUp: ''
+    });
     
     toast({
       title: "Consulta finalizada",
@@ -30,12 +58,33 @@ const DoctorScreen: React.FC = () => {
     });
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'azul': return 'text-blue-600';
+      case 'verde': return 'text-green-600';
+      case 'amarelo': return 'text-yellow-600';
+      case 'laranja': return 'text-orange-600';
+      case 'vermelho': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-50 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
         <Card className="shadow-lg">
           <CardHeader className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
-            <CardTitle className="text-2xl">👨‍⚕️ Atendimento Médico</CardTitle>
+            <div className="flex justify-between items-center">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/')}
+                className="text-white hover:bg-white/20 p-2"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <CardTitle className="text-2xl">👨‍⚕️ Atendimento Médico</CardTitle>
+              <div className="w-10"></div>
+            </div>
           </CardHeader>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -67,13 +116,8 @@ const DoctorScreen: React.FC = () => {
                                 {patient.specialty.replace('-', ' ')}
                               </div>
                               <div className="text-sm">
-                                Prioridade: <span className={`font-medium ${
-                                  patient.triageData?.priority === 'urgente' ? 'text-red-600' :
-                                  patient.triageData?.priority === 'alta' ? 'text-orange-600' :
-                                  patient.triageData?.priority === 'media' ? 'text-yellow-600' :
-                                  'text-green-600'
-                                }`}>
-                                  {patient.triageData?.priority}
+                                Classificação: <span className={`font-medium ${getPriorityColor(patient.triageData?.priority || '')}`}>
+                                  {patient.triageData?.priority?.toUpperCase() || 'N/A'}
                                 </span>
                               </div>
                               <div className={`text-sm font-medium ${
@@ -107,57 +151,110 @@ const DoctorScreen: React.FC = () => {
                 <h3 className="text-xl font-semibold mb-4">Consulta em Andamento</h3>
                 {currentPatient ? (
                   <Card className="border-green-500">
-                    <CardContent className="p-6 space-y-4">
+                    <CardContent className="p-6 space-y-4 max-h-96 overflow-y-auto">
+                      {/* Dados do Paciente */}
                       <div className="bg-green-50 p-4 rounded-lg">
                         <div className="font-bold text-xl">{currentPatient.password}</div>
                         <div className="text-lg font-semibold">
                           {currentPatient.personalData?.name}
                         </div>
-                        <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
-                          <div>
-                            <strong>Idade:</strong> {currentPatient.personalData?.age} anos
-                          </div>
-                          <div>
-                            <strong>CPF:</strong> {currentPatient.personalData?.cpf}
-                          </div>
-                          <div className="col-span-2">
-                            <strong>Telefone:</strong> {currentPatient.phone}
-                          </div>
+                        <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
+                          <div><strong>Idade:</strong> {currentPatient.personalData?.age} anos</div>
+                          <div><strong>Gênero:</strong> {currentPatient.personalData?.gender || 'N/I'}</div>
+                          <div><strong>CPF:</strong> {currentPatient.personalData?.cpf}</div>
+                          <div><strong>Telefone:</strong> {currentPatient.phone}</div>
                           <div className="col-span-2">
                             <strong>Especialidade:</strong> 
                             <span className="capitalize ml-1">
                               {currentPatient.specialty.replace('-', ' ')}
                             </span>
                           </div>
+                          <div className="col-span-2">
+                            <strong>Convênio:</strong> {currentPatient.personalData?.healthInsurance || 'Particular'}
+                          </div>
                         </div>
                       </div>
 
+                      {/* Dados da Triagem */}
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h4 className="font-semibold mb-2">Dados da Triagem</h4>
                         <div className="space-y-2 text-sm">
                           <div>
-                            <strong>Prioridade:</strong> 
-                            <span className={`ml-1 ${
-                              currentPatient.triageData?.priority === 'urgente' ? 'text-red-600' :
-                              currentPatient.triageData?.priority === 'alta' ? 'text-orange-600' :
-                              currentPatient.triageData?.priority === 'media' ? 'text-yellow-600' :
-                              'text-green-600'
-                            }`}>
-                              {currentPatient.triageData?.priority}
+                            <strong>Classificação:</strong> 
+                            <span className={`ml-1 font-medium ${getPriorityColor(currentPatient.triageData?.priority || '')}`}>
+                              {currentPatient.triageData?.priority?.toUpperCase() || 'N/A'}
                             </span>
                           </div>
-                          <div>
-                            <strong>Sinais Vitais:</strong> {currentPatient.triageData?.vitals}
-                          </div>
-                          <div>
-                            <strong>Queixas:</strong> {currentPatient.triageData?.complaints}
-                          </div>
+                          <div><strong>Queixas:</strong> {currentPatient.triageData?.complaints}</div>
+                          <div><strong>Sintomas:</strong> {currentPatient.triageData?.symptoms || 'N/A'}</div>
+                          <div><strong>Dor (0-10):</strong> {currentPatient.triageData?.painScale || 'N/A'}</div>
+                          <div><strong>PA:</strong> {currentPatient.triageData?.vitals?.bloodPressure || 'N/A'}</div>
+                          <div><strong>FC:</strong> {currentPatient.triageData?.vitals?.heartRate || 'N/A'}</div>
+                          <div><strong>Temp:</strong> {currentPatient.triageData?.vitals?.temperature || 'N/A'}</div>
+                          <div><strong>Sat O₂:</strong> {currentPatient.triageData?.vitals?.oxygenSaturation || 'N/A'}</div>
+                          <div><strong>Alergias:</strong> {currentPatient.triageData?.allergies || 'Nenhuma informada'}</div>
+                          <div><strong>Medicamentos:</strong> {currentPatient.triageData?.medications || 'Nenhum informado'}</div>
+                          {currentPatient.triageData?.observations && (
+                            <div><strong>Observações:</strong> {currentPatient.triageData.observations}</div>
+                          )}
                         </div>
                       </div>
 
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-semibold mb-2">Tempos</h4>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
+                      {/* Formulário de Consulta */}
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Diagnóstico *</Label>
+                          <Textarea
+                            placeholder="Diagnóstico principal e secundários..."
+                            value={consultationData.diagnosis}
+                            onChange={(e) => setConsultationData({...consultationData, diagnosis: e.target.value})}
+                            rows={2}
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Plano de Tratamento *</Label>
+                          <Textarea
+                            placeholder="Descrição do tratamento proposto..."
+                            value={consultationData.treatment}
+                            onChange={(e) => setConsultationData({...consultationData, treatment: e.target.value})}
+                            rows={2}
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Prescrição Médica</Label>
+                          <Textarea
+                            placeholder="Medicamentos prescritos, dosagens e orientações..."
+                            value={consultationData.prescription}
+                            onChange={(e) => setConsultationData({...consultationData, prescription: e.target.value})}
+                            rows={3}
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Recomendações</Label>
+                          <Textarea
+                            placeholder="Orientações gerais, repouso, atividades..."
+                            value={consultationData.recommendations}
+                            onChange={(e) => setConsultationData({...consultationData, recommendations: e.target.value})}
+                            rows={2}
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Acompanhamento</Label>
+                          <Textarea
+                            placeholder="Retorno, exames de controle, encaminhamentos..."
+                            value={consultationData.followUp}
+                            onChange={(e) => setConsultationData({...consultationData, followUp: e.target.value})}
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="text-sm text-gray-600">
                           <div>Tempo na consulta: {getTimeElapsed(currentPatient, 'consultationStarted')} min</div>
                           <div>Tempo total: {getTimeElapsed(currentPatient, 'generated')} min</div>
                         </div>

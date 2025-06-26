@@ -5,8 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
+import { ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const AdminScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, getTimeElapsed, isOverSLA } = useHospital();
@@ -14,9 +17,16 @@ const AdminScreen: React.FC = () => {
     name: '',
     cpf: '',
     age: '',
+    gender: '',
+    address: '',
+    emergencyContact: '',
+    emergencyPhone: '',
+    healthInsurance: '',
+    insuranceNumber: '',
     canBeAttended: true
   });
 
+  const navigate = useNavigate();
   const waitingPatients = getPatientsByStatus('waiting-admin');
   const currentPatient = getPatientsByStatus('in-admin')[0];
 
@@ -32,7 +42,7 @@ const AdminScreen: React.FC = () => {
     if (!currentPatient || !personalData.name || !personalData.cpf || !personalData.age) {
       toast({
         title: "Dados incompletos",
-        description: "Por favor, preencha todos os campos obrigatórios.",
+        description: "Por favor, preencha todos os campos obrigatórios (nome, CPF e idade).",
         variant: "destructive"
       });
       return;
@@ -43,15 +53,39 @@ const AdminScreen: React.FC = () => {
       age: parseInt(personalData.age)
     };
 
-    updatePatientStatus(currentPatient.id, 'waiting-doctor', { personalData: dataToSave });
-    setPersonalData({ name: '', cpf: '', age: '', canBeAttended: true });
+    const nextStatus = personalData.canBeAttended ? 'waiting-doctor' : 'completed';
+    updatePatientStatus(currentPatient.id, nextStatus, { personalData: dataToSave });
+    
+    setPersonalData({
+      name: '',
+      cpf: '',
+      age: '',
+      gender: '',
+      address: '',
+      emergencyContact: '',
+      emergencyPhone: '',
+      healthInsurance: '',
+      insuranceNumber: '',
+      canBeAttended: true
+    });
     
     toast({
       title: "Dados coletados",
       description: personalData.canBeAttended ? 
         "Paciente encaminhado para consulta médica." : 
-        "Paciente não pode ser atendido no momento.",
+        "Paciente não pode ser atendido - processo finalizado.",
     });
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'azul': return 'text-blue-600';
+      case 'verde': return 'text-green-600';
+      case 'amarelo': return 'text-yellow-600';
+      case 'laranja': return 'text-orange-600';
+      case 'vermelho': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
   };
 
   return (
@@ -59,7 +93,17 @@ const AdminScreen: React.FC = () => {
       <div className="max-w-6xl mx-auto space-y-6">
         <Card className="shadow-lg">
           <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-            <CardTitle className="text-2xl">📋 Área Administrativa</CardTitle>
+            <div className="flex justify-between items-center">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/')}
+                className="text-white hover:bg-white/20 p-2"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <CardTitle className="text-2xl">📋 Área Administrativa - Coleta de Dados</CardTitle>
+              <div className="w-10"></div>
+            </div>
           </CardHeader>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -89,13 +133,8 @@ const AdminScreen: React.FC = () => {
                                 {patient.specialty.replace('-', ' ')}
                               </div>
                               <div className="text-sm">
-                                Prioridade: <span className={`font-medium ${
-                                  patient.triageData?.priority === 'urgente' ? 'text-red-600' :
-                                  patient.triageData?.priority === 'alta' ? 'text-orange-600' :
-                                  patient.triageData?.priority === 'media' ? 'text-yellow-600' :
-                                  'text-green-600'
-                                }`}>
-                                  {patient.triageData?.priority}
+                                Classificação: <span className={`font-medium ${getPriorityColor(patient.triageData?.priority || '')}`}>
+                                  {patient.triageData?.priority?.toUpperCase() || 'N/A'}
                                 </span>
                               </div>
                               <div className={`text-sm font-medium ${
@@ -126,10 +165,10 @@ const AdminScreen: React.FC = () => {
 
               {/* Atendimento Atual */}
               <div>
-                <h3 className="text-xl font-semibold mb-4">Coleta de Dados</h3>
+                <h3 className="text-xl font-semibold mb-4">Coleta de Dados Pessoais</h3>
                 {currentPatient ? (
                   <Card className="border-blue-500">
-                    <CardContent className="p-6 space-y-4">
+                    <CardContent className="p-6 space-y-4 max-h-96 overflow-y-auto">
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="font-bold text-xl">{currentPatient.password}</div>
                         <div className="text-gray-600 capitalize">
@@ -137,6 +176,11 @@ const AdminScreen: React.FC = () => {
                         </div>
                         <div className="text-sm text-blue-600">
                           Telefone: {currentPatient.phone}
+                        </div>
+                        <div className="text-sm">
+                          Classificação: <span className={`font-medium ${getPriorityColor(currentPatient.triageData?.priority || '')}`}>
+                            {currentPatient.triageData?.priority?.toUpperCase() || 'N/A'}
+                          </span>
                         </div>
                         <div className="text-sm text-gray-600">
                           Queixas: {currentPatient.triageData?.complaints}
@@ -147,40 +191,104 @@ const AdminScreen: React.FC = () => {
                       </div>
 
                       <div className="space-y-4">
-                        <div>
-                          <Label>Nome Completo *</Label>
-                          <Input
-                            placeholder="Nome do paciente"
-                            value={personalData.name}
-                            onChange={(e) => setPersonalData({...personalData, name: e.target.value})}
-                          />
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label>Nome Completo *</Label>
+                            <Input
+                              placeholder="Nome do paciente"
+                              value={personalData.name}
+                              onChange={(e) => setPersonalData({...personalData, name: e.target.value})}
+                            />
+                          </div>
+                          <div>
+                            <Label>CPF *</Label>
+                            <Input
+                              placeholder="000.000.000-00"
+                              value={personalData.cpf}
+                              onChange={(e) => setPersonalData({...personalData, cpf: e.target.value})}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label>Idade *</Label>
+                            <Input
+                              type="number"
+                              placeholder="Idade em anos"
+                              value={personalData.age}
+                              onChange={(e) => setPersonalData({...personalData, age: e.target.value})}
+                            />
+                          </div>
+                          <div>
+                            <Label>Gênero</Label>
+                            <Select onValueChange={(value) => setPersonalData({...personalData, gender: value})}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="masculino">Masculino</SelectItem>
+                                <SelectItem value="feminino">Feminino</SelectItem>
+                                <SelectItem value="outro">Outro</SelectItem>
+                                <SelectItem value="nao-informar">Prefiro não informar</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
 
                         <div>
-                          <Label>CPF *</Label>
+                          <Label>Endereço</Label>
                           <Input
-                            placeholder="000.000.000-00"
-                            value={personalData.cpf}
-                            onChange={(e) => setPersonalData({...personalData, cpf: e.target.value})}
+                            placeholder="Rua, número, bairro, cidade"
+                            value={personalData.address}
+                            onChange={(e) => setPersonalData({...personalData, address: e.target.value})}
                           />
                         </div>
 
-                        <div>
-                          <Label>Idade *</Label>
-                          <Input
-                            type="number"
-                            placeholder="Idade em anos"
-                            value={personalData.age}
-                            onChange={(e) => setPersonalData({...personalData, age: e.target.value})}
-                          />
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label>Contato de Emergência</Label>
+                            <Input
+                              placeholder="Nome do contato"
+                              value={personalData.emergencyContact}
+                              onChange={(e) => setPersonalData({...personalData, emergencyContact: e.target.value})}
+                            />
+                          </div>
+                          <div>
+                            <Label>Telefone de Emergência</Label>
+                            <Input
+                              placeholder="(11) 99999-9999"
+                              value={personalData.emergencyPhone}
+                              onChange={(e) => setPersonalData({...personalData, emergencyPhone: e.target.value})}
+                            />
+                          </div>
                         </div>
 
-                        <div className="flex items-center space-x-2">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label>Convênio Médico</Label>
+                            <Input
+                              placeholder="Nome do convênio"
+                              value={personalData.healthInsurance}
+                              onChange={(e) => setPersonalData({...personalData, healthInsurance: e.target.value})}
+                            />
+                          </div>
+                          <div>
+                            <Label>Número da Carteirinha</Label>
+                            <Input
+                              placeholder="Número do convênio"
+                              value={personalData.insuranceNumber}
+                              onChange={(e) => setPersonalData({...personalData, insuranceNumber: e.target.value})}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2 p-3 bg-yellow-50 rounded-lg">
                           <Switch
                             checked={personalData.canBeAttended}
                             onCheckedChange={(checked) => setPersonalData({...personalData, canBeAttended: checked})}
                           />
-                          <Label>Paciente pode ser atendido</Label>
+                          <Label>Paciente pode ser atendido (convênio ativo, documentos OK)</Label>
                         </div>
 
                         <Button 
