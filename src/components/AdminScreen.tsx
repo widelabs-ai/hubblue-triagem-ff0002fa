@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const AdminScreen: React.FC = () => {
@@ -36,6 +36,28 @@ const AdminScreen: React.FC = () => {
       title: "Paciente chamado",
       description: "Paciente está sendo atendido no administrativo.",
     });
+  };
+
+  const handleReturnToQueue = () => {
+    if (currentPatient) {
+      updatePatientStatus(currentPatient.id, 'waiting-admin');
+      setPersonalData({
+        name: '',
+        cpf: '',
+        age: '',
+        gender: '',
+        address: '',
+        emergencyContact: '',
+        emergencyPhone: '',
+        healthInsurance: '',
+        insuranceNumber: '',
+        canBeAttended: true
+      });
+      toast({
+        title: "Paciente retornado",
+        description: "Paciente foi retornado para a fila de espera.",
+      });
+    }
   };
 
   const handleCompleteAdmin = () => {
@@ -165,7 +187,19 @@ const AdminScreen: React.FC = () => {
 
               {/* Atendimento Atual */}
               <div>
-                <h3 className="text-xl font-semibold mb-4">Coleta de Dados Pessoais</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-semibold">Coleta de Dados Pessoais</h3>
+                  {currentPatient && (
+                    <Button
+                      variant="outline"
+                      onClick={handleReturnToQueue}
+                      className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Retornar à Fila
+                    </Button>
+                  )}
+                </div>
                 {currentPatient ? (
                   <Card className="border-blue-500">
                     <CardContent className="p-6 space-y-4 max-h-96 overflow-y-auto">

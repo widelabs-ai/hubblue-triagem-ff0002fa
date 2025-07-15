@@ -1,162 +1,101 @@
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
-import { useUser } from '@/contexts/UserContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { Users, Stethoscope, FileText, Monitor, UserPlus, ClipboardList, BarChart3 } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { currentUser } = useUser();
 
-  const modules = [
+  const menuItems = [
     {
-      id: 'totem',
-      title: '🎫 Totem de Senhas',
-      description: 'Geração de senhas por especialidade',
-      color: 'from-blue-600 to-green-600',
-      route: '/totem'
+      title: "Totem de Atendimento",
+      description: "Gerar senhas para pacientes",
+      icon: <UserPlus className="h-8 w-8" />,
+      path: "/totem",
+      color: "bg-blue-500"
     },
     {
-      id: 'triagem',
-      title: '🩺 Triagem',
-      description: 'Sistema de triagem de enfermagem',
-      color: 'from-green-600 to-blue-600',
-      route: '/triagem'
+      title: "Triagem",
+      description: "Classificação de risco dos pacientes",
+      icon: <ClipboardList className="h-8 w-8" />,
+      path: "/triagem",
+      color: "bg-red-500"
     },
     {
-      id: 'administrativo',
-      title: '📋 Administrativo',
-      description: 'Coleta de dados pessoais',
-      color: 'from-blue-600 to-purple-600',
-      route: '/administrativo'
+      title: "Administrativo",
+      description: "Coleta de dados pessoais",
+      icon: <FileText className="h-8 w-8" />,
+      path: "/administrativo",
+      color: "bg-purple-500"
     },
     {
-      id: 'medico',
-      title: '👨‍⚕️ Atendimento Médico',
-      description: 'Consultas médicas',
-      color: 'from-green-600 to-teal-600',
-      route: '/medico'
+      title: "Médico",
+      description: "Consultas médicas",
+      icon: <Stethoscope className="h-8 w-8" />,
+      path: "/medico",
+      color: "bg-green-500"
     },
     {
-      id: 'monitoramento',
-      title: '📊 Monitoramento',
-      description: 'Dashboard de acompanhamento',
-      color: 'from-purple-600 to-pink-600',
-      route: '/monitoramento'
+      title: "Monitoramento",
+      description: "Dashboard de acompanhamento",
+      icon: <Monitor className="h-8 w-8" />,
+      path: "/monitoramento",
+      color: "bg-indigo-500"
+    },
+    {
+      title: "Relatórios",
+      description: "Visualizar dados de todos os pacientes",
+      icon: <BarChart3 className="h-8 w-8" />,
+      path: "/relatorios",
+      color: "bg-orange-500"
+    },
+    {
+      title: "Usuários",
+      description: "Gerenciar usuários do sistema",
+      icon: <Users className="h-8 w-8" />,
+      path: "/usuarios",
+      color: "bg-gray-500"
     }
   ];
 
-  // Add user management module for administrators
-  if (currentUser?.role === 'administrador') {
-    modules.push({
-      id: 'usuarios',
-      title: '👥 Gestão de Usuários',
-      description: 'Gerenciar usuários e permissões',
-      color: 'from-red-600 to-orange-600',
-      route: '/usuarios'
-    });
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            🏥 Sistema de Gestão Hospitalar
-          </h1>
-          <p className="text-xl text-gray-600">
-            Gerenciamento completo de filas e atendimentos
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">🏥 Sistema Hospitalar</h1>
+          <p className="text-xl text-gray-600">Gestão integrada de atendimento</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {modules.map((module) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {menuItems.map((item, index) => (
             <Card 
-              key={module.id} 
-              className="hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer border-0 overflow-hidden"
-              onClick={() => navigate(module.route)}
+              key={index} 
+              className="hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105"
+              onClick={() => navigate(item.path)}
             >
-              <CardHeader className={`bg-gradient-to-r ${module.color} text-white pb-6`}>
-                <CardTitle className="text-2xl font-bold text-center">
-                  {module.title}
-                </CardTitle>
+              <CardHeader className="text-center">
+                <div className={`${item.color} text-white rounded-full p-4 w-16 h-16 mx-auto flex items-center justify-center mb-4`}>
+                  {item.icon}
+                </div>
+                <CardTitle className="text-xl">{item.title}</CardTitle>
+                <CardDescription className="text-gray-600">
+                  {item.description}
+                </CardDescription>
               </CardHeader>
-              <CardContent className="p-8 bg-white">
-                <p className="text-gray-600 text-center text-lg mb-6">
-                  {module.description}
-                </p>
+              <CardContent className="text-center">
                 <Button 
-                  className="w-full h-12 text-lg font-semibold bg-gray-800 hover:bg-gray-900 transition-colors"
+                  className="w-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(item.path);
+                  }}
                 >
-                  Acessar Módulo
+                  Acessar
                 </Button>
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        {/* Features Section */}
-        <div className="mt-16">
-          <Card className="shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-gray-700 to-gray-900 text-white">
-              <CardTitle className="text-2xl text-center">
-                ⚡ Funcionalidades Principais
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <div className="text-3xl mb-3">⏱️</div>
-                  <h3 className="font-bold text-lg mb-2">Controle de Tempo</h3>
-                  <p className="text-gray-600">Monitoramento em tempo real com SLA de atendimento</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl mb-3">🚨</div>
-                  <h3 className="font-bold text-lg mb-2">Alertas de SLA</h3>
-                  <p className="text-gray-600">Notificações quando os tempos limites são ultrapassados</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl mb-3">📱</div>
-                  <h3 className="font-bold text-lg mb-2">Interface Responsiva</h3>
-                  <p className="text-gray-600">Funciona perfeitamente em qualquer dispositivo</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl mb-3">🔄</div>
-                  <h3 className="font-bold text-lg mb-2">Fluxo Completo</h3>
-                  <p className="text-gray-600">Da geração da senha até a consulta médica</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* SLA Information */}
-        <div className="mt-12">
-          <Card className="shadow-xl border-2 border-yellow-200">
-            <CardHeader className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white">
-              <CardTitle className="text-xl text-center">
-                📋 Metas de Atendimento (SLA)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <h4 className="font-bold text-green-800 mb-2">🎯 Triagem</h4>
-                  <p className="text-green-700">
-                    Máximo de <strong>10 minutos</strong> da geração da senha até conclusão da triagem
-                  </p>
-                </div>
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <h4 className="font-bold text-blue-800 mb-2">🏁 Atendimento Completo</h4>
-                  <p className="text-blue-700">
-                    Máximo de <strong>1h50 (110 minutos)</strong> para concluir todo o atendimento
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
