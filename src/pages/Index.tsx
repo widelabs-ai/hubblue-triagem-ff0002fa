@@ -1,8 +1,9 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
-import { Users, Stethoscope, FileText, Monitor, UserPlus, ClipboardList, BarChart3 } from "lucide-react";
+import { Users, Stethoscope, FileText, Monitor, UserPlus, ClipboardList, BarChart3, AlertTriangle, Info, Clock } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -67,6 +68,61 @@ const Index = () => {
           <p className="text-xl text-gray-600">Gestão integrada de atendimento</p>
         </div>
 
+        {/* Alertas e Avisos */}
+        <div className="mb-8 space-y-4">
+          <Alert className="border-red-200 bg-red-50">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertTitle className="text-red-800">Atenção - Protocolo de Emergência</AlertTitle>
+            <AlertDescription className="text-red-700">
+              Em casos de emergência (vermelho), encaminhe imediatamente para sala de trauma. 
+              Tempo de espera máximo: 0 minutos.
+            </AlertDescription>
+          </Alert>
+
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <Clock className="h-4 w-4 text-yellow-600" />
+            <AlertTitle className="text-yellow-800">Tempos de Atendimento - Protocolo Manchester</AlertTitle>
+            <AlertDescription className="text-yellow-700">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-2">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span className="text-sm">Vermelho: 0 min</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                  <span className="text-sm">Laranja: 10 min</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <span className="text-sm">Amarelo: 60 min</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">Verde: 120 min</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm">Azul: 240 min</span>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+
+          <Alert className="border-blue-200 bg-blue-50">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertTitle className="text-blue-800">Orientações Gerais</AlertTitle>
+            <AlertDescription className="text-blue-700">
+              <ul className="list-disc list-inside space-y-1 mt-2">
+                <li>Sempre registre a chegada do paciente no totem antes de iniciar a triagem</li>
+                <li>Complete todos os dados administrativos antes do atendimento médico</li>
+                <li>Monitore constantemente os pacientes em espera através do dashboard</li>
+                <li>Utilize o sistema de relatórios para acompanhar métricas de atendimento</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
+        </div>
+
+        {/* Menu Principal */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {menuItems.map((item, index) => (
             <Card 
