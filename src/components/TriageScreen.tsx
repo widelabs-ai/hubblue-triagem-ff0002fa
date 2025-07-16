@@ -9,12 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, X } from 'lucide-react';
+import { ArrowLeft, X, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import TriageChat from './TriageChat';
 
 const TriageScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, getTimeElapsed, isOverSLA } = useHospital();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [triageData, setTriageData] = useState({
     priority: '',
     vitals: {
@@ -46,6 +48,15 @@ const TriageScreen: React.FC = () => {
     });
   };
 
+  const handleSuggestPriority = (priority: string, reasoning: string) => {
+    setTriageData(prev => ({ ...prev, priority }));
+    toast({
+      title: "Classificação sugerida",
+      description: `${getPriorityText(priority)} - ${reasoning}`,
+      duration: 5000,
+    });
+  };
+
   const handleCompleteTriagem = () => {
     if (!currentPatient || !triageData.priority || !triageData.complaints) {
       toast({
@@ -74,6 +85,7 @@ const TriageScreen: React.FC = () => {
       observations: ''
     });
     setIsDialogOpen(false);
+    setShowChat(false);
     
     toast({
       title: "Triagem concluída",
@@ -86,6 +98,7 @@ const TriageScreen: React.FC = () => {
       updatePatientStatus(currentPatient.id, 'waiting-triage');
     }
     setIsDialogOpen(false);
+    setShowChat(false);
     setTriageData({
       priority: '',
       vitals: {
@@ -112,6 +125,17 @@ const TriageScreen: React.FC = () => {
       case 'laranja': return 'text-orange-600';
       case 'vermelho': return 'text-red-600';
       default: return 'text-gray-600';
+    }
+  };
+
+  const getPriorityText = (priority: string) => {
+    switch (priority) {
+      case 'vermelho': return '🔴 Vermelho - Emergência (imediato)';
+      case 'laranja': return '🟠 Laranja - Muito urgente (10 min)';
+      case 'amarelo': return '🟡 Amarelo - Urgente (60 min)';
+      case 'verde': return '🟢 Verde - Pouco urgente (120 min)';
+      case 'azul': return '🔵 Azul - Não urgente (240 min)';
+      default: return priority;
     }
   };
 
@@ -191,175 +215,200 @@ const TriageScreen: React.FC = () => {
           handleCloseDialog();
         }
       }}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-[98vw] max-h-[98vh] overflow-hidden p-0">
+          <DialogHeader className="p-6 pb-4">
             <div className="flex justify-between items-center">
               <DialogTitle className="text-xl">Triagem em Andamento</DialogTitle>
-              <Button variant="ghost" onClick={handleCloseDialog}>
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowChat(!showChat)}
+                  className="flex items-center gap-2"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  {showChat ? 'Ocultar Chat' : 'Chat Especialista'}
+                </Button>
+                <Button variant="ghost" onClick={handleCloseDialog}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </DialogHeader>
           
           {currentPatient && (
-            <div className="space-y-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="font-bold text-xl">{currentPatient.password}</div>
-                <div className="text-gray-600 capitalize">
-                  {currentPatient.specialty.replace('-', ' ')}
-                </div>
-                <div className="text-sm text-blue-600">
-                  Telefone: {currentPatient.phone}
-                </div>
-                <div className="text-sm text-gray-600">
-                  Tempo na triagem: {getTimeElapsed(currentPatient, 'triageStarted')} min
+            <div className="flex h-[calc(98vh-120px)]">
+              {/* Formulário de Triagem */}
+              <div className={`${showChat ? 'w-2/3' : 'w-full'} overflow-y-auto p-6 pt-0`}>
+                <div className="space-y-6">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="font-bold text-xl">{currentPatient.password}</div>
+                    <div className="text-gray-600 capitalize">
+                      {currentPatient.specialty.replace('-', ' ')}
+                    </div>
+                    <div className="text-sm text-blue-600">
+                      Telefone: {currentPatient.phone}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Tempo na triagem: {getTimeElapsed(currentPatient, 'triageStarted')} min
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Classificação de Risco (Manchester) *</Label>
+                        <Select value={triageData.priority} onValueChange={(value) => setTriageData({...triageData, priority: value})}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a classificação" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="azul">🔵 Azul - Não urgente (240 min)</SelectItem>
+                            <SelectItem value="verde">🟢 Verde - Pouco urgente (120 min)</SelectItem>
+                            <SelectItem value="amarelo">🟡 Amarelo - Urgente (60 min)</SelectItem>
+                            <SelectItem value="laranja">🟠 Laranja - Muito urgente (10 min)</SelectItem>
+                            <SelectItem value="vermelho">🔴 Vermelho - Emergência (imediato)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Pressão Arterial</Label>
+                          <Input
+                            placeholder="120x80"
+                            value={triageData.vitals.bloodPressure}
+                            onChange={(e) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, bloodPressure: e.target.value}
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Frequência Cardíaca</Label>
+                          <Input
+                            placeholder="70 bpm"
+                            value={triageData.vitals.heartRate}
+                            onChange={(e) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, heartRate: e.target.value}
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Temperatura</Label>
+                          <Input
+                            placeholder="36.5°C"
+                            value={triageData.vitals.temperature}
+                            onChange={(e) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, temperature: e.target.value}
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Saturação O₂</Label>
+                          <Input
+                            placeholder="98%"
+                            value={triageData.vitals.oxygenSaturation}
+                            onChange={(e) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, oxygenSaturation: e.target.value}
+                            })}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label>Escala de Dor (0-10)</Label>
+                        <Select value={triageData.painScale} onValueChange={(value) => setTriageData({...triageData, painScale: value})}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Nível de dor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[...Array(11)].map((_, i) => (
+                              <SelectItem key={i} value={i.toString()}>
+                                {i} - {i === 0 ? 'Sem dor' : i <= 3 ? 'Leve' : i <= 6 ? 'Moderada' : 'Intensa'}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label>Alergias Conhecidas</Label>
+                        <Input
+                          placeholder="Medicamentos, alimentos, etc."
+                          value={triageData.allergies}
+                          onChange={(e) => setTriageData({...triageData, allergies: e.target.value})}
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Medicamentos em Uso</Label>
+                        <Input
+                          placeholder="Medicamentos atuais"
+                          value={triageData.medications}
+                          onChange={(e) => setTriageData({...triageData, medications: e.target.value})}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Queixas Principais *</Label>
+                        <Textarea
+                          placeholder="Descreva o motivo da consulta..."
+                          value={triageData.complaints}
+                          onChange={(e) => setTriageData({...triageData, complaints: e.target.value})}
+                          rows={4}
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Sintomas Apresentados</Label>
+                        <Textarea
+                          placeholder="Febre, náusea, tontura, etc..."
+                          value={triageData.symptoms}
+                          onChange={(e) => setTriageData({...triageData, symptoms: e.target.value})}
+                          rows={4}
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Observações</Label>
+                        <Textarea
+                          placeholder="Informações adicionais relevantes..."
+                          value={triageData.observations}
+                          onChange={(e) => setTriageData({...triageData, observations: e.target.value})}
+                          rows={4}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-3 pt-4 border-t">
+                    <Button variant="outline" onClick={handleCloseDialog}>
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={handleCompleteTriagem}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Concluir Triagem
+                    </Button>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label>Classificação de Risco (Manchester) *</Label>
-                    <Select onValueChange={(value) => setTriageData({...triageData, priority: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a classificação" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="azul">🔵 Azul - Não urgente (240 min)</SelectItem>
-                        <SelectItem value="verde">🟢 Verde - Pouco urgente (120 min)</SelectItem>
-                        <SelectItem value="amarelo">🟡 Amarelo - Urgente (60 min)</SelectItem>
-                        <SelectItem value="laranja">🟠 Laranja - Muito urgente (10 min)</SelectItem>
-                        <SelectItem value="vermelho">🔴 Vermelho - Emergência (imediato)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>Pressão Arterial</Label>
-                      <Input
-                        placeholder="120x80"
-                        value={triageData.vitals.bloodPressure}
-                        onChange={(e) => setTriageData({
-                          ...triageData, 
-                          vitals: {...triageData.vitals, bloodPressure: e.target.value}
-                        })}
-                      />
-                    </div>
-                    <div>
-                      <Label>Frequência Cardíaca</Label>
-                      <Input
-                        placeholder="70 bpm"
-                        value={triageData.vitals.heartRate}
-                        onChange={(e) => setTriageData({
-                          ...triageData, 
-                          vitals: {...triageData.vitals, heartRate: e.target.value}
-                        })}
-                      />
-                    </div>
-                    <div>
-                      <Label>Temperatura</Label>
-                      <Input
-                        placeholder="36.5°C"
-                        value={triageData.vitals.temperature}
-                        onChange={(e) => setTriageData({
-                          ...triageData, 
-                          vitals: {...triageData.vitals, temperature: e.target.value}
-                        })}
-                      />
-                    </div>
-                    <div>
-                      <Label>Saturação O₂</Label>
-                      <Input
-                        placeholder="98%"
-                        value={triageData.vitals.oxygenSaturation}
-                        onChange={(e) => setTriageData({
-                          ...triageData, 
-                          vitals: {...triageData.vitals, oxygenSaturation: e.target.value}
-                        })}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Escala de Dor (0-10)</Label>
-                    <Select onValueChange={(value) => setTriageData({...triageData, painScale: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Nível de dor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[...Array(11)].map((_, i) => (
-                          <SelectItem key={i} value={i.toString()}>
-                            {i} - {i === 0 ? 'Sem dor' : i <= 3 ? 'Leve' : i <= 6 ? 'Moderada' : 'Intensa'}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Alergias Conhecidas</Label>
-                    <Input
-                      placeholder="Medicamentos, alimentos, etc."
-                      value={triageData.allergies}
-                      onChange={(e) => setTriageData({...triageData, allergies: e.target.value})}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Medicamentos em Uso</Label>
-                    <Input
-                      placeholder="Medicamentos atuais"
-                      value={triageData.medications}
-                      onChange={(e) => setTriageData({...triageData, medications: e.target.value})}
-                    />
-                  </div>
+              {/* Chat do Agente Especialista */}
+              {showChat && (
+                <div className="w-1/3 border-l border-gray-200">
+                  <TriageChat 
+                    triageData={triageData} 
+                    onSuggestPriority={handleSuggestPriority}
+                  />
                 </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label>Queixas Principais *</Label>
-                    <Textarea
-                      placeholder="Descreva o motivo da consulta..."
-                      value={triageData.complaints}
-                      onChange={(e) => setTriageData({...triageData, complaints: e.target.value})}
-                      rows={4}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Sintomas Apresentados</Label>
-                    <Textarea
-                      placeholder="Febre, náusea, tontura, etc..."
-                      value={triageData.symptoms}
-                      onChange={(e) => setTriageData({...triageData, symptoms: e.target.value})}
-                      rows={4}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Observações</Label>
-                    <Textarea
-                      placeholder="Informações adicionais relevantes..."
-                      value={triageData.observations}
-                      onChange={(e) => setTriageData({...triageData, observations: e.target.value})}
-                      rows={4}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4 border-t">
-                <Button variant="outline" onClick={handleCloseDialog}>
-                  Cancelar
-                </Button>
-                <Button 
-                  onClick={handleCompleteTriagem}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Concluir Triagem
-                </Button>
-              </div>
+              )}
             </div>
           )}
         </DialogContent>
