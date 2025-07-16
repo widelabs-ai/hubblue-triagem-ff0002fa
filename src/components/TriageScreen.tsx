@@ -14,7 +14,6 @@ import { useNavigate } from 'react-router-dom';
 
 const TriageScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, getTimeElapsed, isOverSLA } = useHospital();
-  const [selectedPatient, setSelectedPatient] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [triageData, setTriageData] = useState({
     priority: '',
@@ -38,8 +37,8 @@ const TriageScreen: React.FC = () => {
   const currentPatient = getPatientsByStatus('in-triage')[0];
 
   const handleCallPatient = (patientId: string) => {
+    console.log('Chamando paciente:', patientId);
     updatePatientStatus(patientId, 'in-triage');
-    setSelectedPatient(patientId);
     setIsDialogOpen(true);
     toast({
       title: "Paciente chamado",
@@ -187,8 +186,12 @@ const TriageScreen: React.FC = () => {
       </div>
 
       {/* Dialog de Triagem */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          handleCloseDialog();
+        }
+      }}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex justify-between items-center">
               <DialogTitle className="text-xl">Triagem em Andamento</DialogTitle>
