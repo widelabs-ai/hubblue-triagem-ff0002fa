@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -179,13 +178,34 @@ A triagem será finalizada automaticamente com esta classificação.`
     setMessages(prev => [...prev, responseMessage]);
     
     if (confirmed && onCompleteTriagem) {
-      // Aguarda um momento para o usuário ler a mensagem antes de concluir
       setTimeout(() => {
         onCompleteTriagem();
       }, 2000);
     }
     
     setAwaitingConfirmation(null);
+  };
+
+  const handleTextConfirmation = (userMessage: string) => {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    // Detecta confirmação positiva
+    if (lowerMessage.includes('sim') || lowerMessage.includes('confirmo') || 
+        lowerMessage.includes('concordo') || lowerMessage.includes('ok') || 
+        lowerMessage.includes('correto') || lowerMessage.includes('certo')) {
+      handleConfirmation(true);
+      return true;
+    }
+    
+    // Detecta confirmação negativa
+    if (lowerMessage.includes('não') || lowerMessage.includes('nao') || 
+        lowerMessage.includes('revisar') || lowerMessage.includes('errado') || 
+        lowerMessage.includes('incorreto') || lowerMessage.includes('discordo')) {
+      handleConfirmation(false);
+      return true;
+    }
+    
+    return false;
   };
 
   const getPriorityText = (priority: string) => {
@@ -242,6 +262,12 @@ A triagem será finalizada automaticamente com esta classificação.`
     setMessages(prev => [...prev, userMessage]);
     const currentInput = inputValue;
     setInputValue('');
+    
+    // Se estamos aguardando confirmação, tenta processar como resposta de confirmação
+    if (awaitingConfirmation && handleTextConfirmation(currentInput)) {
+      return; // A confirmação foi processada, não precisa gerar resposta adicional
+    }
+    
     setIsLoading(true);
 
     // Simula delay de resposta
@@ -352,7 +378,7 @@ A triagem será finalizada automaticamente com esta classificação.`
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Digite sua dúvida sobre triagem..."
+              placeholder={awaitingConfirmation ? 'Digite "sim" para confirmar ou "não" para revisar...' : 'Digite sua dúvida sobre triagem...'}
               disabled={isLoading}
               className="flex-1"
             />
