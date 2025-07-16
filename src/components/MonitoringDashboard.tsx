@@ -5,6 +5,7 @@ import { useHospital } from '@/contexts/HospitalContext';
 import StatsGrid from './dashboard/StatsGrid';
 import KPICards from './dashboard/KPICards';
 import PatientList from './dashboard/PatientList';
+import ChartSection from './dashboard/ChartSection';
 
 const MonitoringDashboard: React.FC = () => {
   const { patients, getPatientsByStatus, getTimeElapsed, isOverSLA } = useHospital();
@@ -49,6 +50,13 @@ const MonitoringDashboard: React.FC = () => {
               avgTriageTime={avgTriageTime}
               avgTotalTime={avgTotalTime}
             />
+            
+            {/* Nova seção de gráficos */}
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold mb-4 text-gray-800">📈 Análises Visuais</h3>
+              <ChartSection />
+            </div>
+            
             <PatientList 
               patients={patients}
               getTimeElapsed={getTimeElapsed}
