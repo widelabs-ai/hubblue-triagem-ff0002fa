@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,6 @@ import TriageChat from './TriageChat';
 const TriageScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, getTimeElapsed, isOverSLA } = useHospital();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [showChat, setShowChat] = useState(false);
   const [triageData, setTriageData] = useState({
     priority: '',
     vitals: {
@@ -85,7 +83,6 @@ const TriageScreen: React.FC = () => {
       observations: ''
     });
     setIsDialogOpen(false);
-    setShowChat(false);
     
     toast({
       title: "Triagem concluída",
@@ -98,7 +95,6 @@ const TriageScreen: React.FC = () => {
       updatePatientStatus(currentPatient.id, 'waiting-triage');
     }
     setIsDialogOpen(false);
-    setShowChat(false);
     setTriageData({
       priority: '',
       vitals: {
@@ -219,26 +215,16 @@ const TriageScreen: React.FC = () => {
           <DialogHeader className="p-6 pb-4">
             <div className="flex justify-between items-center">
               <DialogTitle className="text-xl">Triagem em Andamento</DialogTitle>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowChat(!showChat)}
-                  className="flex items-center gap-2"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  {showChat ? 'Ocultar Chat' : 'Chat Especialista'}
-                </Button>
-                <Button variant="ghost" onClick={handleCloseDialog}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+              <Button variant="ghost" onClick={handleCloseDialog}>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </DialogHeader>
           
           {currentPatient && (
             <div className="flex h-[calc(98vh-120px)]">
               {/* Formulário de Triagem */}
-              <div className={`${showChat ? 'w-2/3' : 'w-full'} overflow-y-auto p-6 pt-0`}>
+              <div className="w-2/3 overflow-y-auto p-6 pt-0">
                 <div className="space-y-6">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="font-bold text-xl">{currentPatient.password}</div>
@@ -400,15 +386,13 @@ const TriageScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* Chat do Agente Especialista */}
-              {showChat && (
-                <div className="w-1/3 border-l border-gray-200">
-                  <TriageChat 
-                    triageData={triageData} 
-                    onSuggestPriority={handleSuggestPriority}
-                  />
-                </div>
-              )}
+              {/* Chat da LIA sempre visível */}
+              <div className="w-1/3 border-l border-gray-200">
+                <TriageChat 
+                  triageData={triageData} 
+                  onSuggestPriority={handleSuggestPriority}
+                />
+              </div>
             </div>
           )}
         </DialogContent>

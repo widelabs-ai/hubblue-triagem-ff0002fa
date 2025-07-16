@@ -40,7 +40,7 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority }
     {
       id: '1',
       type: 'agent',
-      content: 'Olá! Sou o agente especialista em triagem Manchester. Estou aqui para ajudar com dúvidas sobre classificação e diagnóstico. Como posso auxiliar?',
+      content: 'Olá! Sou a LIA, sua agente especialista em triagem Manchester. Estou aqui para ajudar com dúvidas sobre classificação e diagnóstico. Como posso auxiliar?',
       timestamp: new Date()
     }
   ]);
@@ -201,7 +201,7 @@ Gostaria de aplicar esta classificação ou tem alguma dúvida sobre o protocolo
       <CardHeader className="bg-gradient-to-r from-blue-600 to-green-600 text-white py-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Bot className="h-5 w-5" />
-          Agente Especialista em Triagem
+          LIA - Agente Especialista em Triagem
         </CardTitle>
       </CardHeader>
       
@@ -236,7 +236,7 @@ Gostaria de aplicar esta classificação ou tem alguma dúvida sobre o protocolo
                 <div className="bg-gray-100 rounded-lg px-3 py-2 max-w-[80%]">
                   <div className="flex items-center gap-2">
                     <Bot className="h-4 w-4" />
-                    <div className="text-sm">Digitando...</div>
+                    <div className="text-sm">LIA está digitando...</div>
                   </div>
                 </div>
               </div>
