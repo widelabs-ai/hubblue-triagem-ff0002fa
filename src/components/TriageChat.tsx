@@ -11,6 +11,9 @@ interface Message {
   type: 'user' | 'agent';
   content: string;
   timestamp: Date;
+  isConfirmationQuestion?: boolean;
+  suggestedPriority?: string;
+  reasoning?: string;
 }
 
 interface TriageData {
@@ -33,19 +36,24 @@ interface TriageData {
 interface TriageChatProps {
   triageData: TriageData;
   onSuggestPriority: (priority: string, reasoning: string) => void;
+  onCompleteTriagem?: () => void;
 }
 
-const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority }) => {
+const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, onCompleteTriagem }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       type: 'agent',
-      content: 'Olá! Sou a LIA, sua agente especialista em triagem Manchester. Estou aqui para ajudar com dúvidas sobre classificação e diagnóstico. Como posso auxiliar?',
+      content: 'Olá! Sou a LIA (Leitura Inteligente de Avaliação), sua agente especialista em triagem Manchester. Estou aqui para ajudar com dúvidas sobre classificação e diagnóstico. Como posso auxiliar?',
       timestamp: new Date()
     }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState<{
+    priority: string;
+    reasoning: string;
+  } | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,39 +63,6 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority }
   }, [messages]);
 
   const analyzeTriageData = () => {
-    const { complaints, symptoms, vitals, painScale } = triageData;
-    
-    // Análise automática baseada nos dados
-    let suggestedPriority = '';
-    let reasoning = '';
-
-    // Sinais vitais críticos
-    const heartRate = parseInt(vitals.heartRate) || 0;
-    const temp = parseFloat(vitals.temperature) || 0;
-    const saturation = parseInt(vitals.oxygenSaturation) || 100;
-    const pain = parseInt(painScale) || 0;
-
-    if (heartRate > 150 || heartRate < 40 || temp > 39.5 || saturation < 85) {
-      suggestedPriority = 'vermelho';
-      reasoning = 'Sinais vitais críticos detectados. Necessita atendimento imediato.';
-    } else if (pain >= 8 || temp > 38.5 || heartRate > 120 || saturation < 92) {
-      suggestedPriority = 'laranja';
-      reasoning = 'Sinais de urgência significativa. Atendimento em até 10 minutos.';
-    } else if (pain >= 5 || temp > 37.8 || complaints.toLowerCase().includes('dor no peito')) {
-      suggestedPriority = 'amarelo';
-      reasoning = 'Sintomas que requerem avaliação médica em até 60 minutos.';
-    } else if (pain >= 2 || symptoms.toLowerCase().includes('leve')) {
-      suggestedPriority = 'verde';
-      reasoning = 'Condição estável, pode aguardar até 120 minutos.';
-    } else {
-      suggestedPriority = 'azul';
-      reasoning = 'Condição não urgente, pode aguardar até 240 minutos.';
-    }
-
-    return { suggestedPriority, reasoning };
-  };
-
-  const handleAnalyzeData = () => {
     if (!triageData.complaints || !triageData.priority) {
       const analysisMessage: Message = {
         id: Date.now().toString(),
@@ -99,7 +74,7 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority }
       return;
     }
 
-    const { suggestedPriority, reasoning } = analyzeTriageData();
+    const { suggestedPriority, reasoning, confirmationQuestion } = performDetailedAnalysis();
     
     const analysisMessage: Message = {
       id: Date.now().toString(),
@@ -116,12 +91,101 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority }
 - FC: ${triageData.vitals.heartRate || 'Não aferida'} bpm
 - SatO₂: ${triageData.vitals.oxygenSaturation || 'Não aferida'}%
 
-Gostaria de aplicar esta classificação ou tem alguma dúvida sobre o protocolo?`,
-      timestamp: new Date()
+${confirmationQuestion}`,
+      timestamp: new Date(),
+      isConfirmationQuestion: true,
+      suggestedPriority,
+      reasoning
     };
 
     setMessages(prev => [...prev, analysisMessage]);
+    setAwaitingConfirmation({ priority: suggestedPriority, reasoning });
     onSuggestPriority(suggestedPriority, reasoning);
+  };
+
+  const performDetailedAnalysis = () => {
+    const { complaints, symptoms, vitals, painScale } = triageData;
+    
+    let suggestedPriority = '';
+    let reasoning = '';
+    let confirmationQuestion = '';
+
+    // Análise mais detalhada baseada nos dados
+    const heartRate = parseInt(vitals.heartRate) || 0;
+    const temp = parseFloat(vitals.temperature) || 0;
+    const saturation = parseInt(vitals.oxygenSaturation) || 100;
+    const pain = parseInt(painScale) || 0;
+    const complaintsLower = complaints.toLowerCase();
+    const symptomsLower = symptoms.toLowerCase();
+
+    // Verificações específicas para diferentes fluxos
+    if (complaintsLower.includes('dor no peito') || complaintsLower.includes('precordial')) {
+      if (heartRate > 150 || saturation < 90 || pain >= 8) {
+        suggestedPriority = 'vermelho';
+        reasoning = 'Dor torácica com sinais de instabilidade hemodinâmica';
+        confirmationQuestion = 'Confirma sinais de comprometimento circulatório? (sudorese, palidez, alteração de consciência)';
+      } else if (pain >= 6 || heartRate > 100) {
+        suggestedPriority = 'laranja';
+        reasoning = 'Dor torácica moderada a intensa requer avaliação urgente';
+        confirmationQuestion = 'O paciente apresenta irradiação da dor para braço, mandíbula ou pescoço?';
+      } else {
+        suggestedPriority = 'amarelo';
+        reasoning = 'Dor torácica leve sem sinais de alarme';
+        confirmationQuestion = 'Histórico de doença cardíaca prévia ou fatores de risco cardiovascular?';
+      }
+    } else if (temp > 39.5 || (temp > 38.5 && (heartRate > 120 || saturation < 92))) {
+      suggestedPriority = 'laranja';
+      reasoning = 'Febre alta com sinais de comprometimento sistêmico';
+      confirmationQuestion = 'Paciente apresenta sinais de sepse? (confusão mental, hipotensão, taquicardia)';
+    } else if (saturation < 85 || heartRate > 150 || heartRate < 40) {
+      suggestedPriority = 'vermelho';
+      reasoning = 'Sinais vitais críticos - risco de vida';
+      confirmationQuestion = 'Confirma necessidade de suporte ventilatório ou circulatório imediato?';
+    } else if (pain >= 8 || temp > 38.5 || heartRate > 120 || saturation < 92) {
+      suggestedPriority = 'laranja';
+      reasoning = 'Sintomas intensos requerem avaliação médica urgente';
+      confirmationQuestion = 'Paciente consegue manter-se estável ou há deterioração clínica?';
+    } else if (pain >= 5 || temp > 37.8 || symptomsLower.includes('vômito') || symptomsLower.includes('diarréia')) {
+      suggestedPriority = 'amarelo';
+      reasoning = 'Sintomas moderados necessitam avaliação médica';
+      confirmationQuestion = 'Há sinais de desidratação ou comprometimento do estado geral?';
+    } else if (pain >= 2 || temp > 37.2) {
+      suggestedPriority = 'verde';
+      reasoning = 'Sintomas leves, condição estável';
+      confirmationQuestion = 'Paciente pode aguardar sem risco de complicações?';
+    } else {
+      suggestedPriority = 'azul';
+      reasoning = 'Condição não urgente';
+      confirmationQuestion = 'Confirma que não há urgência médica e pode aguardar atendimento eletivo?';
+    }
+
+    return { suggestedPriority, reasoning, confirmationQuestion };
+  };
+
+  const handleConfirmation = (confirmed: boolean) => {
+    if (!awaitingConfirmation) return;
+
+    const responseMessage: Message = {
+      id: Date.now().toString(),
+      type: 'agent',
+      content: confirmed 
+        ? `Perfeito! Classificação **${getPriorityText(awaitingConfirmation.priority)}** confirmada. Procedendo com a conclusão da triagem conforme protocolo Manchester.
+
+A triagem será finalizada automaticamente com esta classificação.`
+        : 'Entendi. Você pode revisar os dados e me fazer perguntas específicas sobre a classificação. Quando estiver pronto, posso fazer uma nova análise.',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, responseMessage]);
+    
+    if (confirmed && onCompleteTriagem) {
+      // Aguarda um momento para o usuário ler a mensagem antes de concluir
+      setTimeout(() => {
+        onCompleteTriagem();
+      }, 2000);
+    }
+    
+    setAwaitingConfirmation(null);
   };
 
   const getPriorityText = (priority: string) => {
@@ -139,26 +203,30 @@ Gostaria de aplicar esta classificação ou tem alguma dúvida sobre o protocolo
     const lowerMessage = userMessage.toLowerCase();
     
     if (lowerMessage.includes('dor no peito') || lowerMessage.includes('peito')) {
-      return 'Dor no peito é um sintoma importante. Avalie: início súbito, irradiação, intensidade e sinais vitais. Geralmente classifica como AMARELO ou superior dependendo da apresentação.';
+      return 'Dor no peito é um sintoma importante. Avalie: início súbito, irradiação, intensidade e sinais vitais. Geralmente classifica como AMARELO ou superior dependendo da apresentação. Há comprometimento hemodinâmico?';
     }
     
     if (lowerMessage.includes('febre') || lowerMessage.includes('temperatura')) {
-      return 'Para febre: <37.8°C = VERDE/AZUL, 37.8-39.5°C = AMARELO, >39.5°C = LARANJA/VERMELHO. Considere idade e outros sintomas associados.';
+      return 'Para febre: <37.8°C = VERDE/AZUL, 37.8-39.5°C = AMARELO, >39.5°C = LARANJA/VERMELHO. Considere idade, imunossupressão e outros sintomas associados. Há sinais de sepse?';
     }
     
     if (lowerMessage.includes('criança') || lowerMessage.includes('pediatria')) {
-      return 'Em pediatria: observe sinais de desidratação, irritabilidade, palidez. Crianças podem deteriorar rapidamente. Seja mais conservador na classificação.';
+      return 'Em pediatria: observe sinais de desidratação, irritabilidade, palidez. Crianças podem deteriorar rapidamente. Seja mais conservador na classificação. Use escalas específicas para idade.';
     }
     
     if (lowerMessage.includes('respiração') || lowerMessage.includes('falta de ar')) {
-      return 'Dificuldade respiratória: avalie FR, SatO₂, uso de musculatura acessória. SatO₂ <92% = LARANJA, <85% = VERMELHO.';
+      return 'Dificuldade respiratória: avalie FR, SatO₂, uso de musculatura acessória, cianose. SatO₂ <92% = LARANJA, <85% = VERMELHO. Considere broncoespasmo ou insuficiência respiratória.';
     }
     
     if (lowerMessage.includes('protocolo') || lowerMessage.includes('manchester')) {
-      return 'O Protocolo Manchester usa fluxogramas baseados em apresentação clínica. Identifique a queixa principal, siga o fluxograma correspondente e classifique conforme discriminadores.';
+      return 'O Protocolo Manchester usa fluxogramas baseados em apresentação clínica. Identifique a queixa principal, siga o fluxograma correspondente e classifique conforme discriminadores específicos.';
     }
     
-    return 'Entendi sua dúvida. Para uma orientação mais específica, posso analisar os dados completos do paciente. Você pode clicar em "Analisar Dados" ou me fornecer mais detalhes sobre o caso.';
+    if (lowerMessage.includes('sangue') || lowerMessage.includes('hemorragia')) {
+      return 'Hemorragias: avalie volume perdido, sinais de choque, local do sangramento. Hemorragia ativa com instabilidade = VERMELHO. Sangramento controlado = AMARELO/VERDE conforme quantidade.';
+    }
+    
+    return 'Entendi sua dúvida. Para uma orientação mais específica, posso analisar os dados completos do paciente. Você pode clicar em "Analisar Dados" ou me fornecer mais detalhes sobre o caso específico.';
   };
 
   const sendMessage = () => {
@@ -172,6 +240,7 @@ Gostaria de aplicar esta classificação ou tem alguma dúvida sobre o protocolo
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputValue;
     setInputValue('');
     setIsLoading(true);
 
@@ -180,7 +249,7 @@ Gostaria de aplicar esta classificação ou tem alguma dúvida sobre o protocolo
       const agentResponse: Message = {
         id: (Date.now() + 1).toString(),
         type: 'agent',
-        content: generateResponse(inputValue),
+        content: generateResponse(currentInput),
         timestamp: new Date()
       };
       
@@ -201,7 +270,7 @@ Gostaria de aplicar esta classificação ou tem alguma dúvida sobre o protocolo
       <CardHeader className="bg-gradient-to-r from-blue-600 to-green-600 text-white py-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Bot className="h-5 w-5" />
-          LIA - Agente Especialista em Triagem
+          LIA - Leitura Inteligente de Avaliação
         </CardTitle>
       </CardHeader>
       
@@ -209,26 +278,50 @@ Gostaria de aplicar esta classificação ou tem alguma dúvida sobre o protocolo
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+              <div key={message.id}>
                 <div
-                  className={`max-w-[80%] rounded-lg px-3 py-2 ${
-                    message.type === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
+                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className="flex items-start gap-2">
-                    {message.type === 'agent' && <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />}
-                    {message.type === 'user' && <User className="h-4 w-4 mt-0.5 flex-shrink-0" />}
-                    <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-                  </div>
-                  <div className="text-xs opacity-70 mt-1">
-                    {message.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  <div
+                    className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                      message.type === 'user'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {message.type === 'agent' && <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />}
+                      {message.type === 'user' && <User className="h-4 w-4 mt-0.5 flex-shrink-0" />}
+                      <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                    </div>
+                    <div className="text-xs opacity-70 mt-1">
+                      {message.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
                   </div>
                 </div>
+                
+                {/* Botões de confirmação após análise */}
+                {message.isConfirmationQuestion && awaitingConfirmation && (
+                  <div className="flex justify-start mt-2">
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => handleConfirmation(true)}
+                        className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-auto"
+                        size="sm"
+                      >
+                        Sim, confirmo
+                      </Button>
+                      <Button 
+                        onClick={() => handleConfirmation(false)}
+                        variant="outline"
+                        className="text-xs px-3 py-1 h-auto"
+                        size="sm"
+                      >
+                        Não, revisar
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             {isLoading && (
@@ -246,11 +339,12 @@ Gostaria de aplicar esta classificação ou tem alguma dúvida sobre o protocolo
         
         <div className="border-t p-4 space-y-3">
           <Button 
-            onClick={handleAnalyzeData}
+            onClick={analyzeTriageData}
             className="w-full bg-green-600 hover:bg-green-700"
             size="sm"
+            disabled={awaitingConfirmation !== null}
           >
-            Analisar Dados do Paciente
+            {awaitingConfirmation ? 'Aguardando Confirmação' : 'Analisar Dados do Paciente'}
           </Button>
           
           <div className="flex gap-2">

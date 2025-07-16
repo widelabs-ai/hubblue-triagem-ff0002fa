@@ -391,6 +391,7 @@ const TriageScreen: React.FC = () => {
                 <TriageChat 
                   triageData={triageData} 
                   onSuggestPriority={handleSuggestPriority}
+                  onCompleteTriagem={handleCompleteTriagem}
                 />
               </div>
             </div>
