@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,71 @@ const TriageScreen: React.FC = () => {
   const navigate = useNavigate();
   const waitingPatients = getPatientsByStatus('waiting-triage');
   const currentPatient = getPatientsByStatus('in-triage')[0];
+
+  // Função para calcular classificação automática baseada no protocolo Manchester
+  const calculateAutomaticPriority = (data: typeof triageData) => {
+    const { complaints, symptoms, vitals, painScale } = data;
+    
+    if (!complaints && !symptoms) return '';
+
+    const heartRate = parseInt(vitals.heartRate) || 0;
+    const temp = parseFloat(vitals.temperature) || 0;
+    const saturation = parseInt(vitals.oxygenSaturation) || 100;
+    const pain = parseInt(painScale) || 0;
+    const complaintsLower = complaints.toLowerCase();
+    const symptomsLower = symptoms.toLowerCase();
+
+    // Critérios para VERMELHO (Emergência)
+    if (saturation < 85 || heartRate > 150 || heartRate < 40) {
+      return 'vermelho';
+    }
+    
+    if (complaintsLower.includes('dor no peito') || complaintsLower.includes('precordial')) {
+      if (heartRate > 150 || saturation < 90 || pain >= 8) {
+        return 'vermelho';
+      }
+    }
+
+    // Critérios para LARANJA (Muito urgente)
+    if (temp > 39.5 || (temp > 38.5 && (heartRate > 120 || saturation < 92))) {
+      return 'laranja';
+    }
+    
+    if (complaintsLower.includes('dor no peito') || complaintsLower.includes('precordial')) {
+      if (pain >= 6 || heartRate > 100) {
+        return 'laranja';
+      }
+    }
+    
+    if (pain >= 8 || temp > 38.5 || heartRate > 120 || saturation < 92) {
+      return 'laranja';
+    }
+
+    // Critérios para AMARELO (Urgente)
+    if (complaintsLower.includes('dor no peito') || complaintsLower.includes('precordial')) {
+      return 'amarelo';
+    }
+    
+    if (pain >= 5 || temp > 37.8 || symptomsLower.includes('vômito') || symptomsLower.includes('diarréia')) {
+      return 'amarelo';
+    }
+
+    // Critérios para VERDE (Pouco urgente)
+    if (pain >= 2 || temp > 37.2) {
+      return 'verde';
+    }
+
+    // Padrão AZUL (Não urgente)
+    return 'azul';
+  };
+
+  // Atualizar classificação automaticamente quando os campos mudarem
+  useEffect(() => {
+    const automaticPriority = calculateAutomaticPriority(triageData);
+    if (automaticPriority && automaticPriority !== triageData.priority) {
+      setTriageData(prev => ({ ...prev, priority: automaticPriority }));
+    }
+  }, [triageData.complaints, triageData.symptoms, triageData.vitals, triageData.painScale]);
 
   const handleCallPatient = (patientId: string) => {
     console.log('Chamando paciente:', patientId);
@@ -242,19 +308,23 @@ const TriageScreen: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div>
-                        <Label>Classificação de Risco (Manchester) *</Label>
-                        <Select value={triageData.priority} onValueChange={(value) => setTriageData({...triageData, priority: value})}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a classificação" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="azul">🔵 Azul - Não urgente (240 min)</SelectItem>
-                            <SelectItem value="verde">🟢 Verde - Pouco urgente (120 min)</SelectItem>
-                            <SelectItem value="amarelo">🟡 Amarelo - Urgente (60 min)</SelectItem>
-                            <SelectItem value="laranja">🟠 Laranja - Muito urgente (10 min)</SelectItem>
-                            <SelectItem value="vermelho">🔴 Vermelho - Emergência (imediato)</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Label>Queixas Principais *</Label>
+                        <Textarea
+                          placeholder="Descreva o motivo da consulta..."
+                          value={triageData.complaints}
+                          onChange={(e) => setTriageData({...triageData, complaints: e.target.value})}
+                          rows={4}
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Sintomas Apresentados</Label>
+                        <Textarea
+                          placeholder="Febre, náusea, tontura, etc..."
+                          value={triageData.symptoms}
+                          onChange={(e) => setTriageData({...triageData, symptoms: e.target.value})}
+                          rows={4}
+                        />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
@@ -319,7 +389,9 @@ const TriageScreen: React.FC = () => {
                           </SelectContent>
                         </Select>
                       </div>
+                    </div>
 
+                    <div className="space-y-4">
                       <div>
                         <Label>Alergias Conhecidas</Label>
                         <Input
@@ -337,28 +409,6 @@ const TriageScreen: React.FC = () => {
                           onChange={(e) => setTriageData({...triageData, medications: e.target.value})}
                         />
                       </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Queixas Principais *</Label>
-                        <Textarea
-                          placeholder="Descreva o motivo da consulta..."
-                          value={triageData.complaints}
-                          onChange={(e) => setTriageData({...triageData, complaints: e.target.value})}
-                          rows={4}
-                        />
-                      </div>
-
-                      <div>
-                        <Label>Sintomas Apresentados</Label>
-                        <Textarea
-                          placeholder="Febre, náusea, tontura, etc..."
-                          value={triageData.symptoms}
-                          onChange={(e) => setTriageData({...triageData, symptoms: e.target.value})}
-                          rows={4}
-                        />
-                      </div>
 
                       <div>
                         <Label>Observações</Label>
@@ -368,6 +418,28 @@ const TriageScreen: React.FC = () => {
                           onChange={(e) => setTriageData({...triageData, observations: e.target.value})}
                           rows={4}
                         />
+                      </div>
+
+                      {/* Campo de classificação movido para o final */}
+                      <div className="border-t pt-4">
+                        <Label>Classificação de Risco (Manchester) *</Label>
+                        <Select value={triageData.priority} onValueChange={(value) => setTriageData({...triageData, priority: value})}>
+                          <SelectTrigger className={`${getPriorityColor(triageData.priority)} font-medium`}>
+                            <SelectValue placeholder="Classificação será preenchida automaticamente" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="azul">🔵 Azul - Não urgente (240 min)</SelectItem>
+                            <SelectItem value="verde">🟢 Verde - Pouco urgente (120 min)</SelectItem>
+                            <SelectItem value="amarelo">🟡 Amarelo - Urgente (60 min)</SelectItem>
+                            <SelectItem value="laranja">🟠 Laranja - Muito urgente (10 min)</SelectItem>
+                            <SelectItem value="vermelho">🔴 Vermelho - Emergência (imediato)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {triageData.priority && (
+                          <div className={`text-sm mt-2 font-medium ${getPriorityColor(triageData.priority)}`}>
+                            {getPriorityText(triageData.priority)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
