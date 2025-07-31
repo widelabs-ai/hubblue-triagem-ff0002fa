@@ -1,10 +1,9 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface Patient {
   id: string;
   password: string;
-  specialty: 'ortopedia' | 'cirurgia-geral' | 'clinica-medica' | 'pediatria';
+  specialty: 'prioritario' | 'nao-prioritario';
   phone: string;
   status: 'waiting-triage' | 'in-triage' | 'waiting-admin' | 'in-admin' | 'waiting-doctor' | 'in-consultation' | 'completed';
   timestamps: {
@@ -68,10 +67,8 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const generatePassword = (specialty: Patient['specialty'], phone: string): string => {
     const prefixes = {
-      'ortopedia': 'OR',
-      'cirurgia-geral': 'CG',
-      'clinica-medica': 'CM',
-      'pediatria': 'PD'
+      'prioritario': 'PR',
+      'nao-prioritario': 'NP'
     };
     
     const password = `${prefixes[specialty]}${currentPasswordNumber.toString().padStart(3, '0')}`;
