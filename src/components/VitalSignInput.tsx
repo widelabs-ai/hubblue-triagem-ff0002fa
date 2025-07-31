@@ -11,7 +11,7 @@ interface VitalSignInputProps {
   unit: string;
   validation: {
     isValid: boolean;
-    message: string;
+    message?: string;
     isOutOfRange?: boolean;
   };
   size?: 'sm' | 'default';
@@ -38,13 +38,6 @@ const VitalSignInput: React.FC<VitalSignInputProps> = ({
     return baseClass;
   };
 
-  const getDisplayValue = () => {
-    if (value && validation.isValid) {
-      return `${value} ${unit}`;
-    }
-    return value;
-  };
-
   return (
     <div>
       <Label className={`${size === 'sm' ? 'text-xs' : 'text-sm'} font-medium`}>
@@ -65,12 +58,12 @@ const VitalSignInput: React.FC<VitalSignInputProps> = ({
           </div>
         )}
       </div>
-      {!validation.isValid && (
+      {!validation.isValid && validation.message && (
         <div className={`${size === 'sm' ? 'text-xs' : 'text-sm'} text-red-600 mt-1`}>
           {validation.message}
         </div>
       )}
-      {validation.isValid && validation.isOutOfRange && (
+      {validation.isValid && validation.isOutOfRange && validation.message && (
         <div className={`${size === 'sm' ? 'text-xs' : 'text-sm'} text-yellow-600 mt-1`}>
           ⚠️ Valor fora da faixa normal - {validation.message}
         </div>
