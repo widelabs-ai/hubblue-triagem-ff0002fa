@@ -57,13 +57,13 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
   const [showAnimation, setShowAnimation] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Trigger animation when dialog opens - efeito mais perceptível
+  // Trigger animation when dialog opens - muito mais devagar e com delay
   useEffect(() => {
     if (isDialogOpen) {
-      // Começa minimizado e anima para o tamanho completo
+      // Delay de 1 segundo antes de iniciar a animação
       setTimeout(() => {
         setShowAnimation(true);
-      }, 100);
+      }, 1000);
     } else {
       setShowAnimation(false);
     }
@@ -307,10 +307,10 @@ A triagem será finalizada automaticamente com esta classificação.`
 
   return (
     <Card 
-      className={`h-full flex flex-col transition-all duration-1000 ease-out ${
+      className={`h-full flex flex-col transition-all duration-[2000ms] ease-out ${
         showAnimation 
           ? 'transform scale-100 opacity-100 translate-x-0' 
-          : 'transform scale-75 opacity-60 translate-x-8'
+          : 'transform scale-50 opacity-0 translate-x-16'
       }`}
     >
       <CardHeader className="bg-gradient-to-r from-blue-600 to-green-600 text-white py-3">
