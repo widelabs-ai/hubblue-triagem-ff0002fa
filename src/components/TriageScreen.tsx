@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, X, MessageSquare } from 'lucide-react';
+import { ArrowLeft, X, MessageSquare, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TriageChat from './TriageChat';
 import CancellationModal from './CancellationModal';
@@ -50,10 +50,58 @@ const TriageScreen: React.FC = () => {
     painScale: '',
     symptoms: '',
     chronicDiseases: '',
-    allergies: '',
-    medications: '',
+    allergies: [] as string[],
+    medications: [] as string[],
     observations: ''
   });
+
+  // Lista de medicamentos comuns com dosagens
+  const commonMedications = [
+    'Dipirona 500mg',
+    'Paracetamol 750mg',
+    'Ibuprofeno 600mg',
+    'Omeprazol 20mg',
+    'Losartana 50mg',
+    'Atenolol 25mg',
+    'Metformina 850mg',
+    'Sinvastatina 20mg',
+    'Amlodipina 5mg',
+    'Captopril 25mg',
+    'Hidroclorotiazida 25mg',
+    'Ácido Acetilsalicílico 100mg',
+    'Levotiroxina 50mcg',
+    'Clonazepam 2mg',
+    'Fluoxetina 20mg',
+    'Sertralina 50mg',
+    'Insulina NPH',
+    'Insulina Regular',
+    'Glibenclamida 5mg',
+    'Prednisona 20mg'
+  ];
+
+  // Lista de alergias comuns
+  const commonAllergies = [
+    'Penicilina',
+    'Dipirona',
+    'Ácido Acetilsalicílico (AAS)',
+    'Sulfa',
+    'Iodo',
+    'Látex',
+    'Amendoim',
+    'Frutos do mar',
+    'Leite e derivados',
+    'Ovo',
+    'Soja',
+    'Glúten',
+    'Corante alimentar',
+    'Poeira',
+    'Pólen',
+    'Pelo de animais',
+    'Ácaros',
+    'Picada de insetos',
+    'Contraste radiológico',
+    'Anestésicos'
+  ];
 
   const navigate = useNavigate();
   const waitingPatients = getPatientsByStatus('waiting-triage').sort((a, b) => {
@@ -162,6 +210,39 @@ const TriageScreen: React.FC = () => {
   // Verificar se há erros de validação
   const hasValidationErrors = Object.values(vitalsValidation).some(v => !v.isValid);
 
+  // Funções para adicionar/remover alergias e medicamentos
+  const addAllergy = (allergy: string) => {
+    if (allergy && !triageData.allergies.includes(allergy)) {
+      setTriageData(prev => ({
+        ...prev,
+        allergies: [...prev.allergies, allergy]
+      }));
+    }
+  };
+
+  const removeAllergy = (allergy: string) => {
+    setTriageData(prev => ({
+      ...prev,
+      allergies: prev.allergies.filter(a => a !== allergy)
+    }));
+  };
+
+  const addMedication = (medication: string) => {
+    if (medication && !triageData.medications.includes(medication)) {
+      setTriageData(prev => ({
+        ...prev,
+        medications: [...prev.medications, medication]
+      }));
+    }
+  };
+
+  const removeMedication = (medication: string) => {
+    setTriageData(prev => ({
+      ...prev,
+      medications: prev.medications.filter(m => m !== medication)
+    }));
+  };
+
   const handleCallPatient = (patientId: string) => {
     console.log('Chamando paciente:', patientId);
     updatePatientStatus(patientId, 'in-triage');
@@ -218,8 +299,8 @@ const TriageScreen: React.FC = () => {
       painScale: '',
       symptoms: '',
       chronicDiseases: '',
-      allergies: '',
-      medications: '',
+      allergies: [],
+      medications: [],
       observations: ''
     });
   };
@@ -421,7 +502,7 @@ const TriageScreen: React.FC = () => {
                     <h4 className="font-semibold mb-3">Dados Pessoais</h4>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div className="md:col-span-2">
-                        <Label className="text-sm">Nome Completo</Label>
+                        <Label className="text-sm">Nome Completo *</Label>
                         <Input
                           placeholder="Nome completo do paciente"
                           value={triageData.personalData.fullName}
@@ -430,10 +511,11 @@ const TriageScreen: React.FC = () => {
                             personalData: {...triageData.personalData, fullName: e.target.value}
                           })}
                           className="text-sm"
+                          required
                         />
                       </div>
                       <div>
-                        <Label className="text-sm">Data de Nascimento</Label>
+                        <Label className="text-sm">Data de Nascimento *</Label>
                         <Input
                           type="date"
                           value={triageData.personalData.dateOfBirth}
@@ -442,6 +524,7 @@ const TriageScreen: React.FC = () => {
                             personalData: {...triageData.personalData, dateOfBirth: e.target.value}
                           })}
                           className="text-sm"
+                          required
                         />
                       </div>
                       <div>
@@ -455,13 +538,14 @@ const TriageScreen: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-1 gap-3 mt-3">
                       <div>
-                        <Label className="text-sm">Sexo</Label>
+                        <Label className="text-sm">Sexo *</Label>
                         <Select 
                           value={triageData.personalData.gender} 
                           onValueChange={(value) => setTriageData({
                             ...triageData, 
                             personalData: {...triageData.personalData, gender: value}
                           })}
+                          required
                         >
                           <SelectTrigger className="text-sm">
                             <SelectValue placeholder="Selecione o sexo" />
@@ -489,49 +573,117 @@ const TriageScreen: React.FC = () => {
                           onChange={(e) => setTriageData({...triageData, complaints: e.target.value})}
                           rows={3}
                           className="text-sm"
+                          required
                         />
                       </div>
 
                       <div>
-                        <Label className="text-sm font-medium">Sintomas Apresentados</Label>
+                        <Label className="text-sm font-medium">Sintomas Apresentados *</Label>
                         <Textarea
                           placeholder="Febre, náusea, tontura, etc..."
                           value={triageData.symptoms}
                           onChange={(e) => setTriageData({...triageData, symptoms: e.target.value})}
                           rows={3}
                           className="text-sm"
+                          required
                         />
                       </div>
 
                       <div>
-                        <Label className="text-sm font-medium">Doenças Crônicas e Comorbidades</Label>
+                        <Label className="text-sm font-medium">Doenças Crônicas e Comorbidades *</Label>
                         <Textarea
                           placeholder="Diabetes, hipertensão, doença de Crohn, etc..."
                           value={triageData.chronicDiseases}
                           onChange={(e) => setTriageData({...triageData, chronicDiseases: e.target.value})}
                           rows={3}
                           className="text-sm"
+                          required
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3">
+                        {/* Alergias com lista suspensa */}
                         <div>
-                          <Label className="text-sm font-medium">Alergias Conhecidas</Label>
-                          <Input
-                            placeholder="Medicamentos, alimentos, etc."
-                            value={triageData.allergies}
-                            onChange={(e) => setTriageData({...triageData, allergies: e.target.value})}
-                            className="text-sm"
-                          />
+                          <Label className="text-sm font-medium">Alergias Conhecidas *</Label>
+                          <div className="space-y-2">
+                            <Select onValueChange={addAllergy}>
+                              <SelectTrigger className="text-sm">
+                                <SelectValue placeholder="Selecione uma alergia" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[200px] overflow-y-auto">
+                                {commonAllergies
+                                  .filter(allergy => !triageData.allergies.includes(allergy))
+                                  .map((allergy) => (
+                                    <SelectItem key={allergy} value={allergy}>
+                                      {allergy}
+                                    </SelectItem>
+                                  ))}
+                                <SelectItem value="Nenhuma alergia conhecida">
+                                  Nenhuma alergia conhecida
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {triageData.allergies.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {triageData.allergies.map((allergy) => (
+                                  <span
+                                    key={allergy}
+                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-800"
+                                  >
+                                    {allergy}
+                                    <button
+                                      onClick={() => removeAllergy(allergy)}
+                                      className="ml-1 text-red-600 hover:text-red-800"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Medicamentos com lista suspensa */}
                         <div>
-                          <Label className="text-sm font-medium">Medicamentos em Uso</Label>
-                          <Input
-                            placeholder="Medicamentos atuais"
-                            value={triageData.medications}
-                            onChange={(e) => setTriageData({...triageData, medications: e.target.value})}
-                            className="text-sm"
-                          />
+                          <Label className="text-sm font-medium">Medicamentos em Uso *</Label>
+                          <div className="space-y-2">
+                            <Select onValueChange={addMedication}>
+                              <SelectTrigger className="text-sm">
+                                <SelectValue placeholder="Selecione um medicamento" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[200px] overflow-y-auto">
+                                {commonMedications
+                                  .filter(medication => !triageData.medications.includes(medication))
+                                  .map((medication) => (
+                                    <SelectItem key={medication} value={medication}>
+                                      {medication}
+                                    </SelectItem>
+                                  ))}
+                                <SelectItem value="Nenhum medicamento em uso">
+                                  Nenhum medicamento em uso
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {triageData.medications.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {triageData.medications.map((medication) => (
+                                  <span
+                                    key={medication}
+                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800"
+                                  >
+                                    {medication}
+                                    <button
+                                      onClick={() => removeMedication(medication)}
+                                      className="ml-1 text-blue-600 hover:text-blue-800"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -540,10 +692,10 @@ const TriageScreen: React.FC = () => {
                     <div className="space-y-4">
                       {/* Sinais Vitais */}
                       <div className="bg-blue-50 p-4 rounded-lg">
-                        <h4 className="font-semibold mb-3 text-sm">Sinais Vitais</h4>
+                        <h4 className="font-semibold mb-3 text-sm">Sinais Vitais *</h4>
                         <div className="grid grid-cols-2 gap-2">
                           <VitalSignInput
-                            label="Pressão Arterial"
+                            label="Pressão Arterial *"
                             value={triageData.vitals.bloodPressure}
                             onChange={(value) => setTriageData({
                               ...triageData, 
@@ -553,6 +705,7 @@ const TriageScreen: React.FC = () => {
                             unit="mmHg"
                             validation={vitalsValidation.bloodPressure}
                             size="sm"
+                            required
                           />
                           <div>
                             <Label className="text-xs font-medium">PAM (Calculado)</Label>
@@ -564,7 +717,7 @@ const TriageScreen: React.FC = () => {
                             />
                           </div>
                           <VitalSignInput
-                            label="Frequência Cardíaca"
+                            label="Frequência Cardíaca *"
                             value={triageData.vitals.heartRate}
                             onChange={(value) => setTriageData({
                               ...triageData, 
@@ -574,9 +727,10 @@ const TriageScreen: React.FC = () => {
                             unit="bpm"
                             validation={vitalsValidation.heartRate}
                             size="sm"
+                            required
                           />
                           <VitalSignInput
-                            label="Freq. Respiratória"
+                            label="Freq. Respiratória *"
                             value={triageData.vitals.respiratoryRate}
                             onChange={(value) => setTriageData({
                               ...triageData, 
@@ -586,9 +740,10 @@ const TriageScreen: React.FC = () => {
                             unit="rpm"
                             validation={vitalsValidation.respiratoryRate}
                             size="sm"
+                            required
                           />
                           <VitalSignInput
-                            label="Temperatura"
+                            label="Temperatura *"
                             value={triageData.vitals.temperature}
                             onChange={(value) => setTriageData({
                               ...triageData, 
@@ -598,9 +753,10 @@ const TriageScreen: React.FC = () => {
                             unit="°C"
                             validation={vitalsValidation.temperature}
                             size="sm"
+                            required
                           />
                           <VitalSignInput
-                            label="Saturação O₂"
+                            label="Saturação O₂ *"
                             value={triageData.vitals.oxygenSaturation}
                             onChange={(value) => setTriageData({
                               ...triageData, 
@@ -610,17 +766,22 @@ const TriageScreen: React.FC = () => {
                             unit="%"
                             validation={vitalsValidation.oxygenSaturation}
                             size="sm"
+                            required
                           />
                         </div>
                       </div>
 
                       {/* Tríade Clínica */}
                       <div className="bg-yellow-50 p-4 rounded-lg">
-                        <h4 className="font-semibold mb-3 text-sm">Tríade de Avaliação Clínica</h4>
+                        <h4 className="font-semibold mb-3 text-sm">Tríade de Avaliação Clínica *</h4>
                         <div className="space-y-3">
                           <div>
-                            <Label className="text-xs font-medium">Escala de Dor (0-10)</Label>
-                            <Select value={triageData.painScale} onValueChange={(value) => setTriageData({...triageData, painScale: value})}>
+                            <Label className="text-xs font-medium">Escala de Dor (0-10) *</Label>
+                            <Select 
+                              value={triageData.painScale} 
+                              onValueChange={(value) => setTriageData({...triageData, painScale: value})}
+                              required
+                            >
                               <SelectTrigger className="h-8 text-xs">
                                 <SelectValue placeholder="Nível de dor" />
                               </SelectTrigger>
@@ -635,7 +796,7 @@ const TriageScreen: React.FC = () => {
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <VitalSignInput
-                              label="Glasgow"
+                              label="Glasgow *"
                               value={triageData.vitals.glasgow}
                               onChange={(value) => setTriageData({
                                 ...triageData, 
@@ -645,9 +806,10 @@ const TriageScreen: React.FC = () => {
                               unit="pts"
                               validation={vitalsValidation.glasgow}
                               size="sm"
+                              required
                             />
                             <VitalSignInput
-                              label="Glicemia"
+                              label="Glicemia *"
                               value={triageData.vitals.glucose}
                               onChange={(value) => setTriageData({
                                 ...triageData, 
@@ -657,26 +819,32 @@ const TriageScreen: React.FC = () => {
                               unit="mg/dL"
                               validation={vitalsValidation.glucose}
                               size="sm"
+                              required
                             />
                           </div>
                         </div>
                       </div>
 
                       <div>
-                        <Label className="text-sm font-medium">Observações</Label>
+                        <Label className="text-sm font-medium">Observações *</Label>
                         <Textarea
                           placeholder="Informações adicionais relevantes..."
                           value={triageData.observations}
                           onChange={(e) => setTriageData({...triageData, observations: e.target.value})}
                           rows={3}
                           className="text-sm"
+                          required
                         />
                       </div>
 
                       {/* Campo de classificação */}
                       <div className="border-t pt-4">
                         <Label className="text-sm font-medium">Classificação de Risco (Manchester) *</Label>
-                        <Select value={triageData.priority} onValueChange={(value) => setTriageData({...triageData, priority: value})}>
+                        <Select 
+                          value={triageData.priority} 
+                          onValueChange={(value) => setTriageData({...triageData, priority: value})}
+                          required
+                        >
                           <SelectTrigger className={`${getPriorityColor(triageData.priority)} font-medium text-sm`}>
                             <SelectValue placeholder="Classificação automática" />
                           </SelectTrigger>
@@ -724,8 +892,8 @@ const TriageScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* Chat da LIA com efeito melhorado */}
-              <div className="w-1/3 border-l border-gray-200">
+              {/* Chat da LIA com scroll adicionado */}
+              <div className="w-1/3 border-l border-gray-200 overflow-hidden">
                 <TriageChat 
                   triageData={triageData} 
                   onSuggestPriority={handleSuggestPriority}
