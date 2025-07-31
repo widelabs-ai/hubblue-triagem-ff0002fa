@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface Patient {
@@ -42,7 +41,6 @@ export interface Patient {
   };
   cancellationData?: {
     reason: string;
-    cancelledBy: string;
     cancelledAt: Date;
   };
 }
@@ -52,7 +50,7 @@ interface HospitalContextType {
   currentPasswordNumber: number;
   generatePassword: (specialty: Patient['specialty'], phone: string) => string;
   updatePatientStatus: (id: string, status: Patient['status'], additionalData?: any) => void;
-  cancelPatient: (id: string, reason: string, cancelledBy: string) => void;
+  cancelPatient: (id: string, reason: string) => void;
   getPatientsByStatus: (status: Patient['status']) => Patient[];
   getPatientById: (id: string) => Patient | undefined;
   getTimeElapsed: (patient: Patient, from: keyof Patient['timestamps'], to?: keyof Patient['timestamps']) => number;
@@ -137,7 +135,7 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
   };
 
-  const cancelPatient = (id: string, reason: string, cancelledBy: string) => {
+  const cancelPatient = (id: string, reason: string) => {
     setPatients(prev => prev.map(patient => {
       if (patient.id === id) {
         return {
@@ -149,7 +147,6 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           },
           cancellationData: {
             reason,
-            cancelledBy,
             cancelledAt: new Date()
           }
         };

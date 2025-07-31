@@ -69,9 +69,9 @@ const AdminScreen: React.FC = () => {
     }
   };
 
-  const handleCancelPatient = (reason: string, cancelledBy: string) => {
+  const handleCancelPatient = (reason: string) => {
     if (currentPatient) {
-      cancelPatient(currentPatient.id, reason, cancelledBy);
+      cancelPatient(currentPatient.id, reason);
       resetPersonalData();
       setIsDialogOpen(false);
       setIsCancellationModalOpen(false);

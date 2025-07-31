@@ -4,13 +4,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X } from 'lucide-react';
 
 interface CancellationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (reason: string, cancelledBy: string) => void;
+  onConfirm: (reason: string) => void;
   patientPassword: string;
 }
 
@@ -21,20 +20,17 @@ const CancellationModal: React.FC<CancellationModalProps> = ({
   patientPassword
 }) => {
   const [reason, setReason] = useState('');
-  const [cancelledBy, setCancelledBy] = useState('');
 
   const handleConfirm = () => {
-    if (!reason.trim() || !cancelledBy) {
+    if (!reason.trim()) {
       return;
     }
-    onConfirm(reason, cancelledBy);
+    onConfirm(reason);
     setReason('');
-    setCancelledBy('');
   };
 
   const handleClose = () => {
     setReason('');
-    setCancelledBy('');
     onClose();
   };
 
@@ -61,21 +57,6 @@ const CancellationModal: React.FC<CancellationModalProps> = ({
           </div>
 
           <div>
-            <Label>Responsável pelo Cancelamento *</Label>
-            <Select value={cancelledBy} onValueChange={setCancelledBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione quem está cancelando" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="triagem">Equipe de Triagem</SelectItem>
-                <SelectItem value="administrativo">Equipe Administrativa</SelectItem>
-                <SelectItem value="medico">Equipe Médica</SelectItem>
-                <SelectItem value="paciente">Paciente</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
             <Label>Justificativa do Cancelamento *</Label>
             <Textarea
               placeholder="Descreva o motivo do cancelamento..."
@@ -92,7 +73,7 @@ const CancellationModal: React.FC<CancellationModalProps> = ({
             </Button>
             <Button 
               onClick={handleConfirm}
-              disabled={!reason.trim() || !cancelledBy}
+              disabled={!reason.trim()}
               className="bg-red-600 hover:bg-red-700"
             >
               Confirmar Cancelamento
