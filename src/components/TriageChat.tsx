@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +32,9 @@ interface TriageChatProps {
   onSuggestPriority: (priority: string, reasoning: string) => void;
   onCompleteTriagem: () => void;
   isDialogOpen: boolean;
+  isFormComplete: boolean;
+  hasPerformedAnalysis: boolean;
+  onAnalysisPerformed: () => void;
 }
 
 interface Message {
@@ -46,12 +48,14 @@ const TriageChat: React.FC<TriageChatProps> = ({
   triageData, 
   onSuggestPriority, 
   onCompleteTriagem,
-  isDialogOpen 
+  isDialogOpen,
+  isFormComplete,
+  hasPerformedAnalysis,
+  onAnalysisPerformed
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [hasAnalyzedData, setHasAnalyzedData] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -62,40 +66,14 @@ const TriageChat: React.FC<TriageChatProps> = ({
     scrollToBottom();
   }, [messages]);
 
-  // Função para verificar se todos os campos estão preenchidos
-  const isFormComplete = () => {
-    const { personalData, vitals } = triageData;
-    return (
-      personalData.fullName.trim() !== '' &&
-      personalData.dateOfBirth !== '' &&
-      personalData.gender !== '' &&
-      triageData.complaints.trim() !== '' &&
-      triageData.symptoms.trim() !== '' &&
-      triageData.chronicDiseases.trim() !== '' &&
-      triageData.allergies.length > 0 &&
-      triageData.medications.length > 0 &&
-      triageData.painScale !== '' &&
-      vitals.bloodPressure.trim() !== '' &&
-      vitals.heartRate.trim() !== '' &&
-      vitals.temperature.trim() !== '' &&
-      vitals.oxygenSaturation.trim() !== '' &&
-      vitals.respiratoryRate.trim() !== '' &&
-      vitals.glasgow.trim() !== '' &&
-      vitals.glucose.trim() !== '' &&
-      triageData.observations.trim() !== ''
-    );
-  };
-
   // Adicionar mensagem inicial da LIA com delay e streaming
   useEffect(() => {
     if (isDialogOpen && messages.length === 0) {
-      // Mostrar "Digitando..." por 2 segundos
       setIsTyping(true);
       
       const typingTimer = setTimeout(() => {
         setIsTyping(false);
         
-        // Simular streaming da mensagem
         const welcomeText = "Olá! Eu sou Lia. Sua Assistente pessoal de triagem Manchester. Se você tiver alguma dúvida sobre este atendimento é só perguntar";
         let currentText = "";
         let charIndex = 0;
@@ -117,7 +95,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
           } else {
             clearInterval(streamingTimer);
           }
-        }, 30); // 30ms por caractere para efeito de digitação
+        }, 30);
         
         return () => clearInterval(streamingTimer);
       }, 2000);
@@ -126,15 +104,15 @@ const TriageChat: React.FC<TriageChatProps> = ({
     }
   }, [isDialogOpen, messages.length]);
 
-  // Analisar dados automaticamente quando o formulário estiver completo
+  // Analisar dados automaticamente quando o formulário estiver completo E ainda não tiver sido analisado
   useEffect(() => {
-    if (isFormComplete() && !hasAnalyzedData && messages.length > 0) {
+    if (isFormComplete && !hasPerformedAnalysis && messages.length > 0) {
       setTimeout(() => {
         analyzeTriageData();
-        setHasAnalyzedData(true);
+        onAnalysisPerformed();
       }, 1000);
     }
-  }, [triageData, hasAnalyzedData, messages.length]);
+  }, [isFormComplete, hasPerformedAnalysis, messages.length]);
 
   const analyzeTriageData = () => {
     setIsTyping(true);
@@ -264,7 +242,6 @@ const TriageChat: React.FC<TriageChatProps> = ({
   useEffect(() => {
     if (!isDialogOpen) {
       setMessages([]);
-      setHasAnalyzedData(false);
       setIsTyping(false);
     }
   }, [isDialogOpen]);

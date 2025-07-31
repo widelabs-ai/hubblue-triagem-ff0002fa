@@ -9,11 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, X, MessageSquare, Plus } from 'lucide-react';
+import { ArrowLeft, X, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TriageChat from './TriageChat';
 import CancellationModal from './CancellationModal';
 import VitalSignInput from './VitalSignInput';
+import SearchableSelect from './SearchableSelect';
+import BloodPressureInput from './BloodPressureInput';
 import { 
   validateHeartRate, 
   validateTemperature, 
@@ -30,6 +32,7 @@ const TriageScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
+  const [hasPerformedAnalysis, setHasPerformedAnalysis] = useState(false);
   const [triageData, setTriageData] = useState({
     priority: '',
     vitals: {
@@ -130,6 +133,30 @@ const TriageScreen: React.FC = () => {
   // Calcular PAM automaticamente
   const calculatedPAM = calculatePAM(triageData.vitals.bloodPressure);
   const calculatedAge = calculateAge(triageData.personalData.dateOfBirth);
+
+  // Função para verificar se todos os campos obrigatórios estão preenchidos
+  const isFormComplete = () => {
+    const { personalData, vitals } = triageData;
+    return (
+      personalData.fullName.trim() !== '' &&
+      personalData.dateOfBirth !== '' &&
+      personalData.gender !== '' &&
+      triageData.complaints.trim() !== '' &&
+      triageData.symptoms.trim() !== '' &&
+      triageData.chronicDiseases.trim() !== '' &&
+      triageData.allergies.length > 0 &&
+      triageData.medications.length > 0 &&
+      triageData.painScale !== '' &&
+      vitals.bloodPressure.trim() !== '' &&
+      vitals.heartRate.trim() !== '' &&
+      vitals.temperature.trim() !== '' &&
+      vitals.oxygenSaturation.trim() !== '' &&
+      vitals.respiratoryRate.trim() !== '' &&
+      vitals.glasgow.trim() !== '' &&
+      vitals.glucose.trim() !== '' &&
+      triageData.observations.trim() !== ''
+    );
+  };
 
   // Função para calcular classificação automática baseada no protocolo Manchester
   const calculateAutomaticPriority = (data: typeof triageData) => {
@@ -247,6 +274,7 @@ const TriageScreen: React.FC = () => {
     console.log('Chamando paciente:', patientId);
     updatePatientStatus(patientId, 'in-triage');
     setIsDialogOpen(true);
+    setHasPerformedAnalysis(false); // Reset da análise
     toast({
       title: "Paciente chamado",
       description: "Paciente está sendo atendido na triagem.",
@@ -303,6 +331,7 @@ const TriageScreen: React.FC = () => {
       medications: [],
       observations: ''
     });
+    setHasPerformedAnalysis(false);
   };
 
   const handleSuggestPriority = (priority: string, reasoning: string) => {
@@ -603,88 +632,36 @@ const TriageScreen: React.FC = () => {
 
                       <div className="grid grid-cols-1 gap-3">
                         {/* Alergias com lista suspensa */}
-                        <div>
-                          <Label className="text-sm font-medium">Alergias Conhecidas *</Label>
-                          <div className="space-y-2">
-                            <Select onValueChange={addAllergy}>
-                              <SelectTrigger className="text-sm">
-                                <SelectValue placeholder="Selecione uma alergia" />
-                              </SelectTrigger>
-                              <SelectContent className="max-h-[200px] overflow-y-auto">
-                                {commonAllergies
-                                  .filter(allergy => !triageData.allergies.includes(allergy))
-                                  .map((allergy) => (
-                                    <SelectItem key={allergy} value={allergy}>
-                                      {allergy}
-                                    </SelectItem>
-                                  ))}
-                                <SelectItem value="Nenhuma alergia conhecida">
-                                  Nenhuma alergia conhecida
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            {triageData.allergies.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {triageData.allergies.map((allergy) => (
-                                  <span
-                                    key={allergy}
-                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-800"
-                                  >
-                                    {allergy}
-                                    <button
-                                      onClick={() => removeAllergy(allergy)}
-                                      className="ml-1 text-red-600 hover:text-red-800"
-                                    >
-                                      ×
-                                    </button>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                        <SearchableSelect
+                          label="Alergias Conhecidas *"
+                          options={commonAllergies}
+                          selectedItems={triageData.allergies}
+                          onAddItem={(allergy) => setTriageData(prev => ({
+                            ...prev,
+                            allergies: [...prev.allergies, allergy]
+                          }))}
+                          onRemoveItem={(allergy) => setTriageData(prev => ({
+                            ...prev,
+                            allergies: prev.allergies.filter(a => a !== allergy)
+                          }))}
+                          placeholder="Digite para buscar ou adicionar alergia..."
+                        />
 
                         {/* Medicamentos com lista suspensa */}
-                        <div>
-                          <Label className="text-sm font-medium">Medicamentos em Uso *</Label>
-                          <div className="space-y-2">
-                            <Select onValueChange={addMedication}>
-                              <SelectTrigger className="text-sm">
-                                <SelectValue placeholder="Selecione um medicamento" />
-                              </SelectTrigger>
-                              <SelectContent className="max-h-[200px] overflow-y-auto">
-                                {commonMedications
-                                  .filter(medication => !triageData.medications.includes(medication))
-                                  .map((medication) => (
-                                    <SelectItem key={medication} value={medication}>
-                                      {medication}
-                                    </SelectItem>
-                                  ))}
-                                <SelectItem value="Nenhum medicamento em uso">
-                                  Nenhum medicamento em uso
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            {triageData.medications.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {triageData.medications.map((medication) => (
-                                  <span
-                                    key={medication}
-                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800"
-                                  >
-                                    {medication}
-                                    <button
-                                      onClick={() => removeMedication(medication)}
-                                      className="ml-1 text-blue-600 hover:text-blue-800"
-                                    >
-                                      ×
-                                    </button>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                        <SearchableSelect
+                          label="Medicamentos em Uso *"
+                          options={commonMedications}
+                          selectedItems={triageData.medications}
+                          onAddItem={(medication) => setTriageData(prev => ({
+                            ...prev,
+                            medications: [...prev.medications, medication]
+                          }))}
+                          onRemoveItem={(medication) => setTriageData(prev => ({
+                            ...prev,
+                            medications: prev.medications.filter(m => m !== medication)
+                          }))}
+                          placeholder="Digite para buscar ou adicionar medicamento..."
+                        />
                       </div>
                     </div>
 
@@ -694,7 +671,7 @@ const TriageScreen: React.FC = () => {
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h4 className="font-semibold mb-3 text-sm">Sinais Vitais *</h4>
                         <div className="grid grid-cols-2 gap-2">
-                          <VitalSignInput
+                          <BloodPressureInput
                             label="Pressão Arterial *"
                             value={triageData.vitals.bloodPressure}
                             onChange={(value) => setTriageData({
@@ -899,6 +876,9 @@ const TriageScreen: React.FC = () => {
                   onSuggestPriority={handleSuggestPriority}
                   onCompleteTriagem={handleCompleteTriagem}
                   isDialogOpen={isDialogOpen}
+                  isFormComplete={isFormComplete()}
+                  hasPerformedAnalysis={hasPerformedAnalysis}
+                  onAnalysisPerformed={() => setHasPerformedAnalysis(true)}
                 />
               </div>
             </div>
