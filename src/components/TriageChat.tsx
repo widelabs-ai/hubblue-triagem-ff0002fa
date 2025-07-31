@@ -27,7 +27,7 @@ interface TriageChatProps {
     symptoms: string;
     chronicDiseases: string;
     allergies: string[];
-    medications: string[];
+    medications: { name: string; dosage: string }[];
     observations: string;
   };
   onSuggestPriority: (priority: string, reasoning: string) => void;
@@ -62,7 +62,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
     scrollToBottom();
   }, [messages]);
 
-  // Função para verificar se todos os campos estão preenchidos
+  // Function to check if all fields are filled
   const isFormComplete = () => {
     const { personalData, vitals } = triageData;
     return (
@@ -86,16 +86,14 @@ const TriageChat: React.FC<TriageChatProps> = ({
     );
   };
 
-  // Adicionar mensagem inicial da LIA com delay e streaming
+  // Add initial LIA message with delay and streaming
   useEffect(() => {
     if (isDialogOpen && messages.length === 0) {
-      // Mostrar "Digitando..." por 2 segundos
       setIsTyping(true);
       
       const typingTimer = setTimeout(() => {
         setIsTyping(false);
         
-        // Simular streaming da mensagem
         const welcomeText = "Olá! Eu sou Lia. Sua Assistente pessoal de triagem Manchester. Se você tiver alguma dúvida sobre este atendimento é só perguntar";
         let currentText = "";
         let charIndex = 0;
@@ -117,7 +115,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
           } else {
             clearInterval(streamingTimer);
           }
-        }, 30); // 30ms por caractere para efeito de digitação
+        }, 30);
         
         return () => clearInterval(streamingTimer);
       }, 2000);
@@ -126,15 +124,15 @@ const TriageChat: React.FC<TriageChatProps> = ({
     }
   }, [isDialogOpen, messages.length]);
 
-  // Analisar dados automaticamente quando o formulário estiver completo
+  // Analyze data automatically when form is complete - ONLY ONCE
   useEffect(() => {
-    if (isFormComplete() && !hasAnalyzedData && messages.length > 0) {
+    if (isFormComplete() && !hasAnalyzedData && messages.length > 0 && isDialogOpen) {
       setTimeout(() => {
         analyzeTriageData();
         setHasAnalyzedData(true);
       }, 1000);
     }
-  }, [triageData, hasAnalyzedData, messages.length]);
+  }, [triageData, hasAnalyzedData, messages.length, isDialogOpen]);
 
   const analyzeTriageData = () => {
     setIsTyping(true);
@@ -152,7 +150,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
       let priority = 'azul';
       let reasoning = '';
       
-      // Análise baseada no protocolo Manchester
+      // Analysis based on Manchester protocol
       if (saturation < 85 || heartRate > 150 || heartRate < 40) {
         priority = 'vermelho';
         reasoning = 'Sinais vitais críticos detectados - requer atendimento imediato';
@@ -181,7 +179,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
         reasoning = 'Sintomas leves que podem aguardar';
       }
       
-      // Considerações especiais por idade
+      // Special considerations for age
       if (age > 65 && priority === 'verde') {
         priority = 'amarelo';
         reasoning += ' (ajustado para idade avançada)';
@@ -239,7 +237,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
     setMessages(prev => [...prev, userMessage]);
     setNewMessage('');
 
-    // Simular resposta da LIA
+    // Simulate LIA response
     setIsTyping(true);
     setTimeout(() => {
       setIsTyping(false);
@@ -260,7 +258,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
     }
   };
 
-  // Reset quando o dialog fecha
+  // Reset when dialog closes
   useEffect(() => {
     if (!isDialogOpen) {
       setMessages([]);
@@ -278,8 +276,8 @@ const TriageChat: React.FC<TriageChatProps> = ({
         </div>
       </div>
 
-      {/* Área de mensagens com scroll */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[calc(100vh-200px)]">
+      {/* Messages area with scroll */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[calc(80vh-200px)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         {messages.map((message) => (
           <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] p-3 rounded-lg ${
@@ -324,7 +322,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input de mensagem */}
+      {/* Message input */}
       <div className="p-4 border-t bg-gray-50">
         <div className="flex space-x-2">
           <Input
