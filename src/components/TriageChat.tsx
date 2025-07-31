@@ -55,9 +55,10 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
     reasoning: string;
   } | null>(null);
   const [showAnimation, setShowAnimation] = useState(false);
+  const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Trigger animation when dialog opens - muito mais devagar e com delay
+  // Trigger animation when dialog opens - duração de 5 segundos com delay
   useEffect(() => {
     if (isDialogOpen) {
       // Delay de 1 segundo antes de iniciar a animação
@@ -68,6 +69,17 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
       setShowAnimation(false);
     }
   }, [isDialogOpen]);
+
+  // Análise automática quando dados são preenchidos
+  useEffect(() => {
+    if (triageData.complaints && triageData.priority && !hasAnalyzed && isDialogOpen) {
+      // Aguarda um pouco após o diálogo abrir para fazer a análise
+      setTimeout(() => {
+        analyzeTriageData();
+        setHasAnalyzed(true);
+      }, 2000);
+    }
+  }, [triageData.complaints, triageData.priority, hasAnalyzed, isDialogOpen]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -260,7 +272,7 @@ A triagem será finalizada automaticamente com esta classificação.`
       return 'Hemorragias: avalie volume perdido, sinais de choque, local do sangramento. Hemorragia ativa com instabilidade = VERMELHO. Sangramento controlado = AMARELO/VERDE conforme quantidade.';
     }
     
-    return 'Entendi sua dúvida. Para uma orientação mais específica, posso analisar os dados completos do paciente. Você pode clicar em "Analisar Dados" ou me fornecer mais detalhes sobre o caso específico.';
+    return 'Entendi sua dúvida. Para uma orientação mais específica, posso analisar os dados completos do paciente. Os dados serão analisados automaticamente conforme você preenche o formulário.';
   };
 
   const sendMessage = () => {
@@ -307,7 +319,7 @@ A triagem será finalizada automaticamente com esta classificação.`
 
   return (
     <Card 
-      className={`h-full flex flex-col transition-all duration-[2000ms] ease-out ${
+      className={`h-full flex flex-col transition-all duration-[5000ms] ease-out ${
         showAnimation 
           ? 'transform scale-100 opacity-100 translate-x-0' 
           : 'transform scale-50 opacity-0 translate-x-16'
@@ -386,16 +398,7 @@ A triagem será finalizada automaticamente com esta classificação.`
           </div>
         </ScrollArea>
         
-        <div className="border-t p-4 space-y-3">
-          <Button 
-            onClick={analyzeTriageData}
-            className="w-full bg-green-600 hover:bg-green-700"
-            size="sm"
-            disabled={awaitingConfirmation !== null}
-          >
-            {awaitingConfirmation ? 'Aguardando Confirmação' : 'Analisar Dados do Paciente'}
-          </Button>
-          
+        <div className="border-t p-4">
           <div className="flex gap-2">
             <Input
               value={inputValue}
