@@ -40,14 +40,7 @@ interface TriageChatProps {
 }
 
 const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, onCompleteTriagem, isDialogOpen = false }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'agent',
-      content: 'Olá! Sou a LIA (Leitura Inteligente de Avaliação), sua agente especialista em triagem Manchester. Estou aqui para ajudar com dúvidas sobre classificação e diagnóstico. Como posso auxiliar?',
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState<{
@@ -56,6 +49,7 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
   } | null>(null);
   const [showAnimation, setShowAnimation] = useState(false);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [initialMessageSent, setInitialMessageSent] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Trigger animation when dialog opens - duração de 5 segundos com delay
@@ -65,21 +59,53 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
       setTimeout(() => {
         setShowAnimation(true);
       }, 1000);
+      
+      // Envia mensagem inicial 2 segundos após abertura
+      setTimeout(() => {
+        if (!initialMessageSent) {
+          const initialMessage: Message = {
+            id: '1',
+            type: 'agent',
+            content: 'Olá! Eu sou Lia. Sua Assistente pessoal de triagem Manchester. Se você tiver alguma dúvida sobre este atendimento é só perguntar?',
+            timestamp: new Date()
+          };
+          setMessages([initialMessage]);
+          setInitialMessageSent(true);
+        }
+      }, 2000);
     } else {
       setShowAnimation(false);
+      setMessages([]);
+      setInitialMessageSent(false);
+      setHasAnalyzed(false);
     }
   }, [isDialogOpen]);
 
-  // Análise automática quando dados são preenchidos
+  // Verifica se todos os campos obrigatórios estão preenchidos
+  const areAllFieldsCompleted = () => {
+    return triageData.complaints &&
+           triageData.symptoms &&
+           triageData.painScale &&
+           triageData.allergies &&
+           triageData.medications &&
+           triageData.observations &&
+           triageData.vitals.bloodPressure &&
+           triageData.vitals.heartRate &&
+           triageData.vitals.temperature &&
+           triageData.vitals.oxygenSaturation &&
+           triageData.vitals.respiratoryRate;
+  };
+
+  // Análise automática quando TODOS os dados são preenchidos
   useEffect(() => {
-    if (triageData.complaints && triageData.priority && !hasAnalyzed && isDialogOpen) {
-      // Aguarda um pouco após o diálogo abrir para fazer a análise
+    if (areAllFieldsCompleted() && !hasAnalyzed && isDialogOpen && initialMessageSent) {
+      // Aguarda um pouco após todos os campos serem preenchidos
       setTimeout(() => {
         analyzeTriageData();
         setHasAnalyzed(true);
-      }, 2000);
+      }, 1000);
     }
-  }, [triageData.complaints, triageData.priority, hasAnalyzed, isDialogOpen]);
+  }, [triageData, hasAnalyzed, isDialogOpen, initialMessageSent]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -88,11 +114,11 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
   }, [messages]);
 
   const analyzeTriageData = () => {
-    if (!triageData.complaints || !triageData.priority) {
+    if (!areAllFieldsCompleted()) {
       const analysisMessage: Message = {
         id: Date.now().toString(),
         type: 'agent',
-        content: 'Para fazer uma análise completa, preciso que sejam preenchidas pelo menos as queixas principais. Posso ajudar com alguma dúvida específica sobre classificação?',
+        content: 'Para fazer uma análise completa, preciso que todos os campos da triagem sejam preenchidos. Posso ajudar com alguma dúvida específica sobre classificação?',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, analysisMessage]);
@@ -104,17 +130,22 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
     const analysisMessage: Message = {
       id: Date.now().toString(),
       type: 'agent',
-      content: `Análise dos dados da triagem:
+      content: `Análise completa dos dados da triagem:
 
 **Classificação sugerida:** ${getPriorityText(suggestedPriority)}
 **Justificativa:** ${reasoning}
 
 **Dados analisados:**
 - Queixas: ${triageData.complaints}
-- Dor (0-10): ${triageData.painScale || 'Não informado'}
-- Temperatura: ${triageData.vitals.temperature || 'Não aferida'}°C
-- FC: ${triageData.vitals.heartRate || 'Não aferida'} bpm
-- SatO₂: ${triageData.vitals.oxygenSaturation || 'Não aferida'}%
+- Sintomas: ${triageData.symptoms}
+- Dor (0-10): ${triageData.painScale}
+- Temperatura: ${triageData.vitals.temperature}°C
+- FC: ${triageData.vitals.heartRate} bpm
+- PA: ${triageData.vitals.bloodPressure} mmHg
+- SatO₂: ${triageData.vitals.oxygenSaturation}%
+- FR: ${triageData.vitals.respiratoryRate} irpm
+- Medicamentos: ${triageData.medications}
+- Alergias: ${triageData.allergies}
 
 ${confirmationQuestion}`,
       timestamp: new Date(),
