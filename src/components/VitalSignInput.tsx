@@ -15,6 +15,7 @@ interface VitalSignInputProps {
     isOutOfRange?: boolean;
   };
   size?: 'sm' | 'default';
+  required?: boolean;
 }
 
 const VitalSignInput: React.FC<VitalSignInputProps> = ({
@@ -24,7 +25,8 @@ const VitalSignInput: React.FC<VitalSignInputProps> = ({
   placeholder,
   unit,
   validation,
-  size = 'default'
+  size = 'default',
+  required = false
 }) => {
   const getInputClassName = () => {
     let baseClass = size === 'sm' ? 'text-xs h-8' : 'text-sm';
@@ -42,6 +44,7 @@ const VitalSignInput: React.FC<VitalSignInputProps> = ({
     <div>
       <Label className={`${size === 'sm' ? 'text-xs' : 'text-sm'} font-medium`}>
         {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
       </Label>
       <div className="relative">
         <Input
@@ -49,6 +52,7 @@ const VitalSignInput: React.FC<VitalSignInputProps> = ({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className={getInputClassName()}
+          required={required}
         />
         {value && validation.isValid && (
           <div className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
