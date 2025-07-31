@@ -9,10 +9,12 @@ import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import CancellationModal from './CancellationModal';
 
 const DoctorScreen: React.FC = () => {
-  const { getPatientsByStatus, updatePatientStatus, getTimeElapsed, isOverSLA } = useHospital();
+  const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
   const [consultationData, setConsultationData] = useState({
     diagnosis: '',
     treatment: '',
@@ -48,6 +50,41 @@ const DoctorScreen: React.FC = () => {
     });
   };
 
+  const handleReturnToQueue = () => {
+    if (currentPatient) {
+      updatePatientStatus(currentPatient.id, 'waiting-doctor');
+      resetConsultationData();
+      setIsDialogOpen(false);
+      toast({
+        title: "Paciente retornado",
+        description: "Paciente foi retornado para a fila de consulta.",
+      });
+    }
+  };
+
+  const handleCancelPatient = (reason: string, cancelledBy: string) => {
+    if (currentPatient) {
+      cancelPatient(currentPatient.id, reason, cancelledBy);
+      resetConsultationData();
+      setIsDialogOpen(false);
+      setIsCancellationModalOpen(false);
+      toast({
+        title: "Paciente cancelado",
+        description: "Atendimento foi cancelado com sucesso.",
+      });
+    }
+  };
+
+  const resetConsultationData = () => {
+    setConsultationData({
+      diagnosis: '',
+      treatment: '',
+      prescription: '',
+      recommendations: '',
+      followUp: ''
+    });
+  };
+
   const handleCompleteConsultation = () => {
     if (!currentPatient) return;
 
@@ -61,13 +98,7 @@ const DoctorScreen: React.FC = () => {
     }
 
     updatePatientStatus(currentPatient.id, 'completed', { consultationData });
-    setConsultationData({
-      diagnosis: '',
-      treatment: '',
-      prescription: '',
-      recommendations: '',
-      followUp: ''
-    });
+    resetConsultationData();
     setIsDialogOpen(false);
     
     toast({
@@ -81,13 +112,7 @@ const DoctorScreen: React.FC = () => {
       updatePatientStatus(currentPatient.id, 'waiting-doctor');
     }
     setIsDialogOpen(false);
-    setConsultationData({
-      diagnosis: '',
-      treatment: '',
-      prescription: '',
-      recommendations: '',
-      followUp: ''
-    });
+    resetConsultationData();
   };
 
   const getPriorityColor = (priority: string) => {
@@ -334,8 +359,18 @@ const DoctorScreen: React.FC = () => {
               </div>
 
               <div className="flex justify-end space-x-3 pt-4 border-t">
+                <Button variant="outline" onClick={handleReturnToQueue}>
+                  Voltar à Fila
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCancellationModalOpen(true)}
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  Cancelar Paciente
+                </Button>
                 <Button variant="outline" onClick={handleCloseDialog}>
-                  Cancelar
+                  Fechar
                 </Button>
                 <Button 
                   onClick={handleCompleteConsultation}
@@ -348,6 +383,14 @@ const DoctorScreen: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Cancelamento */}
+      <CancellationModal
+        isOpen={isCancellationModalOpen}
+        onClose={() => setIsCancellationModalOpen(false)}
+        onConfirm={handleCancelPatient}
+        patientPassword={currentPatient?.password || ''}
+      />
     </div>
   );
 };

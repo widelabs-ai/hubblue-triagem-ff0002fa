@@ -12,10 +12,12 @@ import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, X, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TriageChat from './TriageChat';
+import CancellationModal from './CancellationModal';
 
 const TriageScreen: React.FC = () => {
-  const { getPatientsByStatus, updatePatientStatus, getTimeElapsed, isOverSLA } = useHospital();
+  const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
   const [triageData, setTriageData] = useState({
     priority: '',
     vitals: {
@@ -117,6 +119,50 @@ const TriageScreen: React.FC = () => {
     });
   };
 
+  const handleReturnToQueue = () => {
+    if (currentPatient) {
+      updatePatientStatus(currentPatient.id, 'waiting-triage');
+      resetTriageData();
+      setIsDialogOpen(false);
+      toast({
+        title: "Paciente retornado",
+        description: "Paciente foi retornado para a fila de triagem.",
+      });
+    }
+  };
+
+  const handleCancelPatient = (reason: string, cancelledBy: string) => {
+    if (currentPatient) {
+      cancelPatient(currentPatient.id, reason, cancelledBy);
+      resetTriageData();
+      setIsDialogOpen(false);
+      setIsCancellationModalOpen(false);
+      toast({
+        title: "Paciente cancelado",
+        description: "Atendimento foi cancelado com sucesso.",
+      });
+    }
+  };
+
+  const resetTriageData = () => {
+    setTriageData({
+      priority: '',
+      vitals: {
+        bloodPressure: '',
+        heartRate: '',
+        temperature: '',
+        oxygenSaturation: '',
+        respiratoryRate: ''
+      },
+      complaints: '',
+      painScale: '',
+      symptoms: '',
+      allergies: '',
+      medications: '',
+      observations: ''
+    });
+  };
+
   const handleSuggestPriority = (priority: string, reasoning: string) => {
     setTriageData(prev => ({ ...prev, priority }));
     toast({
@@ -137,22 +183,7 @@ const TriageScreen: React.FC = () => {
     }
 
     updatePatientStatus(currentPatient.id, 'waiting-admin', { triageData });
-    setTriageData({
-      priority: '',
-      vitals: {
-        bloodPressure: '',
-        heartRate: '',
-        temperature: '',
-        oxygenSaturation: '',
-        respiratoryRate: ''
-      },
-      complaints: '',
-      painScale: '',
-      symptoms: '',
-      allergies: '',
-      medications: '',
-      observations: ''
-    });
+    resetTriageData();
     setIsDialogOpen(false);
     
     toast({
@@ -166,22 +197,7 @@ const TriageScreen: React.FC = () => {
       updatePatientStatus(currentPatient.id, 'waiting-triage');
     }
     setIsDialogOpen(false);
-    setTriageData({
-      priority: '',
-      vitals: {
-        bloodPressure: '',
-        heartRate: '',
-        temperature: '',
-        oxygenSaturation: '',
-        respiratoryRate: ''
-      },
-      complaints: '',
-      painScale: '',
-      symptoms: '',
-      allergies: '',
-      medications: '',
-      observations: ''
-    });
+    resetTriageData();
   };
 
   const getPriorityColor = (priority: string) => {
@@ -470,8 +486,18 @@ const TriageScreen: React.FC = () => {
                   </div>
 
                   <div className="flex justify-end space-x-3 pt-4 border-t">
+                    <Button variant="outline" onClick={handleReturnToQueue}>
+                      Voltar à Fila
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsCancellationModalOpen(true)}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      Cancelar Paciente
+                    </Button>
                     <Button variant="outline" onClick={handleCloseDialog}>
-                      Cancelar
+                      Fechar
                     </Button>
                     <Button 
                       onClick={handleCompleteTriagem}
@@ -495,6 +521,14 @@ const TriageScreen: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Cancelamento */}
+      <CancellationModal
+        isOpen={isCancellationModalOpen}
+        onClose={() => setIsCancellationModalOpen(false)}
+        onConfirm={handleCancelPatient}
+        patientPassword={currentPatient?.password || ''}
+      />
     </div>
   );
 };

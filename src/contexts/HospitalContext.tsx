@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface Patient {
@@ -5,7 +6,7 @@ export interface Patient {
   password: string;
   specialty: 'prioritario' | 'nao-prioritario';
   phone: string;
-  status: 'waiting-triage' | 'in-triage' | 'waiting-admin' | 'in-admin' | 'waiting-doctor' | 'in-consultation' | 'completed';
+  status: 'waiting-triage' | 'in-triage' | 'waiting-admin' | 'in-admin' | 'waiting-doctor' | 'in-consultation' | 'completed' | 'cancelled';
   timestamps: {
     generated: Date;
     triageStarted?: Date;
@@ -14,6 +15,7 @@ export interface Patient {
     adminCompleted?: Date;
     consultationStarted?: Date;
     consultationCompleted?: Date;
+    cancelled?: Date;
   };
   personalData?: {
     name: string;
@@ -38,6 +40,11 @@ export interface Patient {
     medications?: string;
     observations?: string;
   };
+  cancellationData?: {
+    reason: string;
+    cancelledBy: string;
+    cancelledAt: Date;
+  };
 }
 
 interface HospitalContextType {
@@ -45,6 +52,7 @@ interface HospitalContextType {
   currentPasswordNumber: number;
   generatePassword: (specialty: Patient['specialty'], phone: string) => string;
   updatePatientStatus: (id: string, status: Patient['status'], additionalData?: any) => void;
+  cancelPatient: (id: string, reason: string, cancelledBy: string) => void;
   getPatientsByStatus: (status: Patient['status']) => Patient[];
   getPatientById: (id: string) => Patient | undefined;
   getTimeElapsed: (patient: Patient, from: keyof Patient['timestamps'], to?: keyof Patient['timestamps']) => number;
@@ -129,6 +137,27 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
   };
 
+  const cancelPatient = (id: string, reason: string, cancelledBy: string) => {
+    setPatients(prev => prev.map(patient => {
+      if (patient.id === id) {
+        return {
+          ...patient,
+          status: 'cancelled' as const,
+          timestamps: {
+            ...patient.timestamps,
+            cancelled: new Date()
+          },
+          cancellationData: {
+            reason,
+            cancelledBy,
+            cancelledAt: new Date()
+          }
+        };
+      }
+      return patient;
+    }));
+  };
+
   const getPatientsByStatus = (status: Patient['status']): Patient[] => {
     return patients.filter(patient => patient.status === status);
   };
@@ -162,6 +191,7 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       currentPasswordNumber,
       generatePassword,
       updatePatientStatus,
+      cancelPatient,
       getPatientsByStatus,
       getPatientById,
       getTimeElapsed,

@@ -11,10 +11,12 @@ import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import CancellationModal from './CancellationModal';
 
 const AdminScreen: React.FC = () => {
-  const { getPatientsByStatus, updatePatientStatus, getTimeElapsed, isOverSLA } = useHospital();
+  const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
   const [personalData, setPersonalData] = useState({
     name: '',
     cpf: '',
@@ -58,24 +60,41 @@ const AdminScreen: React.FC = () => {
   const handleReturnToQueue = () => {
     if (currentPatient) {
       updatePatientStatus(currentPatient.id, 'waiting-admin');
-      setPersonalData({
-        name: '',
-        cpf: '',
-        age: '',
-        gender: '',
-        address: '',
-        emergencyContact: '',
-        emergencyPhone: '',
-        healthInsurance: '',
-        insuranceNumber: '',
-        canBeAttended: true
-      });
+      resetPersonalData();
       setIsDialogOpen(false);
       toast({
         title: "Paciente retornado",
         description: "Paciente foi retornado para a fila de espera.",
       });
     }
+  };
+
+  const handleCancelPatient = (reason: string, cancelledBy: string) => {
+    if (currentPatient) {
+      cancelPatient(currentPatient.id, reason, cancelledBy);
+      resetPersonalData();
+      setIsDialogOpen(false);
+      setIsCancellationModalOpen(false);
+      toast({
+        title: "Paciente cancelado",
+        description: "Atendimento foi cancelado com sucesso.",
+      });
+    }
+  };
+
+  const resetPersonalData = () => {
+    setPersonalData({
+      name: '',
+      cpf: '',
+      age: '',
+      gender: '',
+      address: '',
+      emergencyContact: '',
+      emergencyPhone: '',
+      healthInsurance: '',
+      insuranceNumber: '',
+      canBeAttended: true
+    });
   };
 
   const handleCompleteAdmin = () => {
@@ -96,18 +115,7 @@ const AdminScreen: React.FC = () => {
     const nextStatus = personalData.canBeAttended ? 'waiting-doctor' : 'completed';
     updatePatientStatus(currentPatient.id, nextStatus, { personalData: dataToSave });
     
-    setPersonalData({
-      name: '',
-      cpf: '',
-      age: '',
-      gender: '',
-      address: '',
-      emergencyContact: '',
-      emergencyPhone: '',
-      healthInsurance: '',
-      insuranceNumber: '',
-      canBeAttended: true
-    });
+    resetPersonalData();
     setIsDialogOpen(false);
     
     toast({
@@ -123,18 +131,7 @@ const AdminScreen: React.FC = () => {
       updatePatientStatus(currentPatient.id, 'waiting-admin');
     }
     setIsDialogOpen(false);
-    setPersonalData({
-      name: '',
-      cpf: '',
-      age: '',
-      gender: '',
-      address: '',
-      emergencyContact: '',
-      emergencyPhone: '',
-      healthInsurance: '',
-      insuranceNumber: '',
-      canBeAttended: true
-    });
+    resetPersonalData();
   };
 
   const getPriorityColor = (priority: string) => {
@@ -387,10 +384,17 @@ const AdminScreen: React.FC = () => {
 
               <div className="flex justify-end space-x-3 pt-4 border-t">
                 <Button variant="outline" onClick={handleReturnToQueue}>
-                  Retornar à Fila
+                  Voltar à Fila
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCancellationModalOpen(true)}
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  Cancelar Paciente
                 </Button>
                 <Button variant="outline" onClick={handleCloseDialog}>
-                  Cancelar
+                  Fechar
                 </Button>
                 <Button 
                   onClick={handleCompleteAdmin}
@@ -407,6 +411,14 @@ const AdminScreen: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Cancelamento */}
+      <CancellationModal
+        isOpen={isCancellationModalOpen}
+        onClose={() => setIsCancellationModalOpen(false)}
+        onConfirm={handleCancelPatient}
+        patientPassword={currentPatient?.password || ''}
+      />
     </div>
   );
 };
