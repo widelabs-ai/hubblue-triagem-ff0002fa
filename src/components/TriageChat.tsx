@@ -36,9 +36,10 @@ interface TriageChatProps {
   triageData: TriageData;
   onSuggestPriority: (priority: string, reasoning: string) => void;
   onCompleteTriagem?: () => void;
+  isDialogOpen?: boolean;
 }
 
-const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, onCompleteTriagem }) => {
+const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, onCompleteTriagem, isDialogOpen = false }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -53,7 +54,16 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
     priority: string;
     reasoning: string;
   } | null>(null);
+  const [showAnimation, setShowAnimation] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Trigger animation when dialog opens
+  useEffect(() => {
+    if (isDialogOpen) {
+      // Start minimized and animate to full size
+      setShowAnimation(true);
+    }
+  }, [isDialogOpen]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -292,11 +302,17 @@ A triagem será finalizada automaticamente com esta classificação.`
   };
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card 
+      className={`h-full flex flex-col transition-all duration-700 ease-out ${
+        showAnimation 
+          ? 'transform scale-100 opacity-100' 
+          : 'transform scale-95 opacity-90'
+      }`}
+    >
       <CardHeader className="bg-gradient-to-r from-blue-600 to-green-600 text-white py-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Bot className="h-5 w-5" />
-          LIA - Leitura Inteligente de Avaliação
+          Converse com a LIA sobre este atendimento
         </CardTitle>
       </CardHeader>
       

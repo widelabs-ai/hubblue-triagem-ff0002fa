@@ -700,12 +700,13 @@ const TriageScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* Chat da LIA sempre visível */}
+              {/* Chat da LIA sempre visível com animação */}
               <div className="w-1/3 border-l border-gray-200">
                 <TriageChat 
                   triageData={triageData} 
                   onSuggestPriority={handleSuggestPriority}
                   onCompleteTriagem={handleCompleteTriagem}
+                  isDialogOpen={isDialogOpen}
                 />
               </div>
             </div>
