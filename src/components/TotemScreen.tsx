@@ -9,8 +9,34 @@ import { ArrowLeft, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const attendanceTypes = [
-  { id: 'prioritario', name: 'Prioritário', icon: '🚨', description: 'Urgências e emergências' },
-  { id: 'nao-prioritario', name: 'Não Prioritário', icon: '🏥', description: 'Consultas e exames de rotina' }
+  { 
+    id: 'prioritario', 
+    name: 'Prioritário', 
+    icon: '🚨', 
+    description: 'Urgências e emergências',
+    legend: [
+      'Idosos (60 anos ou mais)',
+      'Gestantes',
+      'Crianças até 12 anos',
+      'Pessoas com deficiência',
+      'Urgências e emergências médicas',
+      'Casos que necessitam atendimento imediato'
+    ]
+  },
+  { 
+    id: 'nao-prioritario', 
+    name: 'Não Prioritário', 
+    icon: '🏥', 
+    description: 'Consultas e exames de rotina',
+    legend: [
+      'Consultas de rotina',
+      'Exames preventivos',
+      'Retornos médicos',
+      'Procedimentos eletivos',
+      'Atendimentos não urgentes',
+      'Renovação de receitas'
+    ]
+  }
 ];
 
 const TotemScreen: React.FC = () => {
@@ -47,7 +73,7 @@ const TotemScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl shadow-2xl">
+      <Card className="w-full max-w-4xl shadow-2xl">
         <CardHeader className="text-center bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-t-lg">
           <div className="flex justify-between items-center">
             <Button
@@ -68,22 +94,42 @@ const TotemScreen: React.FC = () => {
           <div className="space-y-8">
             <div>
               <Label className="text-xl font-semibold mb-6 block text-center">Tipo de Atendimento</Label>
-              <div className="grid grid-cols-1 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {attendanceTypes.map((type) => (
                   <Button
                     key={type.id}
                     variant={selectedType === type.id ? "default" : "outline"}
-                    className={`h-24 text-lg ${
+                    className={`h-auto min-h-[200px] p-6 text-left ${
                       selectedType === type.id 
                         ? 'bg-blue-600 hover:bg-blue-700 border-2 border-blue-700' 
                         : 'hover:bg-blue-50 border-2 border-gray-300'
                     }`}
                     onClick={() => setSelectedType(type.id)}
                   >
-                    <div className="text-center">
-                      <div className="text-3xl mb-2">{type.icon}</div>
-                      <div className="font-bold">{type.name}</div>
-                      <div className="text-sm opacity-80 mt-1">{type.description}</div>
+                    <div className="w-full">
+                      <div className="flex items-center justify-center mb-4">
+                        <div className="text-4xl mr-3">{type.icon}</div>
+                        <div>
+                          <div className="font-bold text-lg">{type.name}</div>
+                          <div className="text-sm opacity-80">{type.description}</div>
+                        </div>
+                      </div>
+                      
+                      <div className={`text-xs mt-4 p-3 rounded-lg ${
+                        selectedType === type.id 
+                          ? 'bg-white/20' 
+                          : 'bg-gray-50'
+                      }`}>
+                        <div className="font-semibold mb-2">Perfis atendidos:</div>
+                        <ul className="space-y-1">
+                          {type.legend.map((item, index) => (
+                            <li key={index} className="flex items-start">
+                              <span className="mr-2">•</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
                   </Button>
                 ))}
