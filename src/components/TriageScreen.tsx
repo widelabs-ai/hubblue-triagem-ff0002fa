@@ -403,9 +403,9 @@ const TriageScreen: React.FC = () => {
           
           {currentPatient && (
             <div className="flex h-[calc(98vh-120px)]">
-              {/* Formulário de Triagem */}
+              {/* Formulário de Triagem - layout melhorado */}
               <div className="w-2/3 overflow-y-auto p-6 pt-0">
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="font-bold text-xl">{currentPatient.password}</div>
                     <div className="text-gray-600 capitalize">
@@ -419,9 +419,9 @@ const TriageScreen: React.FC = () => {
                   {/* Dados Pessoais */}
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-semibold mb-3">Dados Pessoais</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label>Nome Completo</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div className="md:col-span-2">
+                        <Label className="text-sm">Nome Completo</Label>
                         <Input
                           placeholder="Nome completo do paciente"
                           value={triageData.personalData.fullName}
@@ -429,10 +429,11 @@ const TriageScreen: React.FC = () => {
                             ...triageData, 
                             personalData: {...triageData.personalData, fullName: e.target.value}
                           })}
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <Label>Data de Nascimento</Label>
+                        <Label className="text-sm">Data de Nascimento</Label>
                         <Input
                           type="date"
                           value={triageData.personalData.dateOfBirth}
@@ -440,18 +441,21 @@ const TriageScreen: React.FC = () => {
                             ...triageData, 
                             personalData: {...triageData.personalData, dateOfBirth: e.target.value}
                           })}
+                          className="text-sm"
                         />
                       </div>
                       <div>
-                        <Label>Idade</Label>
+                        <Label className="text-sm">Idade</Label>
                         <Input
                           value={calculatedAge > 0 ? `${calculatedAge} anos` : ''}
                           readOnly
-                          className="bg-gray-100"
+                          className="bg-gray-100 text-sm"
                         />
                       </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-1 gap-3 mt-3">
                       <div>
-                        <Label>Sexo</Label>
+                        <Label className="text-sm">Sexo</Label>
                         <Select 
                           value={triageData.personalData.gender} 
                           onValueChange={(value) => setTriageData({
@@ -459,7 +463,7 @@ const TriageScreen: React.FC = () => {
                             personalData: {...triageData.personalData, gender: value}
                           })}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="text-sm">
                             <SelectValue placeholder="Selecione o sexo" />
                           </SelectTrigger>
                           <SelectContent>
@@ -472,42 +476,72 @@ const TriageScreen: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Layout em duas colunas para melhor aproveitamento */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    
+                    {/* Coluna esquerda */}
                     <div className="space-y-4">
                       <div>
-                        <Label>Queixas Principais *</Label>
+                        <Label className="text-sm font-medium">Queixas Principais *</Label>
                         <Textarea
                           placeholder="Descreva o motivo da consulta..."
                           value={triageData.complaints}
                           onChange={(e) => setTriageData({...triageData, complaints: e.target.value})}
-                          rows={4}
+                          rows={3}
+                          className="text-sm"
                         />
                       </div>
 
                       <div>
-                        <Label>Sintomas Apresentados</Label>
+                        <Label className="text-sm font-medium">Sintomas Apresentados</Label>
                         <Textarea
                           placeholder="Febre, náusea, tontura, etc..."
                           value={triageData.symptoms}
                           onChange={(e) => setTriageData({...triageData, symptoms: e.target.value})}
-                          rows={4}
+                          rows={3}
+                          className="text-sm"
                         />
                       </div>
 
                       <div>
-                        <Label>Doenças Crônicas e Comorbidades</Label>
+                        <Label className="text-sm font-medium">Doenças Crônicas e Comorbidades</Label>
                         <Textarea
                           placeholder="Diabetes, hipertensão, doença de Crohn, etc..."
                           value={triageData.chronicDiseases}
                           onChange={(e) => setTriageData({...triageData, chronicDiseases: e.target.value})}
                           rows={3}
+                          className="text-sm"
                         />
                       </div>
 
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-sm font-medium">Alergias Conhecidas</Label>
+                          <Input
+                            placeholder="Medicamentos, alimentos, etc."
+                            value={triageData.allergies}
+                            onChange={(e) => setTriageData({...triageData, allergies: e.target.value})}
+                            className="text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Medicamentos em Uso</Label>
+                          <Input
+                            placeholder="Medicamentos atuais"
+                            value={triageData.medications}
+                            onChange={(e) => setTriageData({...triageData, medications: e.target.value})}
+                            className="text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Coluna direita */}
+                    <div className="space-y-4">
                       {/* Sinais Vitais */}
                       <div className="bg-blue-50 p-4 rounded-lg">
-                        <h4 className="font-semibold mb-3">Sinais Vitais</h4>
-                        <div className="grid grid-cols-2 gap-3">
+                        <h4 className="font-semibold mb-3 text-sm">Sinais Vitais</h4>
+                        <div className="grid grid-cols-2 gap-2">
                           <VitalSignInput
                             label="Pressão Arterial"
                             value={triageData.vitals.bloodPressure}
@@ -518,14 +552,15 @@ const TriageScreen: React.FC = () => {
                             placeholder="120x80"
                             unit="mmHg"
                             validation={vitalsValidation.bloodPressure}
+                            size="sm"
                           />
                           <div>
-                            <Label className="text-sm font-medium">PAM (Calculado)</Label>
+                            <Label className="text-xs font-medium">PAM (Calculado)</Label>
                             <Input
                               value={calculatedPAM ? `${calculatedPAM} mmHg` : ''}
                               readOnly
-                              className="bg-gray-100"
-                              placeholder="Será calculado automaticamente"
+                              className="bg-gray-100 text-xs h-8"
+                              placeholder="Automático"
                             />
                           </div>
                           <VitalSignInput
@@ -538,9 +573,10 @@ const TriageScreen: React.FC = () => {
                             placeholder="70"
                             unit="bpm"
                             validation={vitalsValidation.heartRate}
+                            size="sm"
                           />
                           <VitalSignInput
-                            label="Frequência Respiratória"
+                            label="Freq. Respiratória"
                             value={triageData.vitals.respiratoryRate}
                             onChange={(value) => setTriageData({
                               ...triageData, 
@@ -549,6 +585,7 @@ const TriageScreen: React.FC = () => {
                             placeholder="16"
                             unit="rpm"
                             validation={vitalsValidation.respiratoryRate}
+                            size="sm"
                           />
                           <VitalSignInput
                             label="Temperatura"
@@ -560,6 +597,7 @@ const TriageScreen: React.FC = () => {
                             placeholder="36.5"
                             unit="°C"
                             validation={vitalsValidation.temperature}
+                            size="sm"
                           />
                           <VitalSignInput
                             label="Saturação O₂"
@@ -571,18 +609,19 @@ const TriageScreen: React.FC = () => {
                             placeholder="98"
                             unit="%"
                             validation={vitalsValidation.oxygenSaturation}
+                            size="sm"
                           />
                         </div>
                       </div>
 
                       {/* Tríade Clínica */}
                       <div className="bg-yellow-50 p-4 rounded-lg">
-                        <h4 className="font-semibold mb-3">Tríade de Avaliação Clínica</h4>
-                        <div className="grid grid-cols-1 gap-3">
+                        <h4 className="font-semibold mb-3 text-sm">Tríade de Avaliação Clínica</h4>
+                        <div className="space-y-3">
                           <div>
-                            <Label>Escala de Dor (0-10)</Label>
+                            <Label className="text-xs font-medium">Escala de Dor (0-10)</Label>
                             <Select value={triageData.painScale} onValueChange={(value) => setTriageData({...triageData, painScale: value})}>
-                              <SelectTrigger>
+                              <SelectTrigger className="h-8 text-xs">
                                 <SelectValue placeholder="Nível de dor" />
                               </SelectTrigger>
                               <SelectContent>
@@ -594,9 +633,9 @@ const TriageScreen: React.FC = () => {
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-2 gap-2">
                             <VitalSignInput
-                              label="Escala de Glasgow"
+                              label="Glasgow"
                               value={triageData.vitals.glasgow}
                               onChange={(value) => setTriageData({
                                 ...triageData, 
@@ -605,6 +644,7 @@ const TriageScreen: React.FC = () => {
                               placeholder="15"
                               unit="pts"
                               validation={vitalsValidation.glasgow}
+                              size="sm"
                             />
                             <VitalSignInput
                               label="Glicemia"
@@ -616,47 +656,29 @@ const TriageScreen: React.FC = () => {
                               placeholder="90"
                               unit="mg/dL"
                               validation={vitalsValidation.glucose}
+                              size="sm"
                             />
                           </div>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Alergias Conhecidas</Label>
-                        <Input
-                          placeholder="Medicamentos, alimentos, etc."
-                          value={triageData.allergies}
-                          onChange={(e) => setTriageData({...triageData, allergies: e.target.value})}
-                        />
-                      </div>
 
                       <div>
-                        <Label>Medicamentos em Uso</Label>
-                        <Input
-                          placeholder="Medicamentos atuais"
-                          value={triageData.medications}
-                          onChange={(e) => setTriageData({...triageData, medications: e.target.value})}
-                        />
-                      </div>
-
-                      <div>
-                        <Label>Observações</Label>
+                        <Label className="text-sm font-medium">Observações</Label>
                         <Textarea
                           placeholder="Informações adicionais relevantes..."
                           value={triageData.observations}
                           onChange={(e) => setTriageData({...triageData, observations: e.target.value})}
-                          rows={4}
+                          rows={3}
+                          className="text-sm"
                         />
                       </div>
 
-                      {/* Campo de classificação movido para o final */}
+                      {/* Campo de classificação */}
                       <div className="border-t pt-4">
-                        <Label>Classificação de Risco (Manchester) *</Label>
+                        <Label className="text-sm font-medium">Classificação de Risco (Manchester) *</Label>
                         <Select value={triageData.priority} onValueChange={(value) => setTriageData({...triageData, priority: value})}>
-                          <SelectTrigger className={`${getPriorityColor(triageData.priority)} font-medium`}>
-                            <SelectValue placeholder="Classificação será preenchida automaticamente" />
+                          <SelectTrigger className={`${getPriorityColor(triageData.priority)} font-medium text-sm`}>
+                            <SelectValue placeholder="Classificação automática" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="azul">🔵 Azul - Não urgente (240 min)</SelectItem>
@@ -667,7 +689,7 @@ const TriageScreen: React.FC = () => {
                           </SelectContent>
                         </Select>
                         {triageData.priority && (
-                          <div className={`text-sm mt-2 font-medium ${getPriorityColor(triageData.priority)}`}>
+                          <div className={`text-xs mt-2 font-medium ${getPriorityColor(triageData.priority)}`}>
                             {getPriorityText(triageData.priority)}
                           </div>
                         )}
@@ -676,23 +698,25 @@ const TriageScreen: React.FC = () => {
                   </div>
 
                   <div className="flex justify-end space-x-3 pt-4 border-t">
-                    <Button variant="outline" onClick={handleReturnToQueue}>
+                    <Button variant="outline" onClick={handleReturnToQueue} size="sm">
                       Voltar à Fila
                     </Button>
                     <Button 
                       variant="outline" 
                       onClick={() => setIsCancellationModalOpen(true)}
                       className="text-red-600 border-red-200 hover:bg-red-50"
+                      size="sm"
                     >
                       Cancelar Paciente
                     </Button>
-                    <Button variant="outline" onClick={handleCloseDialog}>
+                    <Button variant="outline" onClick={handleCloseDialog} size="sm">
                       Fechar
                     </Button>
                     <Button 
                       onClick={handleCompleteTriagem}
                       className="bg-green-600 hover:bg-green-700"
                       disabled={hasValidationErrors}
+                      size="sm"
                     >
                       Concluir Triagem
                     </Button>
@@ -700,7 +724,7 @@ const TriageScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* Chat da LIA sempre visível com animação */}
+              {/* Chat da LIA com efeito melhorado */}
               <div className="w-1/3 border-l border-gray-200">
                 <TriageChat 
                   triageData={triageData} 

@@ -57,11 +57,15 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
   const [showAnimation, setShowAnimation] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Trigger animation when dialog opens
+  // Trigger animation when dialog opens - efeito mais perceptível
   useEffect(() => {
     if (isDialogOpen) {
-      // Start minimized and animate to full size
-      setShowAnimation(true);
+      // Começa minimizado e anima para o tamanho completo
+      setTimeout(() => {
+        setShowAnimation(true);
+      }, 100);
+    } else {
+      setShowAnimation(false);
     }
   }, [isDialogOpen]);
 
@@ -303,16 +307,19 @@ A triagem será finalizada automaticamente com esta classificação.`
 
   return (
     <Card 
-      className={`h-full flex flex-col transition-all duration-700 ease-out ${
+      className={`h-full flex flex-col transition-all duration-1000 ease-out ${
         showAnimation 
-          ? 'transform scale-100 opacity-100' 
-          : 'transform scale-95 opacity-90'
+          ? 'transform scale-100 opacity-100 translate-x-0' 
+          : 'transform scale-75 opacity-60 translate-x-8'
       }`}
     >
       <CardHeader className="bg-gradient-to-r from-blue-600 to-green-600 text-white py-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Bot className="h-5 w-5" />
-          Converse com a LIA sobre este atendimento
+          <div className="text-center leading-tight">
+            <div>Converse com a LIA</div>
+            <div className="text-sm">sobre este atendimento</div>
+          </div>
         </CardTitle>
       </CardHeader>
       
