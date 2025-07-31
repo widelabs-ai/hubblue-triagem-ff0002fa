@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,15 @@ import { ArrowLeft, X, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TriageChat from './TriageChat';
 import CancellationModal from './CancellationModal';
+import VitalSignInput from './VitalSignInput';
+import { 
+  validateHeartRate, 
+  validateTemperature, 
+  validateOxygenSaturation, 
+  validateBloodPressure,
+  validateRespiratoryRate,
+  VITAL_RANGES
+} from '@/utils/vitalsValidation';
 
 const TriageScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
@@ -109,6 +119,18 @@ const TriageScreen: React.FC = () => {
     }
   }, [triageData.complaints, triageData.symptoms, triageData.vitals, triageData.painScale]);
 
+  // Validação dos sinais vitais
+  const vitalsValidation = {
+    heartRate: validateHeartRate(triageData.vitals.heartRate),
+    temperature: validateTemperature(triageData.vitals.temperature),
+    oxygenSaturation: validateOxygenSaturation(triageData.vitals.oxygenSaturation),
+    bloodPressure: validateBloodPressure(triageData.vitals.bloodPressure),
+    respiratoryRate: validateRespiratoryRate(triageData.vitals.respiratoryRate)
+  };
+
+  // Verificar se há erros de validação
+  const hasValidationErrors = Object.values(vitalsValidation).some(v => !v.isValid);
+
   const handleCallPatient = (patientId: string) => {
     console.log('Chamando paciente:', patientId);
     updatePatientStatus(patientId, 'in-triage');
@@ -177,6 +199,15 @@ const TriageScreen: React.FC = () => {
       toast({
         title: "Dados incompletos",
         description: "Por favor, preencha pelo menos a prioridade e as queixas principais.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (hasValidationErrors) {
+      toast({
+        title: "Dados inválidos",
+        description: "Por favor, corrija os valores dos sinais vitais antes de concluir.",
         variant: "destructive"
       });
       return;
@@ -369,50 +400,64 @@ const TriageScreen: React.FC = () => {
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label>Pressão Arterial</Label>
-                          <Input
-                            placeholder="120x80"
-                            value={triageData.vitals.bloodPressure}
-                            onChange={(e) => setTriageData({
-                              ...triageData, 
-                              vitals: {...triageData.vitals, bloodPressure: e.target.value}
-                            })}
-                          />
-                        </div>
-                        <div>
-                          <Label>Frequência Cardíaca</Label>
-                          <Input
-                            placeholder="70 bpm"
-                            value={triageData.vitals.heartRate}
-                            onChange={(e) => setTriageData({
-                              ...triageData, 
-                              vitals: {...triageData.vitals, heartRate: e.target.value}
-                            })}
-                          />
-                        </div>
-                        <div>
-                          <Label>Temperatura</Label>
-                          <Input
-                            placeholder="36.5°C"
-                            value={triageData.vitals.temperature}
-                            onChange={(e) => setTriageData({
-                              ...triageData, 
-                              vitals: {...triageData.vitals, temperature: e.target.value}
-                            })}
-                          />
-                        </div>
-                        <div>
-                          <Label>Saturação O₂</Label>
-                          <Input
-                            placeholder="98%"
-                            value={triageData.vitals.oxygenSaturation}
-                            onChange={(e) => setTriageData({
-                              ...triageData, 
-                              vitals: {...triageData.vitals, oxygenSaturation: e.target.value}
-                            })}
-                          />
-                        </div>
+                        <VitalSignInput
+                          label="Pressão Arterial"
+                          value={triageData.vitals.bloodPressure}
+                          onChange={(value) => setTriageData({
+                            ...triageData, 
+                            vitals: {...triageData.vitals, bloodPressure: value}
+                          })}
+                          placeholder="120x80"
+                          unit="mmHg"
+                          validation={vitalsValidation.bloodPressure}
+                        />
+                        <VitalSignInput
+                          label="Frequência Cardíaca"
+                          value={triageData.vitals.heartRate}
+                          onChange={(value) => setTriageData({
+                            ...triageData, 
+                            vitals: {...triageData.vitals, heartRate: value}
+                          })}
+                          placeholder="70"
+                          unit="bpm"
+                          validation={vitalsValidation.heartRate}
+                        />
+                        <VitalSignInput
+                          label="Temperatura"
+                          value={triageData.vitals.temperature}
+                          onChange={(value) => setTriageData({
+                            ...triageData, 
+                            vitals: {...triageData.vitals, temperature: value}
+                          })}
+                          placeholder="36.5"
+                          unit="°C"
+                          validation={vitalsValidation.temperature}
+                        />
+                        <VitalSignInput
+                          label="Saturação O₂"
+                          value={triageData.vitals.oxygenSaturation}
+                          onChange={(value) => setTriageData({
+                            ...triageData, 
+                            vitals: {...triageData.vitals, oxygenSaturation: value}
+                          })}
+                          placeholder="98"
+                          unit="%"
+                          validation={vitalsValidation.oxygenSaturation}
+                        />
+                      </div>
+
+                      <div>
+                        <VitalSignInput
+                          label="Frequência Respiratória"
+                          value={triageData.vitals.respiratoryRate}
+                          onChange={(value) => setTriageData({
+                            ...triageData, 
+                            vitals: {...triageData.vitals, respiratoryRate: value}
+                          })}
+                          placeholder="16"
+                          unit="rpm"
+                          validation={vitalsValidation.respiratoryRate}
+                        />
                       </div>
 
                       <div>
@@ -502,6 +547,7 @@ const TriageScreen: React.FC = () => {
                     <Button 
                       onClick={handleCompleteTriagem}
                       className="bg-green-600 hover:bg-green-700"
+                      disabled={hasValidationErrors}
                     >
                       Concluir Triagem
                     </Button>
