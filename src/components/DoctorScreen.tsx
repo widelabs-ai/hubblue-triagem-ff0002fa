@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, X } from 'lucide-react';
@@ -22,7 +22,21 @@ const DoctorScreen: React.FC = () => {
   });
 
   const navigate = useNavigate();
-  const waitingPatients = getPatientsByStatus('waiting-doctor');
+  const waitingPatients = getPatientsByStatus('waiting-doctor').sort((a, b) => {
+    // Primeiro ordena por prioridade (vermelho > laranja > amarelo > verde > azul)
+    const priorityOrder = { 'vermelho': 5, 'laranja': 4, 'amarelo': 3, 'verde': 2, 'azul': 1 };
+    const priorityA = priorityOrder[a.triageData?.priority as keyof typeof priorityOrder] || 0;
+    const priorityB = priorityOrder[b.triageData?.priority as keyof typeof priorityOrder] || 0;
+    
+    if (priorityA !== priorityB) {
+      return priorityB - priorityA; // Maior prioridade primeiro
+    }
+    
+    // Se a prioridade for igual, ordena por tempo de espera (mais tempo primeiro)
+    const timeA = getTimeElapsed(a, 'adminCompleted');
+    const timeB = getTimeElapsed(b, 'adminCompleted');
+    return timeB - timeA;
+  });
   const currentPatient = getPatientsByStatus('in-consultation')[0];
 
   const handleCallPatient = (patientId: string) => {
@@ -89,7 +103,7 @@ const DoctorScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-50 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         <Card className="shadow-lg">
           <CardHeader className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
             <div className="flex justify-between items-center">
@@ -106,60 +120,89 @@ const DoctorScreen: React.FC = () => {
           </CardHeader>
           <CardContent className="p-6">
             <h3 className="text-xl font-semibold mb-4">Pacientes Aguardando Consulta</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {waitingPatients.map((patient) => {
-                const totalTime = getTimeElapsed(patient, 'generated');
-                const slaStatus = isOverSLA(patient);
-                
-                return (
-                  <Card 
-                    key={patient.id} 
-                    className={`cursor-pointer hover:shadow-md transition-all ${
-                      slaStatus.totalSLA ? 'border-red-500 bg-red-50' : 
-                      totalTime > 90 ? 'border-yellow-500 bg-yellow-50' : 
-                      'border-green-500 bg-green-50'
-                    }`}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-bold text-lg">{patient.password}</div>
-                          <div className="text-sm text-gray-600">
-                            {patient.personalData?.name} - {patient.personalData?.age} anos
-                          </div>
-                          <div className="text-sm text-gray-600 capitalize">
-                            {patient.specialty.replace('-', ' ')}
-                          </div>
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-20">Senha</TableHead>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Classificação</TableHead>
+                    <TableHead className="w-32">Tempo Aguardando</TableHead>
+                    <TableHead className="w-32">Tempo Total</TableHead>
+                    <TableHead className="w-32">Status SLA</TableHead>
+                    <TableHead className="w-24">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {waitingPatients.map((patient) => {
+                    const timeWaiting = getTimeElapsed(patient, 'adminCompleted');
+                    const totalTime = getTimeElapsed(patient, 'generated');
+                    const slaStatus = isOverSLA(patient);
+                    
+                    return (
+                      <TableRow 
+                        key={patient.id}
+                        className={`${
+                          slaStatus.totalSLA ? 'bg-red-50 border-red-200' : 
+                          totalTime > 90 ? 'bg-yellow-50 border-yellow-200' : 
+                          'bg-green-50 border-green-200'
+                        }`}
+                      >
+                        <TableCell className="font-bold">{patient.password}</TableCell>
+                        <TableCell>
                           <div className="text-sm">
-                            Classificação: <span className={`font-medium ${getPriorityColor(patient.triageData?.priority || '')}`}>
-                              {patient.triageData?.priority?.toUpperCase() || 'N/A'}
-                            </span>
+                            <div className="font-medium">{patient.personalData?.name}</div>
+                            <div className="text-gray-600">{patient.personalData?.age} anos</div>
                           </div>
-                          <div className={`text-sm font-medium ${
-                            slaStatus.totalSLA ? 'text-red-600' : 
-                            totalTime > 90 ? 'text-yellow-600' : 
-                            'text-green-600'
+                        </TableCell>
+                        <TableCell className="capitalize">
+                          {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`font-medium ${getPriorityColor(patient.triageData?.priority || '')}`}>
+                            {patient.triageData?.priority?.toUpperCase() || 'N/A'}
+                          </span>
+                        </TableCell>
+                        <TableCell>{timeWaiting} min</TableCell>
+                        <TableCell className={`font-medium ${
+                          slaStatus.totalSLA ? 'text-red-600' : 
+                          totalTime > 90 ? 'text-yellow-600' : 
+                          'text-green-600'
+                        }`}>
+                          {totalTime} min
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            slaStatus.totalSLA ? 'bg-red-100 text-red-800' : 
+                            totalTime > 90 ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-green-100 text-green-800'
                           }`}>
-                            Tempo total: {totalTime} min
-                          </div>
-                        </div>
-                        <Button 
-                          onClick={() => handleCallPatient(patient.id)}
-                          disabled={!!currentPatient}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          Chamar
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-              {waitingPatients.length === 0 && (
-                <div className="col-span-full">
-                  <p className="text-gray-500 text-center py-8">Nenhum paciente aguardando consulta</p>
-                </div>
-              )}
+                            {slaStatus.totalSLA ? 'Atrasado' : totalTime > 90 ? 'Atenção' : 'No prazo'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            onClick={() => handleCallPatient(patient.id)}
+                            disabled={!!currentPatient}
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            Chamar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {waitingPatients.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                        Nenhum paciente aguardando consulta
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
@@ -189,11 +232,10 @@ const DoctorScreen: React.FC = () => {
                   <div><strong>Idade:</strong> {currentPatient.personalData?.age} anos</div>
                   <div><strong>Gênero:</strong> {currentPatient.personalData?.gender || 'N/I'}</div>
                   <div><strong>CPF:</strong> {currentPatient.personalData?.cpf}</div>
-                  <div><strong>Telefone:</strong> {currentPatient.phone}</div>
                   <div className="col-span-2">
-                    <strong>Especialidade:</strong> 
+                    <strong>Tipo:</strong> 
                     <span className="capitalize ml-1">
-                      {currentPatient.specialty.replace('-', ' ')}
+                      {currentPatient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
                     </span>
                   </div>
                   <div className="col-span-2">

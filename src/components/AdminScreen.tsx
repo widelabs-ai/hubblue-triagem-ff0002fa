@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, X } from 'lucide-react';
@@ -29,7 +29,21 @@ const AdminScreen: React.FC = () => {
   });
 
   const navigate = useNavigate();
-  const waitingPatients = getPatientsByStatus('waiting-admin');
+  const waitingPatients = getPatientsByStatus('waiting-admin').sort((a, b) => {
+    // Primeiro ordena por prioridade (vermelho > laranja > amarelo > verde > azul)
+    const priorityOrder = { 'vermelho': 5, 'laranja': 4, 'amarelo': 3, 'verde': 2, 'azul': 1 };
+    const priorityA = priorityOrder[a.triageData?.priority as keyof typeof priorityOrder] || 0;
+    const priorityB = priorityOrder[b.triageData?.priority as keyof typeof priorityOrder] || 0;
+    
+    if (priorityA !== priorityB) {
+      return priorityB - priorityA; // Maior prioridade primeiro
+    }
+    
+    // Se a prioridade for igual, ordena por tempo de espera (mais tempo primeiro)
+    const timeA = getTimeElapsed(a, 'triageCompleted');
+    const timeB = getTimeElapsed(b, 'triageCompleted');
+    return timeB - timeA;
+  });
   const currentPatient = getPatientsByStatus('in-admin')[0];
 
   const handleCallPatient = (patientId: string) => {
@@ -136,7 +150,7 @@ const AdminScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         <Card className="shadow-lg">
           <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
             <div className="flex justify-between items-center">
@@ -153,58 +167,82 @@ const AdminScreen: React.FC = () => {
           </CardHeader>
           <CardContent className="p-6">
             <h3 className="text-xl font-semibold mb-4">Pacientes Aguardando Atendimento</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {waitingPatients.map((patient) => {
-                const timeWaiting = getTimeElapsed(patient, 'triageCompleted');
-                const totalTime = getTimeElapsed(patient, 'generated');
-                const slaStatus = isOverSLA(patient);
-                
-                return (
-                  <Card 
-                    key={patient.id} 
-                    className={`cursor-pointer hover:shadow-md transition-all ${
-                      slaStatus.totalSLA ? 'border-red-500 bg-red-50' : 
-                      totalTime > 80 ? 'border-yellow-500 bg-yellow-50' : 
-                      'border-green-500 bg-green-50'
-                    }`}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-bold text-lg">{patient.password}</div>
-                          <div className="text-sm text-gray-600 capitalize">
-                            {patient.specialty.replace('-', ' ')}
-                          </div>
-                          <div className="text-sm">
-                            Classificação: <span className={`font-medium ${getPriorityColor(patient.triageData?.priority || '')}`}>
-                              {patient.triageData?.priority?.toUpperCase() || 'N/A'}
-                            </span>
-                          </div>
-                          <div className={`text-sm font-medium ${
-                            slaStatus.totalSLA ? 'text-red-600' : 
-                            totalTime > 80 ? 'text-yellow-600' : 
-                            'text-green-600'
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-20">Senha</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Classificação</TableHead>
+                    <TableHead className="w-32">Tempo Aguardando</TableHead>
+                    <TableHead className="w-32">Tempo Total</TableHead>
+                    <TableHead className="w-32">Status SLA</TableHead>
+                    <TableHead className="w-24">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {waitingPatients.map((patient) => {
+                    const timeWaiting = getTimeElapsed(patient, 'triageCompleted');
+                    const totalTime = getTimeElapsed(patient, 'generated');
+                    const slaStatus = isOverSLA(patient);
+                    
+                    return (
+                      <TableRow 
+                        key={patient.id}
+                        className={`${
+                          slaStatus.totalSLA ? 'bg-red-50 border-red-200' : 
+                          totalTime > 80 ? 'bg-yellow-50 border-yellow-200' : 
+                          'bg-green-50 border-green-200'
+                        }`}
+                      >
+                        <TableCell className="font-bold">{patient.password}</TableCell>
+                        <TableCell className="capitalize">
+                          {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`font-medium ${getPriorityColor(patient.triageData?.priority || '')}`}>
+                            {patient.triageData?.priority?.toUpperCase() || 'N/A'}
+                          </span>
+                        </TableCell>
+                        <TableCell>{timeWaiting} min</TableCell>
+                        <TableCell className={`font-medium ${
+                          slaStatus.totalSLA ? 'text-red-600' : 
+                          totalTime > 80 ? 'text-yellow-600' : 
+                          'text-green-600'
+                        }`}>
+                          {totalTime} min
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            slaStatus.totalSLA ? 'bg-red-100 text-red-800' : 
+                            totalTime > 80 ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-green-100 text-green-800'
                           }`}>
-                            Tempo total: {totalTime} min
-                          </div>
-                        </div>
-                        <Button 
-                          onClick={() => handleCallPatient(patient.id)}
-                          disabled={!!currentPatient}
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          Chamar
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-              {waitingPatients.length === 0 && (
-                <div className="col-span-full">
-                  <p className="text-gray-500 text-center py-8">Nenhum paciente aguardando atendimento</p>
-                </div>
-              )}
+                            {slaStatus.totalSLA ? 'Atrasado' : totalTime > 80 ? 'Atenção' : 'No prazo'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            onClick={() => handleCallPatient(patient.id)}
+                            disabled={!!currentPatient}
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Chamar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {waitingPatients.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        Nenhum paciente aguardando atendimento
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
@@ -227,10 +265,7 @@ const AdminScreen: React.FC = () => {
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="font-bold text-xl">{currentPatient.password}</div>
                 <div className="text-gray-600 capitalize">
-                  {currentPatient.specialty.replace('-', ' ')}
-                </div>
-                <div className="text-sm text-blue-600">
-                  Telefone: {currentPatient.phone}
+                  {currentPatient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
                 </div>
                 <div className="text-sm">
                   Classificação: <span className={`font-medium ${getPriorityColor(currentPatient.triageData?.priority || '')}`}>
