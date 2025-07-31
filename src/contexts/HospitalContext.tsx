@@ -17,9 +17,11 @@ export interface Patient {
     cancelled?: Date;
   };
   personalData?: {
+    fullName?: string;
     name: string;
     cpf: string;
     age: number;
+    dateOfBirth?: string;
     gender?: string;
     healthInsurance?: string;
     canBeAttended: boolean;
@@ -34,7 +36,11 @@ export interface Patient {
       heartRate?: string;
       temperature?: string;
       oxygenSaturation?: string;
+      respiratoryRate?: string;
+      glasgow?: string;
+      glucose?: string;
     };
+    chronicDiseases?: string;
     allergies?: string;
     medications?: string;
     observations?: string;

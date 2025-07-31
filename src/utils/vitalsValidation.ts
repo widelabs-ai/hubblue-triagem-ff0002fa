@@ -12,6 +12,8 @@ export interface VitalRanges {
   respiratoryRate: VitalRange;
   systolicBP: VitalRange;
   diastolicBP: VitalRange;
+  glasgow: VitalRange;
+  glucose: VitalRange;
 }
 
 export const VITAL_RANGES: VitalRanges = {
@@ -20,7 +22,9 @@ export const VITAL_RANGES: VitalRanges = {
   oxygenSaturation: { min: 95, max: 100, unit: '%' },
   respiratoryRate: { min: 12, max: 20, unit: 'rpm' },
   systolicBP: { min: 90, max: 140, unit: 'mmHg' },
-  diastolicBP: { min: 60, max: 90, unit: 'mmHg' }
+  diastolicBP: { min: 60, max: 90, unit: 'mmHg' },
+  glasgow: { min: 13, max: 15, unit: 'pts' },
+  glucose: { min: 70, max: 140, unit: 'mg/dL' }
 };
 
 export interface ValidationResult {
@@ -181,4 +185,71 @@ export const validateRespiratoryRate = (value: string): ValidationResult => {
   }
   
   return { isValid: true, isOutOfRange: false };
+};
+
+export const validateGlasgow = (value: string): ValidationResult => {
+  if (!value) return { isValid: true, isOutOfRange: false };
+  
+  const num = parseInt(value);
+  
+  if (isNaN(num) || num < 3 || num > 15) {
+    return {
+      isValid: false,
+      isOutOfRange: false,
+      message: 'Escala de Glasgow deve ser entre 3 e 15',
+      severity: 'error'
+    };
+  }
+  
+  if (num < VITAL_RANGES.glasgow.min) {
+    return {
+      isValid: true,
+      isOutOfRange: true,
+      message: `Abaixo do normal (${VITAL_RANGES.glasgow.min}-${VITAL_RANGES.glasgow.max} ${VITAL_RANGES.glasgow.unit})`,
+      severity: 'warning'
+    };
+  }
+  
+  return { isValid: true, isOutOfRange: false };
+};
+
+export const validateGlucose = (value: string): ValidationResult => {
+  if (!value) return { isValid: true, isOutOfRange: false };
+  
+  const num = parseInt(value);
+  
+  if (isNaN(num) || num < 10 || num > 600) {
+    return {
+      isValid: false,
+      isOutOfRange: false,
+      message: 'Glicemia deve ser um número entre 10 e 600',
+      severity: 'error'
+    };
+  }
+  
+  if (num < VITAL_RANGES.glucose.min || num > VITAL_RANGES.glucose.max) {
+    return {
+      isValid: true,
+      isOutOfRange: true,
+      message: `Fora da faixa normal (${VITAL_RANGES.glucose.min}-${VITAL_RANGES.glucose.max} ${VITAL_RANGES.glucose.unit})`,
+      severity: 'warning'
+    };
+  }
+  
+  return { isValid: true, isOutOfRange: false };
+};
+
+// Função para calcular PAM (Pressão Arterial Média)
+export const calculatePAM = (bloodPressure: string): number | null => {
+  if (!bloodPressure) return null;
+  
+  const parts = bloodPressure.split('x').map(p => p.trim());
+  if (parts.length !== 2) return null;
+  
+  const systolic = parseInt(parts[0]);
+  const diastolic = parseInt(parts[1]);
+  
+  if (isNaN(systolic) || isNaN(diastolic)) return null;
+  
+  return Math.round((systolic + 2 * diastolic) / 3);
 };

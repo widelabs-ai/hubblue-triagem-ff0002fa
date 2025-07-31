@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +20,9 @@ import {
   validateOxygenSaturation, 
   validateBloodPressure,
   validateRespiratoryRate,
+  validateGlasgow,
+  validateGlucose,
+  calculatePAM,
   VITAL_RANGES
 } from '@/utils/vitalsValidation';
 
@@ -35,11 +37,19 @@ const TriageScreen: React.FC = () => {
       heartRate: '',
       temperature: '',
       oxygenSaturation: '',
-      respiratoryRate: ''
+      respiratoryRate: '',
+      glasgow: '',
+      glucose: ''
+    },
+    personalData: {
+      fullName: '',
+      dateOfBirth: '',
+      gender: ''
     },
     complaints: '',
     painScale: '',
     symptoms: '',
+    chronicDiseases: '',
     allergies: '',
     medications: '',
     observations: ''
@@ -53,6 +63,25 @@ const TriageScreen: React.FC = () => {
     return timeB - timeA;
   });
   const currentPatient = getPatientsByStatus('in-triage')[0];
+
+  // Calcular idade a partir da data de nascimento
+  const calculateAge = (dateOfBirth: string): number => {
+    if (!dateOfBirth) return 0;
+    const birth = new Date(dateOfBirth);
+    const today = new Date();
+    const age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      return age - 1;
+    }
+    
+    return age;
+  };
+
+  // Calcular PAM automaticamente
+  const calculatedPAM = calculatePAM(triageData.vitals.bloodPressure);
+  const calculatedAge = calculateAge(triageData.personalData.dateOfBirth);
 
   // Função para calcular classificação automática baseada no protocolo Manchester
   const calculateAutomaticPriority = (data: typeof triageData) => {
@@ -125,7 +154,9 @@ const TriageScreen: React.FC = () => {
     temperature: validateTemperature(triageData.vitals.temperature),
     oxygenSaturation: validateOxygenSaturation(triageData.vitals.oxygenSaturation),
     bloodPressure: validateBloodPressure(triageData.vitals.bloodPressure),
-    respiratoryRate: validateRespiratoryRate(triageData.vitals.respiratoryRate)
+    respiratoryRate: validateRespiratoryRate(triageData.vitals.respiratoryRate),
+    glasgow: validateGlasgow(triageData.vitals.glasgow),
+    glucose: validateGlucose(triageData.vitals.glucose)
   };
 
   // Verificar se há erros de validação
@@ -174,11 +205,19 @@ const TriageScreen: React.FC = () => {
         heartRate: '',
         temperature: '',
         oxygenSaturation: '',
-        respiratoryRate: ''
+        respiratoryRate: '',
+        glasgow: '',
+        glucose: ''
+      },
+      personalData: {
+        fullName: '',
+        dateOfBirth: '',
+        gender: ''
       },
       complaints: '',
       painScale: '',
       symptoms: '',
+      chronicDiseases: '',
       allergies: '',
       medications: '',
       observations: ''
@@ -377,6 +416,62 @@ const TriageScreen: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Dados Pessoais */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-3">Dados Pessoais</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label>Nome Completo</Label>
+                        <Input
+                          placeholder="Nome completo do paciente"
+                          value={triageData.personalData.fullName}
+                          onChange={(e) => setTriageData({
+                            ...triageData, 
+                            personalData: {...triageData.personalData, fullName: e.target.value}
+                          })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Data de Nascimento</Label>
+                        <Input
+                          type="date"
+                          value={triageData.personalData.dateOfBirth}
+                          onChange={(e) => setTriageData({
+                            ...triageData, 
+                            personalData: {...triageData.personalData, dateOfBirth: e.target.value}
+                          })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Idade</Label>
+                        <Input
+                          value={calculatedAge > 0 ? `${calculatedAge} anos` : ''}
+                          readOnly
+                          className="bg-gray-100"
+                        />
+                      </div>
+                      <div>
+                        <Label>Sexo</Label>
+                        <Select 
+                          value={triageData.personalData.gender} 
+                          onValueChange={(value) => setTriageData({
+                            ...triageData, 
+                            personalData: {...triageData.personalData, gender: value}
+                          })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o sexo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="masculino">Masculino</SelectItem>
+                            <SelectItem value="feminino">Feminino</SelectItem>
+                            <SelectItem value="outro">Outro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div>
@@ -399,81 +494,131 @@ const TriageScreen: React.FC = () => {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <VitalSignInput
-                          label="Pressão Arterial"
-                          value={triageData.vitals.bloodPressure}
-                          onChange={(value) => setTriageData({
-                            ...triageData, 
-                            vitals: {...triageData.vitals, bloodPressure: value}
-                          })}
-                          placeholder="120x80"
-                          unit="mmHg"
-                          validation={vitalsValidation.bloodPressure}
-                        />
-                        <VitalSignInput
-                          label="Frequência Cardíaca"
-                          value={triageData.vitals.heartRate}
-                          onChange={(value) => setTriageData({
-                            ...triageData, 
-                            vitals: {...triageData.vitals, heartRate: value}
-                          })}
-                          placeholder="70"
-                          unit="bpm"
-                          validation={vitalsValidation.heartRate}
-                        />
-                        <VitalSignInput
-                          label="Temperatura"
-                          value={triageData.vitals.temperature}
-                          onChange={(value) => setTriageData({
-                            ...triageData, 
-                            vitals: {...triageData.vitals, temperature: value}
-                          })}
-                          placeholder="36.5"
-                          unit="°C"
-                          validation={vitalsValidation.temperature}
-                        />
-                        <VitalSignInput
-                          label="Saturação O₂"
-                          value={triageData.vitals.oxygenSaturation}
-                          onChange={(value) => setTriageData({
-                            ...triageData, 
-                            vitals: {...triageData.vitals, oxygenSaturation: value}
-                          })}
-                          placeholder="98"
-                          unit="%"
-                          validation={vitalsValidation.oxygenSaturation}
+                      <div>
+                        <Label>Doenças Crônicas e Comorbidades</Label>
+                        <Textarea
+                          placeholder="Diabetes, hipertensão, doença de Crohn, etc..."
+                          value={triageData.chronicDiseases}
+                          onChange={(e) => setTriageData({...triageData, chronicDiseases: e.target.value})}
+                          rows={3}
                         />
                       </div>
 
-                      <div>
-                        <VitalSignInput
-                          label="Frequência Respiratória"
-                          value={triageData.vitals.respiratoryRate}
-                          onChange={(value) => setTriageData({
-                            ...triageData, 
-                            vitals: {...triageData.vitals, respiratoryRate: value}
-                          })}
-                          placeholder="16"
-                          unit="rpm"
-                          validation={vitalsValidation.respiratoryRate}
-                        />
+                      {/* Sinais Vitais */}
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <h4 className="font-semibold mb-3">Sinais Vitais</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <VitalSignInput
+                            label="Pressão Arterial"
+                            value={triageData.vitals.bloodPressure}
+                            onChange={(value) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, bloodPressure: value}
+                            })}
+                            placeholder="120x80"
+                            unit="mmHg"
+                            validation={vitalsValidation.bloodPressure}
+                          />
+                          <div>
+                            <Label className="text-sm font-medium">PAM (Calculado)</Label>
+                            <Input
+                              value={calculatedPAM ? `${calculatedPAM} mmHg` : ''}
+                              readOnly
+                              className="bg-gray-100"
+                              placeholder="Será calculado automaticamente"
+                            />
+                          </div>
+                          <VitalSignInput
+                            label="Frequência Cardíaca"
+                            value={triageData.vitals.heartRate}
+                            onChange={(value) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, heartRate: value}
+                            })}
+                            placeholder="70"
+                            unit="bpm"
+                            validation={vitalsValidation.heartRate}
+                          />
+                          <VitalSignInput
+                            label="Frequência Respiratória"
+                            value={triageData.vitals.respiratoryRate}
+                            onChange={(value) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, respiratoryRate: value}
+                            })}
+                            placeholder="16"
+                            unit="rpm"
+                            validation={vitalsValidation.respiratoryRate}
+                          />
+                          <VitalSignInput
+                            label="Temperatura"
+                            value={triageData.vitals.temperature}
+                            onChange={(value) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, temperature: value}
+                            })}
+                            placeholder="36.5"
+                            unit="°C"
+                            validation={vitalsValidation.temperature}
+                          />
+                          <VitalSignInput
+                            label="Saturação O₂"
+                            value={triageData.vitals.oxygenSaturation}
+                            onChange={(value) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, oxygenSaturation: value}
+                            })}
+                            placeholder="98"
+                            unit="%"
+                            validation={vitalsValidation.oxygenSaturation}
+                          />
+                        </div>
                       </div>
 
-                      <div>
-                        <Label>Escala de Dor (0-10)</Label>
-                        <Select value={triageData.painScale} onValueChange={(value) => setTriageData({...triageData, painScale: value})}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Nível de dor" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {[...Array(11)].map((_, i) => (
-                              <SelectItem key={i} value={i.toString()}>
-                                {i} - {i === 0 ? 'Sem dor' : i <= 3 ? 'Leve' : i <= 6 ? 'Moderada' : 'Intensa'}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      {/* Tríade Clínica */}
+                      <div className="bg-yellow-50 p-4 rounded-lg">
+                        <h4 className="font-semibold mb-3">Tríade de Avaliação Clínica</h4>
+                        <div className="grid grid-cols-1 gap-3">
+                          <div>
+                            <Label>Escala de Dor (0-10)</Label>
+                            <Select value={triageData.painScale} onValueChange={(value) => setTriageData({...triageData, painScale: value})}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Nível de dor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[...Array(11)].map((_, i) => (
+                                  <SelectItem key={i} value={i.toString()}>
+                                    {i} - {i === 0 ? 'Sem dor' : i <= 3 ? 'Leve' : i <= 6 ? 'Moderada' : 'Intensa'}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <VitalSignInput
+                              label="Escala de Glasgow"
+                              value={triageData.vitals.glasgow}
+                              onChange={(value) => setTriageData({
+                                ...triageData, 
+                                vitals: {...triageData.vitals, glasgow: value}
+                              })}
+                              placeholder="15"
+                              unit="pts"
+                              validation={vitalsValidation.glasgow}
+                            />
+                            <VitalSignInput
+                              label="Glicemia"
+                              value={triageData.vitals.glucose}
+                              onChange={(value) => setTriageData({
+                                ...triageData, 
+                                vitals: {...triageData.vitals, glucose: value}
+                              })}
+                              placeholder="90"
+                              unit="mg/dL"
+                              validation={vitalsValidation.glucose}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
 
