@@ -6,11 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { X, Plus, MessageSquare } from 'lucide-react';
-import { useHospital, Patient } from '@/contexts/HospitalContext';
-import VitalSignInput from './VitalSignInput';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useHospital } from '@/contexts/HospitalContext';
+import { toast } from '@/hooks/use-toast';
+import { ArrowLeft, X, MessageSquare, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import TriageChat from './TriageChat';
+import CancellationModal from './CancellationModal';
+import VitalSignInput from './VitalSignInput';
 import { 
   validateHeartRate, 
   validateTemperature, 
@@ -18,705 +21,898 @@ import {
   validateBloodPressure,
   validateRespiratoryRate,
   validateGlasgow,
-  validateGlucose 
+  validateGlucose,
+  calculatePAM,
+  VITAL_RANGES
 } from '@/utils/vitalsValidation';
 
-interface Medication {
-  name: string;
-  dosage: string;
-}
-
-const COMMON_ALLERGIES = [
-  'Penicilina',
-  'Aspirina',
-  'Dipirona',
-  'Látex',
-  'Mariscos',
-  'Amendoim',
-  'Nozes',
-  'Leite',
-  'Ovos',
-  'Soja',
-  'Trigo',
-  'Picadas de insetos',
-  'Pólen',
-  'Mofo',
-  'Pelo de animais'
-];
-
-const COMMON_MEDICATIONS = [
-  { name: 'Paracetamol', dosage: '500mg' },
-  { name: 'Ibuprofeno', dosage: '400mg' },
-  { name: 'Amoxicilina', dosage: '500mg' },
-  { name: 'Omeprazol', dosage: '20mg' },
-  { name: 'Losartana', dosage: '50mg' },
-  { name: 'Sinvastatina', dosage: '20mg' },
-  { name: 'Metformina', dosage: '500mg' },
-  { name: 'Captopril', dosage: '25mg' },
-  { name: 'AAS', dosage: '100mg' },
-  { name: 'Dipirona', dosage: '500mg' }
-];
-
 const TriageScreen: React.FC = () => {
-  const { getPatientsByStatus, updatePatientStatus } = useHospital();
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [showTriageForm, setShowTriageForm] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
+  const [triageData, setTriageData] = useState({
+    priority: '',
+    vitals: {
+      bloodPressure: '',
+      heartRate: '',
+      temperature: '',
+      oxygenSaturation: '',
+      respiratoryRate: '',
+      glasgow: '',
+      glucose: ''
+    },
+    personalData: {
+      fullName: '',
+      dateOfBirth: '',
+      gender: ''
+    },
+    complaints: '',
+    painScale: '',
+    symptoms: '',
+    chronicDiseases: '',
+    allergies: [] as string[],
+    medications: [] as string[],
+    observations: ''
+  });
 
-  const [fullName, setFullName] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState('');
-  const [gender, setGender] = useState('');
-  const [complaints, setComplaints] = useState('');
-  const [symptoms, setSymptoms] = useState('');
-  const [chronicDiseases, setChronicDiseases] = useState('');
-  const [allergies, setAllergies] = useState<string[]>([]);
-  const [medications, setMedications] = useState<Medication[]>([]);
-  const [painScale, setPainScale] = useState('');
-  const [bloodPressure, setBloodPressure] = useState('');
-  const [heartRate, setHeartRate] = useState('');
-  const [temperature, setTemperature] = useState('');
-  const [oxygenSaturation, setOxygenSaturation] = useState('');
-  const [respiratoryRate, setRespiratoryRate] = useState('');
-  const [glasgow, setGlasgow] = useState('');
-  const [glucose, setGlucose] = useState('');
-  const [observations, setObservations] = useState('');
-  const [priority, setPriority] = useState('');
+  // Lista de medicamentos comuns com dosagens
+  const commonMedications = [
+    'Dipirona 500mg',
+    'Paracetamol 750mg',
+    'Ibuprofeno 600mg',
+    'Omeprazol 20mg',
+    'Losartana 50mg',
+    'Atenolol 25mg',
+    'Metformina 850mg',
+    'Sinvastatina 20mg',
+    'Amlodipina 5mg',
+    'Captopril 25mg',
+    'Hidroclorotiazida 25mg',
+    'Ácido Acetilsalicílico 100mg',
+    'Levotiroxina 50mcg',
+    'Clonazepam 2mg',
+    'Fluoxetina 20mg',
+    'Sertralina 50mg',
+    'Insulina NPH',
+    'Insulina Regular',
+    'Glibenclamida 5mg',
+    'Prednisona 20mg'
+  ];
 
-  // Autocomplete states for allergies and medications
-  const [allergyInput, setAllergyInput] = useState('');
-  const [medicationInput, setMedicationInput] = useState('');
-  const [showAllergyDropdown, setShowAllergyDropdown] = useState(false);
-  const [showMedicationDropdown, setShowMedicationDropdown] = useState(false);
+  // Lista de alergias comuns
+  const commonAllergies = [
+    'Penicilina',
+    'Dipirona',
+    'Ácido Acetilsalicílico (AAS)',
+    'Sulfa',
+    'Iodo',
+    'Látex',
+    'Amendoim',
+    'Frutos do mar',
+    'Leite e derivados',
+    'Ovo',
+    'Soja',
+    'Glúten',
+    'Corante alimentar',
+    'Poeira',
+    'Pólen',
+    'Pelo de animais',
+    'Ácaros',
+    'Picada de insetos',
+    'Contraste radiológico',
+    'Anestésicos'
+  ];
 
-  const waitingTriagePatients = getPatientsByStatus('waiting-triage');
+  const navigate = useNavigate();
+  const waitingPatients = getPatientsByStatus('waiting-triage').sort((a, b) => {
+    // Primeiro ordena por tempo de espera (mais tempo primeiro)
+    const timeA = getTimeElapsed(a, 'generated');
+    const timeB = getTimeElapsed(b, 'generated');
+    return timeB - timeA;
+  });
+  const currentPatient = getPatientsByStatus('in-triage')[0];
 
-  const filteredAllergies = COMMON_ALLERGIES.filter(allergy =>
-    allergy.toLowerCase().includes(allergyInput.toLowerCase()) &&
-    !allergies.includes(allergy)
-  );
-
-  const filteredMedications = COMMON_MEDICATIONS.filter(med =>
-    med.name.toLowerCase().includes(medicationInput.toLowerCase()) &&
-    !medications.some(m => m.name === med.name)
-  );
-
-  useEffect(() => {
-    if (selectedPatient) {
-      setFullName(selectedPatient.personalData?.fullName || '');
-      setDateOfBirth(selectedPatient.personalData?.dateOfBirth || '');
-      setGender(selectedPatient.personalData?.gender || '');
-    }
-  }, [selectedPatient]);
-
-  const startTriage = (patient: Patient) => {
-    setSelectedPatient(patient);
-    setShowTriageForm(true);
-  };
-
-  const applyBloodPressureMask = (value: string) => {
-    // Remove all non-numeric characters except 'x'
-    let cleaned = value.replace(/[^\dx]/g, '');
+  // Calcular idade a partir da data de nascimento
+  const calculateAge = (dateOfBirth: string): number => {
+    if (!dateOfBirth) return 0;
+    const birth = new Date(dateOfBirth);
+    const today = new Date();
+    const age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
     
-    // Add 'x' after 2-3 digits if not present
-    if (cleaned.length > 3) {
-      cleaned = cleaned.slice(0, 3) + 'x' + cleaned.slice(3, 5);
-    } else if (cleaned.length > 2 && !value.includes('x')) {
-      cleaned = cleaned.slice(0, 2) + 'x' + cleaned.slice(2);
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      return age - 1;
     }
     
-    return cleaned;
+    return age;
   };
 
-  const handleBloodPressureChange = (value: string) => {
-    const masked = applyBloodPressureMask(value);
-    setBloodPressure(masked);
-  };
+  // Calcular PAM automaticamente
+  const calculatedPAM = calculatePAM(triageData.vitals.bloodPressure);
+  const calculatedAge = calculateAge(triageData.personalData.dateOfBirth);
 
-  // Check if form is complete for analysis
-  const isFormComplete = () => {
-    return (
-      fullName.trim() !== '' &&
-      dateOfBirth !== '' &&
-      gender !== '' &&
-      complaints.trim() !== '' &&
-      symptoms.trim() !== '' &&
-      chronicDiseases.trim() !== '' &&
-      allergies.length > 0 &&
-      medications.length > 0 &&
-      painScale !== '' &&
-      bloodPressure.trim() !== '' &&
-      heartRate.trim() !== '' &&
-      temperature.trim() !== '' &&
-      oxygenSaturation.trim() !== '' &&
-      respiratoryRate.trim() !== '' &&
-      glasgow.trim() !== '' &&
-      glucose.trim() !== '' &&
-      observations.trim() !== ''
-    );
-  };
+  // Função para calcular classificação automática baseada no protocolo Manchester
+  const calculateAutomaticPriority = (data: typeof triageData) => {
+    const { complaints, symptoms, vitals, painScale } = data;
+    
+    if (!complaints && !symptoms) return '';
 
-  // Effect to trigger analysis only once when form becomes complete
-  useEffect(() => {
-    if (isFormComplete() && !hasAnalyzed) {
-      setHasAnalyzed(true);
+    const heartRate = parseInt(vitals.heartRate) || 0;
+    const temp = parseFloat(vitals.temperature) || 0;
+    const saturation = parseInt(vitals.oxygenSaturation) || 100;
+    const pain = parseInt(painScale) || 0;
+    const complaintsLower = complaints.toLowerCase();
+    const symptomsLower = symptoms.toLowerCase();
+
+    // Critérios para VERMELHO (Emergência)
+    if (saturation < 85 || heartRate > 150 || heartRate < 40) {
+      return 'vermelho';
     }
-  }, [fullName, dateOfBirth, gender, complaints, symptoms, chronicDiseases, allergies, medications, painScale, bloodPressure, heartRate, temperature, oxygenSaturation, respiratoryRate, glasgow, glucose, observations, hasAnalyzed]);
+    
+    if (complaintsLower.includes('dor no peito') || complaintsLower.includes('precordial')) {
+      if (heartRate > 150 || saturation < 90 || pain >= 8) {
+        return 'vermelho';
+      }
+    }
 
+    // Critérios para LARANJA (Muito urgente)
+    if (temp > 39.5 || (temp > 38.5 && (heartRate > 120 || saturation < 92))) {
+      return 'laranja';
+    }
+    
+    if (complaintsLower.includes('dor no peito') || complaintsLower.includes('precordial')) {
+      if (pain >= 6 || heartRate > 100) {
+        return 'laranja';
+      }
+    }
+    
+    if (pain >= 8 || temp > 38.5 || heartRate > 120 || saturation < 92) {
+      return 'laranja';
+    }
+
+    // Critérios para AMARELO (Urgente)
+    if (complaintsLower.includes('dor no peito') || complaintsLower.includes('precordial')) {
+      return 'amarelo';
+    }
+    
+    if (pain >= 5 || temp > 37.8 || symptomsLower.includes('vômito') || symptomsLower.includes('diarréia')) {
+      return 'amarelo';
+    }
+
+    // Critérios para VERDE (Pouco urgente)
+    if (pain >= 2 || temp > 37.2) {
+      return 'verde';
+    }
+
+    // Padrão AZUL (Não urgente)
+    return 'azul';
+  };
+
+  // Atualizar classificação automaticamente quando os campos mudarem
+  useEffect(() => {
+    const automaticPriority = calculateAutomaticPriority(triageData);
+    if (automaticPriority && automaticPriority !== triageData.priority) {
+      setTriageData(prev => ({ ...prev, priority: automaticPriority }));
+    }
+  }, [triageData.complaints, triageData.symptoms, triageData.vitals, triageData.painScale]);
+
+  // Validação dos sinais vitais
+  const vitalsValidation = {
+    heartRate: validateHeartRate(triageData.vitals.heartRate),
+    temperature: validateTemperature(triageData.vitals.temperature),
+    oxygenSaturation: validateOxygenSaturation(triageData.vitals.oxygenSaturation),
+    bloodPressure: validateBloodPressure(triageData.vitals.bloodPressure),
+    respiratoryRate: validateRespiratoryRate(triageData.vitals.respiratoryRate),
+    glasgow: validateGlasgow(triageData.vitals.glasgow),
+    glucose: validateGlucose(triageData.vitals.glucose)
+  };
+
+  // Verificar se há erros de validação
+  const hasValidationErrors = Object.values(vitalsValidation).some(v => !v.isValid);
+
+  // Funções para adicionar/remover alergias e medicamentos
   const addAllergy = (allergy: string) => {
-    if (allergy && !allergies.includes(allergy)) {
-      setAllergies([...allergies, allergy]);
-      setAllergyInput('');
-      setShowAllergyDropdown(false);
+    if (allergy && !triageData.allergies.includes(allergy)) {
+      setTriageData(prev => ({
+        ...prev,
+        allergies: [...prev.allergies, allergy]
+      }));
     }
   };
 
-  const addMedication = (medication: { name: string; dosage: string }) => {
-    if (medication.name && !medications.some(m => m.name === medication.name)) {
-      setMedications([...medications, medication]);
-      setMedicationInput('');
-      setShowMedicationDropdown(false);
+  const removeAllergy = (allergy: string) => {
+    setTriageData(prev => ({
+      ...prev,
+      allergies: prev.allergies.filter(a => a !== allergy)
+    }));
+  };
+
+  const addMedication = (medication: string) => {
+    if (medication && !triageData.medications.includes(medication)) {
+      setTriageData(prev => ({
+        ...prev,
+        medications: [...prev.medications, medication]
+      }));
     }
   };
 
-  const removeAllergy = (allergyToRemove: string) => {
-    setAllergies(allergies.filter(allergy => allergy !== allergyToRemove));
+  const removeMedication = (medication: string) => {
+    setTriageData(prev => ({
+      ...prev,
+      medications: prev.medications.filter(m => m !== medication)
+    }));
   };
 
-  const removeMedication = (medicationToRemove: string) => {
-    setMedications(medications.filter(med => med.name !== medicationToRemove));
+  const handleCallPatient = (patientId: string) => {
+    console.log('Chamando paciente:', patientId);
+    updatePatientStatus(patientId, 'in-triage');
+    setIsDialogOpen(true);
+    toast({
+      title: "Paciente chamado",
+      description: "Paciente está sendo atendido na triagem.",
+    });
   };
 
-  const resetForm = () => {
-    setFullName('');
-    setDateOfBirth('');
-    setGender('');
-    setComplaints('');
-    setSymptoms('');
-    setChronicDiseases('');
-    setAllergies([]);
-    setMedications([]);
-    setPainScale('');
-    setBloodPressure('');
-    setHeartRate('');
-    setTemperature('');
-    setOxygenSaturation('');
-    setRespiratoryRate('');
-    setGlasgow('');
-    setGlucose('');
-    setObservations('');
-    setPriority('');
-    setHasAnalyzed(false);
+  const handleReturnToQueue = () => {
+    if (currentPatient) {
+      updatePatientStatus(currentPatient.id, 'waiting-triage');
+      resetTriageData();
+      setIsDialogOpen(false);
+      toast({
+        title: "Paciente retornado",
+        description: "Paciente foi retornado para a fila de triagem.",
+      });
+    }
   };
 
-  const handleSubmit = () => {
-    if (!selectedPatient) return;
+  const handleCancelPatient = (reason: string) => {
+    if (currentPatient) {
+      cancelPatient(currentPatient.id, reason);
+      resetTriageData();
+      setIsDialogOpen(false);
+      setIsCancellationModalOpen(false);
+      toast({
+        title: "Paciente cancelado",
+        description: "Atendimento foi cancelado com sucesso.",
+      });
+    }
+  };
 
-    const personalData = {
-      fullName,
-      dateOfBirth,
-      gender
-    };
-
-    const triageData = {
-      priority,
-      complaints,
-      symptoms,
-      painScale,
+  const resetTriageData = () => {
+    setTriageData({
+      priority: '',
       vitals: {
-        bloodPressure,
-        heartRate,
-        temperature,
-        oxygenSaturation,
-        respiratoryRate,
-        glasgow,
-        glucose
+        bloodPressure: '',
+        heartRate: '',
+        temperature: '',
+        oxygenSaturation: '',
+        respiratoryRate: '',
+        glasgow: '',
+        glucose: ''
       },
-      chronicDiseases,
-      allergies,
-      medications,
-      observations
-    };
-
-    updatePatientStatus(selectedPatient.id, 'waiting-admin', { personalData, triageData });
-    setShowTriageForm(false);
+      personalData: {
+        fullName: '',
+        dateOfBirth: '',
+        gender: ''
+      },
+      complaints: '',
+      painScale: '',
+      symptoms: '',
+      chronicDiseases: '',
+      allergies: [],
+      medications: [],
+      observations: ''
+    });
   };
 
-  const handleChatSuggestPriority = (priority: string, reasoning: string) => {
-    setPriority(priority);
+  const handleSuggestPriority = (priority: string, reasoning: string) => {
+    setTriageData(prev => ({ ...prev, priority }));
+    toast({
+      title: "Classificação sugerida",
+      description: `${getPriorityText(priority)} - ${reasoning}`,
+      duration: 5000,
+    });
   };
 
   const handleCompleteTriagem = () => {
-    setShowChat(false);
-    handleSubmit();
+    if (!currentPatient || !triageData.priority || !triageData.complaints) {
+      toast({
+        title: "Dados incompletos",
+        description: "Por favor, preencha pelo menos a prioridade e as queixas principais.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (hasValidationErrors) {
+      toast({
+        title: "Dados inválidos",
+        description: "Por favor, corrija os valores dos sinais vitais antes de concluir.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    updatePatientStatus(currentPatient.id, 'waiting-admin', { triageData });
+    resetTriageData();
+    setIsDialogOpen(false);
+    
+    toast({
+      title: "Triagem concluída",
+      description: "Paciente encaminhado para o administrativo.",
+    });
   };
 
-  if (showTriageForm && selectedPatient) {
-    const triageData = {
-      priority,
-      vitals: {
-        bloodPressure,
-        heartRate,
-        temperature,
-        oxygenSaturation,
-        respiratoryRate,
-        glasgow,
-        glucose
-      },
-      personalData: {
-        fullName,
-        dateOfBirth,
-        gender
-      },
-      complaints,
-      painScale,
-      symptoms,
-      chronicDiseases,
-      allergies,
-      medications,
-      observations
-    };
+  const handleCloseDialog = () => {
+    if (currentPatient) {
+      updatePatientStatus(currentPatient.id, 'waiting-triage');
+    }
+    setIsDialogOpen(false);
+    resetTriageData();
+  };
 
-    return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">
-                Triagem - {selectedPatient.password}
-              </h1>
-              <p className="text-gray-600">Telefone: {selectedPatient.phone}</p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setShowChat(true)}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Consultar LIA
-              </Button>
-              <Button variant="outline" onClick={() => setShowTriageForm(false)}>
-                Voltar
-              </Button>
-            </div>
-          </div>
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'azul': return 'text-blue-600';
+      case 'verde': return 'text-green-600';
+      case 'amarelo': return 'text-yellow-600';
+      case 'laranja': return 'text-orange-600';
+      case 'vermelho': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  };
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Personal Data Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Dados Pessoais</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="fullName">Nome Completo *</Label>
-                    <Input
-                      id="fullName"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Digite o nome completo"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dateOfBirth">Data de Nascimento *</Label>
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      value={dateOfBirth}
-                      onChange={(e) => setDateOfBirth(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="gender">Sexo *</Label>
-                  <Select value={gender} onValueChange={setGender} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o sexo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="masculino">Masculino</SelectItem>
-                      <SelectItem value="feminino">Feminino</SelectItem>
-                      <SelectItem value="outro">Outro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Clinical Data Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Dados Clínicos</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="complaints">Queixa Principal *</Label>
-                  <Textarea
-                    id="complaints"
-                    value={complaints}
-                    onChange={(e) => setComplaints(e.target.value)}
-                    placeholder="Descreva a queixa principal do paciente"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="symptoms">Sintomas Associados *</Label>
-                  <Textarea
-                    id="symptoms"
-                    value={symptoms}
-                    onChange={(e) => setSymptoms(e.target.value)}
-                    placeholder="Descreva os sintomas associados"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="chronicDiseases">Doenças Crônicas *</Label>
-                  <Textarea
-                    id="chronicDiseases"
-                    value={chronicDiseases}
-                    onChange={(e) => setChronicDiseases(e.target.value)}
-                    placeholder="Liste as doenças crônicas conhecidas"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label>Alergias Conhecidas *</Label>
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <Input
-                        value={allergyInput}
-                        onChange={(e) => {
-                          setAllergyInput(e.target.value);
-                          setShowAllergyDropdown(e.target.value.length > 0);
-                        }}
-                        onFocus={() => setShowAllergyDropdown(allergyInput.length > 0)}
-                        onBlur={() => setTimeout(() => setShowAllergyDropdown(false), 200)}
-                        placeholder="Digite para buscar alergias..."
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (allergyInput.trim()) {
-                              addAllergy(allergyInput.trim());
-                            }
-                          }
-                        }}
-                      />
-                      {showAllergyDropdown && filteredAllergies.length > 0 && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                          {filteredAllergies.map((allergy) => (
-                            <div
-                              key={allergy}
-                              className="p-2 hover:bg-gray-100 cursor-pointer"
-                              onClick={() => addAllergy(allergy)}
-                            >
-                              {allergy}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {allergies.map((allergy) => (
-                        <Badge key={allergy} variant="secondary" className="flex items-center gap-1">
-                          {allergy}
-                          <X className="h-3 w-3 cursor-pointer" onClick={() => removeAllergy(allergy)} />
-                        </Badge>
-                      ))}
-                    </div>
-                    {allergies.length === 0 && (
-                      <p className="text-sm text-red-600">Pelo menos uma alergia deve ser informada</p>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Medicamentos em Uso *</Label>
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <Input
-                        value={medicationInput}
-                        onChange={(e) => {
-                          setMedicationInput(e.target.value);
-                          setShowMedicationDropdown(e.target.value.length > 0);
-                        }}
-                        onFocus={() => setShowMedicationDropdown(medicationInput.length > 0)}
-                        onBlur={() => setTimeout(() => setShowMedicationDropdown(false), 200)}
-                        placeholder="Digite para buscar medicamentos..."
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (medicationInput.trim()) {
-                              addMedication({ name: medicationInput.trim(), dosage: 'Conforme prescrição' });
-                            }
-                          }
-                        }}
-                      />
-                      {showMedicationDropdown && filteredMedications.length > 0 && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                          {filteredMedications.map((med) => (
-                            <div
-                              key={med.name}
-                              className="p-2 hover:bg-gray-100 cursor-pointer"
-                              onClick={() => addMedication(med)}
-                            >
-                              <div className="font-medium">{med.name}</div>
-                              <div className="text-sm text-gray-600">{med.dosage}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {medications.map((med) => (
-                        <Badge key={med.name} variant="secondary" className="flex items-center gap-1">
-                          <div>
-                            <div className="font-medium">{med.name}</div>
-                            <div className="text-xs">{med.dosage}</div>
-                          </div>
-                          <X className="h-3 w-3 cursor-pointer" onClick={() => removeMedication(med.name)} />
-                        </Badge>
-                      ))}
-                    </div>
-                    {medications.length === 0 && (
-                      <p className="text-sm text-red-600">Pelo menos um medicamento deve ser informado</p>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="painScale">Escala de Dor (0-10) *</Label>
-                  <Select value={painScale} onValueChange={setPainScale} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a intensidade da dor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[...Array(11)].map((_, i) => (
-                        <SelectItem key={i} value={i.toString()}>
-                          {i} - {i === 0 ? 'Sem dor' : i <= 3 ? 'Leve' : i <= 6 ? 'Moderada' : i <= 8 ? 'Intensa' : 'Insuportável'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Vital Signs Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Sinais Vitais</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label htmlFor="bloodPressure">Pressão Arterial *</Label>
-                    <Input
-                      id="bloodPressure"
-                      value={bloodPressure}
-                      onChange={(e) => handleBloodPressureChange(e.target.value)}
-                      placeholder="120x80"
-                      className={validateBloodPressure(bloodPressure).isValid ? '' : 'border-red-500 bg-red-50'}
-                      required
-                    />
-                    {!validateBloodPressure(bloodPressure).isValid && validateBloodPressure(bloodPressure).message && (
-                      <div className="text-sm text-red-600 mt-1">
-                        {validateBloodPressure(bloodPressure).message}
-                      </div>
-                    )}
-                  </div>
-
-                  <VitalSignInput
-                    label="Frequência Cardíaca"
-                    value={heartRate}
-                    onChange={setHeartRate}
-                    placeholder="80"
-                    unit="bpm"
-                    validation={validateHeartRate(heartRate)}
-                    size="sm"
-                    required={true}
-                  />
-
-                  <VitalSignInput
-                    label="Temperatura"
-                    value={temperature}
-                    onChange={setTemperature}
-                    placeholder="36.5"
-                    unit="°C"
-                    validation={validateTemperature(temperature)}
-                    size="sm"
-                    required={true}
-                  />
-
-                  <VitalSignInput
-                    label="Saturação O₂"
-                    value={oxygenSaturation}
-                    onChange={setOxygenSaturation}
-                    placeholder="98"
-                    unit="%"
-                    validation={validateOxygenSaturation(oxygenSaturation)}
-                    size="sm"
-                    required={true}
-                  />
-
-                  <VitalSignInput
-                    label="Freq. Respiratória"
-                    value={respiratoryRate}
-                    onChange={setRespiratoryRate}
-                    placeholder="16"
-                    unit="rpm"
-                    validation={validateRespiratoryRate(respiratoryRate)}
-                    size="sm"
-                    required={true}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <VitalSignInput
-                    label="Escala de Glasgow"
-                    value={glasgow}
-                    onChange={setGlasgow}
-                    placeholder="15"
-                    unit="pts"
-                    validation={validateGlasgow(glasgow)}
-                    size="sm"
-                    required={true}
-                  />
-
-                  <VitalSignInput
-                    label="Glicemia"
-                    value={glucose}
-                    onChange={setGlucose}
-                    placeholder="90"
-                    unit="mg/dL"
-                    validation={validateGlucose(glucose)}
-                    size="sm"
-                    required={true}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Classification Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Classificação de Risco</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="priority">Prioridade</Label>
-                  <Select value={priority} onValueChange={setPriority}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a prioridade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="vermelho">🔴 Vermelho - Emergência</SelectItem>
-                      <SelectItem value="laranja">🟠 Laranja - Muito urgente</SelectItem>
-                      <SelectItem value="amarelo">🟡 Amarelo - Urgente</SelectItem>
-                      <SelectItem value="verde">🟢 Verde - Pouco urgente</SelectItem>
-                      <SelectItem value="azul">🔵 Azul - Não urgente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="observations">Observações *</Label>
-                  <Textarea
-                    id="observations"
-                    value={observations}
-                    onChange={(e) => setObservations(e.target.value)}
-                    placeholder="Observações adicionais sobre o paciente"
-                    required
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-end gap-4">
-              <Button type="button" variant="outline" onClick={resetForm}>
-                Limpar Formulário
-              </Button>
-              <Button type="submit" disabled={!isFormComplete()}>
-                Finalizar Triagem
-              </Button>
-            </div>
-          </form>
-
-          {/* Chat Dialog */}
-          <Dialog open={showChat} onOpenChange={setShowChat}>
-            <DialogContent className="max-w-4xl h-[80vh] p-0">
-              <DialogHeader className="p-4 pb-0">
-                <DialogTitle>Assistente LIA - Triagem Manchester</DialogTitle>
-              </DialogHeader>
-              <div className="flex-1 h-full">
-                <TriageChat
-                  triageData={triageData}
-                  onSuggestPriority={handleChatSuggestPriority}
-                  onCompleteTriagem={handleCompleteTriagem}
-                  isDialogOpen={showChat}
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-    );
-  }
+  const getPriorityText = (priority: string) => {
+    switch (priority) {
+      case 'vermelho': return '🔴 Vermelho - Emergência (imediato)';
+      case 'laranja': return '🟠 Laranja - Muito urgente (10 min)';
+      case 'amarelo': return '🟡 Amarelo - Urgente (60 min)';
+      case 'verde': return '🟢 Verde - Pouco urgente (120 min)';
+      case 'azul': return '🔵 Azul - Não urgente (240 min)';
+      default: return priority;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Pacientes Aguardando Triagem</h1>
-        {waitingTriagePatients.length === 0 ? (
-          <p className="text-gray-600">Nenhum paciente aguardando triagem no momento.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full leading-normal">
-              <thead>
-                <tr>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Senha
-                  </th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Telefone
-                  </th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Especialidade
-                  </th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {waitingTriagePatients.map(patient => (
-                  <tr key={patient.id}>
-                    <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                      <p className="text-gray-900 whitespace-no-wrap">{patient.password}</p>
-                    </td>
-                    <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                      <p className="text-gray-900 whitespace-no-wrap">{patient.phone}</p>
-                    </td>
-                    <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                      <Badge className={patient.specialty === 'prioritario' ? 'bg-red-500' : 'bg-blue-500'}>
-                        {patient.specialty}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                      <Button onClick={() => startTriage(patient)}>Iniciar Triagem</Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <Card className="shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white">
+            <div className="flex justify-between items-center">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/')}
+                className="text-white hover:bg-white/20 p-2"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <CardTitle className="text-2xl">🩺 Sistema de Triagem - Protocolo Manchester</CardTitle>
+              <div className="w-10"></div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            <h3 className="text-xl font-semibold mb-4">Pacientes Aguardando Triagem</h3>
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-20">Senha</TableHead>
+                    <TableHead>Especialidade</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead className="w-32">Tempo Aguardando</TableHead>
+                    <TableHead className="w-32">Status SLA</TableHead>
+                    <TableHead className="w-24">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {waitingPatients.map((patient) => {
+                    const timeWaiting = getTimeElapsed(patient, 'generated');
+                    const slaStatus = isOverSLA(patient);
+                    
+                    return (
+                      <TableRow 
+                        key={patient.id}
+                        className={`${
+                          slaStatus.triageSLA ? 'bg-red-50 border-red-200' : 
+                          timeWaiting > 7 ? 'bg-yellow-50 border-yellow-200' : 
+                          'bg-green-50 border-green-200'
+                        }`}
+                      >
+                        <TableCell className="font-bold">{patient.password}</TableCell>
+                        <TableCell className="capitalize">
+                          {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
+                        </TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell className={`font-medium ${
+                          slaStatus.triageSLA ? 'text-red-600' : 
+                          timeWaiting > 7 ? 'text-yellow-600' : 
+                          'text-green-600'
+                        }`}>
+                          {timeWaiting} min
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            slaStatus.triageSLA ? 'bg-red-100 text-red-800' : 
+                            timeWaiting > 7 ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {slaStatus.triageSLA ? 'Atrasado' : timeWaiting > 7 ? 'Atenção' : 'No prazo'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            onClick={() => handleCallPatient(patient.id)}
+                            disabled={!!currentPatient}
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Chamar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {waitingPatients.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        Nenhum paciente aguardando triagem
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Dialog de Triagem */}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          handleCloseDialog();
+        }
+      }}>
+        <DialogContent className="max-w-[98vw] max-h-[98vh] overflow-hidden p-0">
+          <DialogHeader className="p-6 pb-4">
+            <div className="flex justify-between items-center">
+              <DialogTitle className="text-xl">Triagem em Andamento</DialogTitle>
+              <Button variant="ghost" onClick={handleCloseDialog}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          
+          {currentPatient && (
+            <div className="flex h-[calc(98vh-120px)]">
+              {/* Formulário de Triagem - layout melhorado */}
+              <div className="w-2/3 overflow-y-auto p-6 pt-0">
+                <div className="space-y-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="font-bold text-xl">{currentPatient.password}</div>
+                    <div className="text-gray-600 capitalize">
+                      {currentPatient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Tempo na triagem: {getTimeElapsed(currentPatient, 'triageStarted')} min
+                    </div>
+                  </div>
+
+                  {/* Dados Pessoais */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-3">Dados Pessoais</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div className="md:col-span-2">
+                        <Label className="text-sm">Nome Completo *</Label>
+                        <Input
+                          placeholder="Nome completo do paciente"
+                          value={triageData.personalData.fullName}
+                          onChange={(e) => setTriageData({
+                            ...triageData, 
+                            personalData: {...triageData.personalData, fullName: e.target.value}
+                          })}
+                          className="text-sm"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Data de Nascimento *</Label>
+                        <Input
+                          type="date"
+                          value={triageData.personalData.dateOfBirth}
+                          onChange={(e) => setTriageData({
+                            ...triageData, 
+                            personalData: {...triageData.personalData, dateOfBirth: e.target.value}
+                          })}
+                          className="text-sm"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Idade</Label>
+                        <Input
+                          value={calculatedAge > 0 ? `${calculatedAge} anos` : ''}
+                          readOnly
+                          className="bg-gray-100 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-1 gap-3 mt-3">
+                      <div>
+                        <Label className="text-sm">Sexo *</Label>
+                        <Select 
+                          value={triageData.personalData.gender} 
+                          onValueChange={(value) => setTriageData({
+                            ...triageData, 
+                            personalData: {...triageData.personalData, gender: value}
+                          })}
+                          required
+                        >
+                          <SelectTrigger className="text-sm">
+                            <SelectValue placeholder="Selecione o sexo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="masculino">Masculino</SelectItem>
+                            <SelectItem value="feminino">Feminino</SelectItem>
+                            <SelectItem value="outro">Outro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Layout em duas colunas para melhor aproveitamento */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    
+                    {/* Coluna esquerda */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium">Queixas Principais *</Label>
+                        <Textarea
+                          placeholder="Descreva o motivo da consulta..."
+                          value={triageData.complaints}
+                          onChange={(e) => setTriageData({...triageData, complaints: e.target.value})}
+                          rows={3}
+                          className="text-sm"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Sintomas Apresentados *</Label>
+                        <Textarea
+                          placeholder="Febre, náusea, tontura, etc..."
+                          value={triageData.symptoms}
+                          onChange={(e) => setTriageData({...triageData, symptoms: e.target.value})}
+                          rows={3}
+                          className="text-sm"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Doenças Crônicas e Comorbidades *</Label>
+                        <Textarea
+                          placeholder="Diabetes, hipertensão, doença de Crohn, etc..."
+                          value={triageData.chronicDiseases}
+                          onChange={(e) => setTriageData({...triageData, chronicDiseases: e.target.value})}
+                          rows={3}
+                          className="text-sm"
+                          required
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        {/* Alergias com lista suspensa */}
+                        <div>
+                          <Label className="text-sm font-medium">Alergias Conhecidas *</Label>
+                          <div className="space-y-2">
+                            <Select onValueChange={addAllergy}>
+                              <SelectTrigger className="text-sm">
+                                <SelectValue placeholder="Selecione uma alergia" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[200px] overflow-y-auto">
+                                {commonAllergies
+                                  .filter(allergy => !triageData.allergies.includes(allergy))
+                                  .map((allergy) => (
+                                    <SelectItem key={allergy} value={allergy}>
+                                      {allergy}
+                                    </SelectItem>
+                                  ))}
+                                <SelectItem value="Nenhuma alergia conhecida">
+                                  Nenhuma alergia conhecida
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {triageData.allergies.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {triageData.allergies.map((allergy) => (
+                                  <span
+                                    key={allergy}
+                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-800"
+                                  >
+                                    {allergy}
+                                    <button
+                                      onClick={() => removeAllergy(allergy)}
+                                      className="ml-1 text-red-600 hover:text-red-800"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Medicamentos com lista suspensa */}
+                        <div>
+                          <Label className="text-sm font-medium">Medicamentos em Uso *</Label>
+                          <div className="space-y-2">
+                            <Select onValueChange={addMedication}>
+                              <SelectTrigger className="text-sm">
+                                <SelectValue placeholder="Selecione um medicamento" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[200px] overflow-y-auto">
+                                {commonMedications
+                                  .filter(medication => !triageData.medications.includes(medication))
+                                  .map((medication) => (
+                                    <SelectItem key={medication} value={medication}>
+                                      {medication}
+                                    </SelectItem>
+                                  ))}
+                                <SelectItem value="Nenhum medicamento em uso">
+                                  Nenhum medicamento em uso
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {triageData.medications.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {triageData.medications.map((medication) => (
+                                  <span
+                                    key={medication}
+                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800"
+                                  >
+                                    {medication}
+                                    <button
+                                      onClick={() => removeMedication(medication)}
+                                      className="ml-1 text-blue-600 hover:text-blue-800"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Coluna direita */}
+                    <div className="space-y-4">
+                      {/* Sinais Vitais */}
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <h4 className="font-semibold mb-3 text-sm">Sinais Vitais *</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          <VitalSignInput
+                            label="Pressão Arterial *"
+                            value={triageData.vitals.bloodPressure}
+                            onChange={(value) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, bloodPressure: value}
+                            })}
+                            placeholder="120x80"
+                            unit="mmHg"
+                            validation={vitalsValidation.bloodPressure}
+                            size="sm"
+                            required
+                          />
+                          <div>
+                            <Label className="text-xs font-medium">PAM (Calculado)</Label>
+                            <Input
+                              value={calculatedPAM ? `${calculatedPAM} mmHg` : ''}
+                              readOnly
+                              className="bg-gray-100 text-xs h-8"
+                              placeholder="Automático"
+                            />
+                          </div>
+                          <VitalSignInput
+                            label="Frequência Cardíaca *"
+                            value={triageData.vitals.heartRate}
+                            onChange={(value) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, heartRate: value}
+                            })}
+                            placeholder="70"
+                            unit="bpm"
+                            validation={vitalsValidation.heartRate}
+                            size="sm"
+                            required
+                          />
+                          <VitalSignInput
+                            label="Freq. Respiratória *"
+                            value={triageData.vitals.respiratoryRate}
+                            onChange={(value) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, respiratoryRate: value}
+                            })}
+                            placeholder="16"
+                            unit="rpm"
+                            validation={vitalsValidation.respiratoryRate}
+                            size="sm"
+                            required
+                          />
+                          <VitalSignInput
+                            label="Temperatura *"
+                            value={triageData.vitals.temperature}
+                            onChange={(value) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, temperature: value}
+                            })}
+                            placeholder="36.5"
+                            unit="°C"
+                            validation={vitalsValidation.temperature}
+                            size="sm"
+                            required
+                          />
+                          <VitalSignInput
+                            label="Saturação O₂ *"
+                            value={triageData.vitals.oxygenSaturation}
+                            onChange={(value) => setTriageData({
+                              ...triageData, 
+                              vitals: {...triageData.vitals, oxygenSaturation: value}
+                            })}
+                            placeholder="98"
+                            unit="%"
+                            validation={vitalsValidation.oxygenSaturation}
+                            size="sm"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Tríade Clínica */}
+                      <div className="bg-yellow-50 p-4 rounded-lg">
+                        <h4 className="font-semibold mb-3 text-sm">Tríade de Avaliação Clínica *</h4>
+                        <div className="space-y-3">
+                          <div>
+                            <Label className="text-xs font-medium">Escala de Dor (0-10) *</Label>
+                            <Select 
+                              value={triageData.painScale} 
+                              onValueChange={(value) => setTriageData({...triageData, painScale: value})}
+                              required
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Nível de dor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[...Array(11)].map((_, i) => (
+                                  <SelectItem key={i} value={i.toString()}>
+                                    {i} - {i === 0 ? 'Sem dor' : i <= 3 ? 'Leve' : i <= 6 ? 'Moderada' : 'Intensa'}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <VitalSignInput
+                              label="Glasgow *"
+                              value={triageData.vitals.glasgow}
+                              onChange={(value) => setTriageData({
+                                ...triageData, 
+                                vitals: {...triageData.vitals, glasgow: value}
+                              })}
+                              placeholder="15"
+                              unit="pts"
+                              validation={vitalsValidation.glasgow}
+                              size="sm"
+                              required
+                            />
+                            <VitalSignInput
+                              label="Glicemia *"
+                              value={triageData.vitals.glucose}
+                              onChange={(value) => setTriageData({
+                                ...triageData, 
+                                vitals: {...triageData.vitals, glucose: value}
+                              })}
+                              placeholder="90"
+                              unit="mg/dL"
+                              validation={vitalsValidation.glucose}
+                              size="sm"
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Observações *</Label>
+                        <Textarea
+                          placeholder="Informações adicionais relevantes..."
+                          value={triageData.observations}
+                          onChange={(e) => setTriageData({...triageData, observations: e.target.value})}
+                          rows={3}
+                          className="text-sm"
+                          required
+                        />
+                      </div>
+
+                      {/* Campo de classificação */}
+                      <div className="border-t pt-4">
+                        <Label className="text-sm font-medium">Classificação de Risco (Manchester) *</Label>
+                        <Select 
+                          value={triageData.priority} 
+                          onValueChange={(value) => setTriageData({...triageData, priority: value})}
+                          required
+                        >
+                          <SelectTrigger className={`${getPriorityColor(triageData.priority)} font-medium text-sm`}>
+                            <SelectValue placeholder="Classificação automática" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="azul">🔵 Azul - Não urgente (240 min)</SelectItem>
+                            <SelectItem value="verde">🟢 Verde - Pouco urgente (120 min)</SelectItem>
+                            <SelectItem value="amarelo">🟡 Amarelo - Urgente (60 min)</SelectItem>
+                            <SelectItem value="laranja">🟠 Laranja - Muito urgente (10 min)</SelectItem>
+                            <SelectItem value="vermelho">🔴 Vermelho - Emergência (imediato)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {triageData.priority && (
+                          <div className={`text-xs mt-2 font-medium ${getPriorityColor(triageData.priority)}`}>
+                            {getPriorityText(triageData.priority)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-3 pt-4 border-t">
+                    <Button variant="outline" onClick={handleReturnToQueue} size="sm">
+                      Voltar à Fila
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsCancellationModalOpen(true)}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                      size="sm"
+                    >
+                      Cancelar Paciente
+                    </Button>
+                    <Button variant="outline" onClick={handleCloseDialog} size="sm">
+                      Fechar
+                    </Button>
+                    <Button 
+                      onClick={handleCompleteTriagem}
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={hasValidationErrors}
+                      size="sm"
+                    >
+                      Concluir Triagem
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chat da LIA com scroll adicionado */}
+              <div className="w-1/3 border-l border-gray-200 overflow-hidden">
+                <TriageChat 
+                  triageData={triageData} 
+                  onSuggestPriority={handleSuggestPriority}
+                  onCompleteTriagem={handleCompleteTriagem}
+                  isDialogOpen={isDialogOpen}
+                />
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Cancelamento */}
+      <CancellationModal
+        isOpen={isCancellationModalOpen}
+        onClose={() => setIsCancellationModalOpen(false)}
+        onConfirm={handleCancelPatient}
+        patientPassword={currentPatient?.password || ''}
+      />
     </div>
   );
 };
