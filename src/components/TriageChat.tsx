@@ -50,6 +50,8 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
   const [showAnimation, setShowAnimation] = useState(false);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const [initialMessageSent, setInitialMessageSent] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Trigger animation when dialog opens - duração de 5 segundos com delay
@@ -60,17 +62,40 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
         setShowAnimation(true);
       }, 1000);
       
-      // Envia mensagem inicial 2 segundos após abertura
+      // Mostra "Digitando..." após 2 segundos e inicia streaming após 2.5 segundos
       setTimeout(() => {
         if (!initialMessageSent) {
-          const initialMessage: Message = {
-            id: '1',
-            type: 'agent',
-            content: 'Olá! Eu sou Lia. Sua Assistente pessoal de triagem Manchester. Se você tiver alguma dúvida sobre este atendimento é só perguntar?',
-            timestamp: new Date()
-          };
-          setMessages([initialMessage]);
-          setInitialMessageSent(true);
+          setIsLoading(true);
+          
+          // Inicia streaming após 0.5 segundos do "Digitando..."
+          setTimeout(() => {
+            setIsLoading(false);
+            setIsStreaming(true);
+            const fullMessage = 'Olá! Eu sou Lia. Sua Assistente pessoal de triagem Manchester. Se você tiver alguma dúvida sobre este atendimento é só perguntar';
+            
+            // Simula streaming da mensagem
+            let currentIndex = 0;
+            const streamInterval = setInterval(() => {
+              setStreamingText(fullMessage.substring(0, currentIndex + 1));
+              currentIndex++;
+              
+              if (currentIndex >= fullMessage.length) {
+                clearInterval(streamInterval);
+                setIsStreaming(false);
+                
+                // Adiciona a mensagem completa ao estado
+                const initialMessage: Message = {
+                  id: '1',
+                  type: 'agent',
+                  content: fullMessage,
+                  timestamp: new Date()
+                };
+                setMessages([initialMessage]);
+                setStreamingText('');
+                setInitialMessageSent(true);
+              }
+            }, 50); // Velocidade do streaming (50ms por caractere)
+          }, 500);
         }
       }, 2000);
     } else {
@@ -78,6 +103,8 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
       setMessages([]);
       setInitialMessageSent(false);
       setHasAnalyzed(false);
+      setStreamingText('');
+      setIsStreaming(false);
     }
   }, [isDialogOpen]);
 
@@ -111,7 +138,7 @@ const TriageChat: React.FC<TriageChatProps> = ({ triageData, onSuggestPriority, 
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, streamingText]);
 
   const analyzeTriageData = () => {
     if (!areAllFieldsCompleted()) {
@@ -307,7 +334,7 @@ A triagem será finalizada automaticamente com esta classificação.`
   };
 
   const sendMessage = () => {
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading || isStreaming) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -416,12 +443,25 @@ A triagem será finalizada automaticamente com esta classificação.`
                 )}
               </div>
             ))}
-            {isLoading && (
+            
+            {/* Mensagem em streaming */}
+            {isStreaming && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 rounded-lg px-3 py-2 max-w-[80%]">
+                  <div className="flex items-start gap-2">
+                    <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm whitespace-pre-wrap">{streamingText}<span className="animate-pulse">|</span></div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {isLoading && !isStreaming && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 rounded-lg px-3 py-2 max-w-[80%]">
                   <div className="flex items-center gap-2">
                     <Bot className="h-4 w-4" />
-                    <div className="text-sm">LIA está digitando...</div>
+                    <div className="text-sm">Digitando...</div>
                   </div>
                 </div>
               </div>
@@ -436,12 +476,12 @@ A triagem será finalizada automaticamente com esta classificação.`
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={awaitingConfirmation ? 'Digite "sim" para confirmar ou "não" para revisar...' : 'Digite sua dúvida sobre triagem...'}
-              disabled={isLoading}
+              disabled={isLoading || isStreaming}
               className="flex-1"
             />
             <Button 
               onClick={sendMessage} 
-              disabled={!inputValue.trim() || isLoading}
+              disabled={!inputValue.trim() || isLoading || isStreaming}
               size="icon"
             >
               <Send className="h-4 w-4" />
