@@ -19,27 +19,17 @@ const ChartSection: React.FC = () => {
     { name: 'Concluídos', value: getPatientsByStatus('completed').length, fill: '#6B7280' },
   ];
 
-  // Dados para gráfico de pizza - Especialidades
-  const specialtyData = [
+  // Dados para gráfico de pizza - Tipos de Atendimento
+  const attendanceTypeData = [
     { 
-      name: 'Ortopedia', 
-      value: patients.filter(p => p.specialty === 'ortopedia').length,
-      fill: '#3B82F6'
-    },
-    { 
-      name: 'Cirurgia Geral', 
-      value: patients.filter(p => p.specialty === 'cirurgia-geral').length,
+      name: 'Prioritário', 
+      value: patients.filter(p => p.specialty === 'prioritario').length,
       fill: '#EF4444'
     },
     { 
-      name: 'Clínica Médica', 
-      value: patients.filter(p => p.specialty === 'clinica-medica').length,
+      name: 'Não Prioritário', 
+      value: patients.filter(p => p.specialty === 'nao-prioritario').length,
       fill: '#10B981'
-    },
-    { 
-      name: 'Pediatria', 
-      value: patients.filter(p => p.specialty === 'pediatria').length,
-      fill: '#F59E0B'
     },
   ];
 
@@ -120,17 +110,17 @@ const ChartSection: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Gráfico de Especialidades */}
+      {/* Gráfico de Tipos de Atendimento */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">🏥 Por Especialidade</CardTitle>
+          <CardTitle className="text-lg">🏥 Tipos de Atendimento</CardTitle>
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig} className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={specialtyData}
+                  data={attendanceTypeData}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -138,7 +128,7 @@ const ChartSection: React.FC = () => {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {specialtyData.map((entry, index) => (
+                  {attendanceTypeData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>

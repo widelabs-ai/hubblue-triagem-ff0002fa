@@ -30,13 +30,8 @@ const TotemScreen: React.FC = () => {
       return;
     }
 
-    // Map the new types to existing specialties for compatibility
-    const specialtyMap = {
-      'prioritario': 'clinica-medica' as const,
-      'nao-prioritario': 'clinica-medica' as const
-    };
-
-    const password = generatePassword(specialtyMap[selectedType as keyof typeof specialtyMap], 'Não informado');
+    // Now we can use the selectedType directly since it matches our specialty types
+    const password = generatePassword(selectedType as 'prioritario' | 'nao-prioritario', 'Não informado');
     
     setGeneratedPassword(password);
     setShowPasswordModal(true);
