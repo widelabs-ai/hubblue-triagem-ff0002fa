@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ValidationResult } from '@/utils/vitalsValidation';
 
 interface BloodPressureInputProps {
   label: string;
@@ -9,11 +10,7 @@ interface BloodPressureInputProps {
   onChange: (value: string) => void;
   placeholder: string;
   unit: string;
-  validation: {
-    isValid: boolean;
-    message: string;
-    severity: 'normal' | 'warning' | 'critical';
-  };
+  validation: ValidationResult;
   size?: 'sm';
   required?: boolean;
   className?: string;
@@ -50,10 +47,24 @@ const BloodPressureInput: React.FC<BloodPressureInputProps> = ({
 
   const displayValue = value.includes('x') ? value : value;
 
+  const getInputClassName = () => {
+    let baseClass = size === 'sm' ? 'text-xs h-8' : 'text-sm';
+    baseClass += ' pr-12';
+    
+    if (!validation.isValid) {
+      baseClass += ' border-red-500 bg-red-50';
+    } else if (validation.isOutOfRange) {
+      baseClass += ' border-yellow-500 bg-yellow-50';
+    }
+    
+    return baseClass;
+  };
+
   return (
     <div className={className}>
       <Label className={`${size === 'sm' ? 'text-xs' : 'text-sm'} font-medium`}>
         {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
       </Label>
       <div className="relative">
         <Input
@@ -62,23 +73,26 @@ const BloodPressureInput: React.FC<BloodPressureInputProps> = ({
           value={displayValue}
           onChange={handleChange}
           maxLength={7} // 120x80 = 6 characters + x
-          className={`
-            ${size === 'sm' ? 'text-xs h-8' : 'text-sm'}
-            ${!validation.isValid ? 'border-red-500' : ''}
-            pr-12
-          `}
+          className={getInputClassName()}
           required={required}
         />
-        <span className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${
-          size === 'sm' ? 'text-xs' : 'text-sm'
-        } text-gray-500`}>
-          {unit}
-        </span>
+        {value && validation.isValid && (
+          <div className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
+            size === 'sm' ? 'text-xs' : 'text-sm'
+          } text-gray-500 pointer-events-none`}>
+            {unit}
+          </div>
+        )}
       </div>
-      {!validation.isValid && (
-        <p className={`${size === 'sm' ? 'text-xs' : 'text-sm'} text-red-600 mt-1`}>
+      {!validation.isValid && validation.message && (
+        <div className={`${size === 'sm' ? 'text-xs' : 'text-sm'} text-red-600 mt-1`}>
           {validation.message}
-        </p>
+        </div>
+      )}
+      {validation.isValid && validation.isOutOfRange && validation.message && (
+        <div className={`${size === 'sm' ? 'text-xs' : 'text-sm'} text-yellow-600 mt-1`}>
+          ⚠️ {validation.message}
+        </div>
       )}
     </div>
   );
