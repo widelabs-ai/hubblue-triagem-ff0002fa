@@ -2,46 +2,52 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const specialties = [
-  { id: 'ortopedia', name: 'Ortopedia', icon: '🦴' },
-  { id: 'cirurgia-geral', name: 'Cirurgia Geral', icon: '⚕️' },
-  { id: 'clinica-medica', name: 'Clínica Médica', icon: '🩺' },
-  { id: 'pediatria', name: 'Pediatria', icon: '👶' }
+const attendanceTypes = [
+  { id: 'prioritario', name: 'Prioritário', icon: '🚨', description: 'Urgências e emergências' },
+  { id: 'nao-prioritario', name: 'Não Prioritário', icon: '🏥', description: 'Consultas e exames de rotina' }
 ];
 
 const TotemScreen: React.FC = () => {
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string>('');
-  const [phone, setPhone] = useState('');
+  const [selectedType, setSelectedType] = useState<string>('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState('');
   const { generatePassword } = useHospital();
   const navigate = useNavigate();
 
   const handleGeneratePassword = () => {
-    if (!selectedSpecialty) {
+    if (!selectedType) {
       toast({
         title: "Dados incompletos",
-        description: "Por favor, selecione uma especialidade.",
+        description: "Por favor, selecione um tipo de atendimento.",
         variant: "destructive"
       });
       return;
     }
 
-    const password = generatePassword(selectedSpecialty as any, phone || 'Não informado');
+    // Map the new types to existing specialties for compatibility
+    const specialtyMap = {
+      'prioritario': 'clinica-medica' as const,
+      'nao-prioritario': 'clinica-medica' as const
+    };
+
+    const password = generatePassword(specialtyMap[selectedType as keyof typeof specialtyMap], 'Não informado');
     
-    toast({
-      title: "Senha gerada com sucesso!",
-      description: `Sua senha é: ${password}. Aguarde ser chamado para a triagem.`,
-    });
+    setGeneratedPassword(password);
+    setShowPasswordModal(true);
 
     // Reset form
-    setSelectedSpecialty('');
-    setPhone('');
+    setSelectedType('');
+
+    // Auto close modal after 5 seconds
+    setTimeout(() => {
+      setShowPasswordModal(false);
+    }, 5000);
   };
 
   return (
@@ -58,64 +64,79 @@ const TotemScreen: React.FC = () => {
             </Button>
             <div className="flex-1">
               <CardTitle className="text-3xl font-bold">🏥 Totem de Atendimento</CardTitle>
-              <p className="text-blue-100 mt-2">Selecione a especialidade e gere sua senha</p>
+              <p className="text-blue-100 mt-2">Selecione o tipo de atendimento e gere sua senha</p>
             </div>
             <div className="w-10"></div>
           </div>
         </CardHeader>
         <CardContent className="p-8">
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div>
-              <Label className="text-lg font-semibold mb-4 block">Especialidade Médica</Label>
-              <div className="grid grid-cols-2 gap-4">
-                {specialties.map((specialty) => (
+              <Label className="text-xl font-semibold mb-6 block text-center">Tipo de Atendimento</Label>
+              <div className="grid grid-cols-1 gap-6">
+                {attendanceTypes.map((type) => (
                   <Button
-                    key={specialty.id}
-                    variant={selectedSpecialty === specialty.id ? "default" : "outline"}
-                    className={`h-20 text-lg ${
-                      selectedSpecialty === specialty.id 
-                        ? 'bg-blue-600 hover:bg-blue-700' 
-                        : 'hover:bg-blue-50'
+                    key={type.id}
+                    variant={selectedType === type.id ? "default" : "outline"}
+                    className={`h-24 text-lg ${
+                      selectedType === type.id 
+                        ? 'bg-blue-600 hover:bg-blue-700 border-2 border-blue-700' 
+                        : 'hover:bg-blue-50 border-2 border-gray-300'
                     }`}
-                    onClick={() => setSelectedSpecialty(specialty.id)}
+                    onClick={() => setSelectedType(type.id)}
                   >
                     <div className="text-center">
-                      <div className="text-2xl mb-1">{specialty.icon}</div>
-                      <div>{specialty.name}</div>
+                      <div className="text-3xl mb-2">{type.icon}</div>
+                      <div className="font-bold">{type.name}</div>
+                      <div className="text-sm opacity-80 mt-1">{type.description}</div>
                     </div>
                   </Button>
                 ))}
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="phone" className="text-lg font-semibold">
-                Número de Celular (Opcional)
-              </Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="(11) 99999-9999"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="mt-2 h-12 text-lg"
-                maxLength={15}
-              />
-              <p className="text-sm text-gray-600 mt-1">
-                Recomendado para comunicação sobre seu atendimento
-              </p>
-            </div>
-
             <Button
               onClick={handleGeneratePassword}
-              className="w-full h-16 text-xl font-bold bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-              disabled={!selectedSpecialty}
+              className="w-full h-20 text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+              disabled={!selectedType}
             >
               🎫 Gerar Senha de Atendimento
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-12 shadow-2xl max-w-md w-full mx-4 text-center relative">
+            <Button
+              variant="ghost"
+              onClick={() => setShowPasswordModal(false)}
+              className="absolute top-4 right-4 p-2"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+            
+            <div className="text-6xl mb-6">🎫</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Senha Gerada com Sucesso!
+            </h2>
+            <div className="bg-gradient-to-r from-blue-100 to-green-100 rounded-xl p-6 mb-6">
+              <p className="text-lg text-gray-600 mb-2">Sua senha é:</p>
+              <p className="text-5xl font-bold text-blue-600 tracking-wider">
+                {generatedPassword}
+              </p>
+            </div>
+            <p className="text-gray-600">
+              Aguarde ser chamado para o atendimento.
+            </p>
+            <div className="mt-6 text-sm text-gray-500">
+              Esta janela fechará automaticamente em alguns segundos
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
