@@ -30,6 +30,14 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, totalTime, sla }) =>
     'completed': 'Concluído'
   };
 
+  const getGenderDisplay = (gender?: string) => {
+    switch (gender) {
+      case 'masculino': return 'M';
+      case 'feminino': return 'F';
+      default: return 'N/A';
+    }
+  };
+
   return (
     <Card 
       className={`${statusColors[patient.status]} ${
@@ -42,6 +50,9 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, totalTime, sla }) =>
             <div className="font-bold text-lg">{patient.password}</div>
             <div className="text-sm text-gray-600">
               {patient.personalData?.name || 'Nome não coletado'}
+            </div>
+            <div className="text-sm text-gray-600">
+              {patient.personalData?.age ? `${patient.personalData.age} anos` : 'Idade N/A'} • {getGenderDisplay(patient.personalData?.gender)}
             </div>
             <div className="text-sm capitalize">
               {patient.specialty.replace('-', ' ')} - {statusLabels[patient.status]}

@@ -43,6 +43,9 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
           <TableHeader>
             <TableRow>
               <TableHead className="w-20">Senha</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Idade</TableHead>
+              <TableHead>Sexo</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Classificação</TableHead>
@@ -65,6 +68,13 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
                   }`}
                 >
                   <TableCell className="font-bold">{patient.password}</TableCell>
+                  <TableCell>{patient.personalData?.name || 'Não informado'}</TableCell>
+                  <TableCell>{patient.personalData?.age || 'N/A'}</TableCell>
+                  <TableCell className="capitalize">
+                    {patient.personalData?.gender === 'masculino' ? 'M' :
+                     patient.personalData?.gender === 'feminino' ? 'F' :
+                     patient.personalData?.gender || 'N/A'}
+                  </TableCell>
                   <TableCell className="capitalize">
                     {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
                   </TableCell>
@@ -95,7 +105,7 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
             })}
             {activePatients.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                   Nenhum paciente ativo no momento
                 </TableCell>
               </TableRow>
