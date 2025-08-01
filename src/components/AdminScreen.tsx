@@ -57,15 +57,6 @@ const AdminScreen: React.FC = () => {
     });
   };
 
-  const getGenderText = (gender: string) => {
-    switch (gender) {
-      case 'masculino': return 'M';
-      case 'feminino': return 'F';
-      case 'outro': return 'O';
-      default: return '-';
-    }
-  };
-
   const handleReturnToQueue = () => {
     if (currentPatient) {
       updatePatientStatus(currentPatient.id, 'waiting-admin');
@@ -178,9 +169,6 @@ const AdminScreen: React.FC = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-20">Senha</TableHead>
-                    <TableHead>Nome</TableHead>
-                    <TableHead className="w-20">Idade</TableHead>
-                    <TableHead className="w-16">Sexo</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Classificação</TableHead>
                     <TableHead className="w-32">Tempo Aguardando</TableHead>
@@ -205,15 +193,6 @@ const AdminScreen: React.FC = () => {
                         }`}
                       >
                         <TableCell className="font-bold">{patient.password}</TableCell>
-                        <TableCell className="font-medium">
-                          {patient.personalData?.name || 'Nome não coletado'}
-                        </TableCell>
-                        <TableCell>
-                          {patient.personalData?.age || '-'}
-                        </TableCell>
-                        <TableCell>
-                          {getGenderText(patient.personalData?.gender || '')}
-                        </TableCell>
                         <TableCell className="capitalize">
                           {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
                         </TableCell>
@@ -254,7 +233,7 @@ const AdminScreen: React.FC = () => {
                   })}
                   {waitingPatients.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                         Nenhum paciente aguardando atendimento
                       </TableCell>
                     </TableRow>
@@ -293,33 +272,6 @@ const AdminScreen: React.FC = () => {
                 <div className="text-sm text-gray-600">
                   Queixas: {currentPatient.triageData?.complaints}
                 </div>
-                {currentPatient.triageData?.symptoms && (
-                  <div className="text-sm text-gray-600">
-                    Sintomas: {currentPatient.triageData.symptoms}
-                  </div>
-                )}
-                {currentPatient.triageData?.painScale && (
-                  <div className="text-sm text-gray-600">
-                    Escala de dor: {currentPatient.triageData.painScale}/10
-                  </div>
-                )}
-                {currentPatient.triageData?.vitals && (
-                  <div className="text-sm text-gray-600 mt-2">
-                    <strong>Sinais Vitais:</strong>
-                    {currentPatient.triageData.vitals.bloodPressure && (
-                      <span className="ml-2">PA: {currentPatient.triageData.vitals.bloodPressure}</span>
-                    )}
-                    {currentPatient.triageData.vitals.heartRate && (
-                      <span className="ml-2">FC: {currentPatient.triageData.vitals.heartRate} bpm</span>
-                    )}
-                    {currentPatient.triageData.vitals.temperature && (
-                      <span className="ml-2">Temp: {currentPatient.triageData.vitals.temperature}°C</span>
-                    )}
-                    {currentPatient.triageData.vitals.oxygenSaturation && (
-                      <span className="ml-2">SatO₂: {currentPatient.triageData.vitals.oxygenSaturation}%</span>
-                    )}
-                  </div>
-                )}
                 <div className="text-sm">
                   Tempo no administrativo: {getTimeElapsed(currentPatient, 'adminStarted')} min
                 </div>

@@ -35,15 +35,6 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
     }
   };
 
-  const getGenderText = (gender: string) => {
-    switch (gender) {
-      case 'masculino': return 'M';
-      case 'feminino': return 'F';
-      case 'outro': return 'O';
-      default: return '-';
-    }
-  };
-
   return (
     <div>
       <h3 className="text-xl font-semibold mb-4">Pacientes Ativos</h3>
@@ -52,9 +43,6 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
           <TableHeader>
             <TableRow>
               <TableHead className="w-20">Senha</TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead className="w-20">Idade</TableHead>
-              <TableHead className="w-16">Sexo</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Classificação</TableHead>
@@ -77,15 +65,6 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
                   }`}
                 >
                   <TableCell className="font-bold">{patient.password}</TableCell>
-                  <TableCell className="font-medium">
-                    {patient.personalData?.name || 'Nome não coletado'}
-                  </TableCell>
-                  <TableCell>
-                    {patient.personalData?.age || '-'}
-                  </TableCell>
-                  <TableCell>
-                    {getGenderText(patient.personalData?.gender || '')}
-                  </TableCell>
                   <TableCell className="capitalize">
                     {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
                   </TableCell>
@@ -116,7 +95,7 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
             })}
             {activePatients.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                   Nenhum paciente ativo no momento
                 </TableCell>
               </TableRow>
