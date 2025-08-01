@@ -74,7 +74,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
       const typingTimer = setTimeout(() => {
         setIsTyping(false);
         
-        const welcomeText = "Olá! Eu sou Lia. Sua Assistente pessoal de triagem Manchester. Se você tiver alguma dúvida sobre este atendimento é só perguntar";
+        const welcomeText = "Olá! Eu sou Lia. Sua Assistente pessoal de triagem Manchester. Preencha todos os campos do formulário e clique em 'Revisar e Concluir' para que eu possa fazer a análise completa do paciente.";
         let currentText = "";
         let charIndex = 0;
         
@@ -104,15 +104,14 @@ const TriageChat: React.FC<TriageChatProps> = ({
     }
   }, [isDialogOpen, messages.length]);
 
-  // Analisar dados automaticamente quando o formulário estiver completo E ainda não tiver sido analisado
+  // Trigger analysis only when hasPerformedAnalysis changes from false to true
   useEffect(() => {
-    if (isFormComplete && !hasPerformedAnalysis && messages.length > 0) {
+    if (hasPerformedAnalysis && isFormComplete && messages.length > 0) {
       setTimeout(() => {
         analyzeTriageData();
-        onAnalysisPerformed();
       }, 1000);
     }
-  }, [isFormComplete, hasPerformedAnalysis, messages.length]);
+  }, [hasPerformedAnalysis]);
 
   const analyzeTriageData = () => {
     setIsTyping(true);
@@ -165,7 +164,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
         reasoning += ' (ajustado para idade avançada)';
       }
       
-      const analysisMessage = `Análise completa realizada!\n\n**Classificação sugerida:** ${getPriorityText(priority)}\n\n**Justificativa:** ${reasoning}\n\n**Principais achados:**\n• FC: ${heartRate} bpm\n• Temperatura: ${temp}°C\n• Sat O₂: ${saturation}%\n• Dor: ${pain}/10\n• Idade: ${age} anos\n\nRecomendo revisar a classificação antes de finalizar a triagem.`;
+      const analysisMessage = `Análise completa realizada!\n\n**Classificação sugerida:** ${getPriorityText(priority)}\n\n**Justificativa:** ${reasoning}\n\n**Principais achados:**\n• FC: ${heartRate} bpm\n• Temperatura: ${temp}°C\n• Sat O₂: ${saturation}%\n• Dor: ${pain}/10\n• Idade: ${age} anos\n\nAnálise concluída. Você pode finalizar a triagem agora.`;
       
       const newMessage: Message = {
         id: Date.now().toString(),
@@ -176,6 +175,11 @@ const TriageChat: React.FC<TriageChatProps> = ({
       
       setMessages(prev => [...prev, newMessage]);
       onSuggestPriority(priority, reasoning);
+      
+      // Auto-complete triage after analysis
+      setTimeout(() => {
+        onCompleteTriagem();
+      }, 2000);
     }, 2000);
   };
 

@@ -362,14 +362,21 @@ const TriageScreen: React.FC = () => {
       return;
     }
 
-    updatePatientStatus(currentPatient.id, 'waiting-admin', { triageData });
-    resetTriageData();
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Triagem concluída",
-      description: "Paciente encaminhado para o administrativo.",
-    });
+    // Trigger LIA analysis before completing
+    if (isFormComplete() && !hasPerformedAnalysis) {
+      // Set analysis performed flag and let TriageChat handle the analysis
+      setHasPerformedAnalysis(true);
+    } else {
+      // Complete triage if analysis was already done
+      updatePatientStatus(currentPatient.id, 'waiting-admin', { triageData });
+      resetTriageData();
+      setIsDialogOpen(false);
+      
+      toast({
+        title: "Triagem concluída",
+        description: "Paciente encaminhado para o administrativo.",
+      });
+    }
   };
 
   const handleCloseDialog = () => {
@@ -863,7 +870,7 @@ const TriageScreen: React.FC = () => {
                       disabled={hasValidationErrors}
                       size="sm"
                     >
-                      Concluir Triagem
+                      Revisar e Concluir
                     </Button>
                   </div>
                 </div>
@@ -874,7 +881,17 @@ const TriageScreen: React.FC = () => {
                 <TriageChat 
                   triageData={triageData} 
                   onSuggestPriority={handleSuggestPriority}
-                  onCompleteTriagem={handleCompleteTriagem}
+                  onCompleteTriagem={() => {
+                    // Complete triage after analysis is done
+                    updatePatientStatus(currentPatient.id, 'waiting-admin', { triageData });
+                    resetTriageData();
+                    setIsDialogOpen(false);
+                    
+                    toast({
+                      title: "Triagem concluída",
+                      description: "Paciente encaminhado para o administrativo.",
+                    });
+                  }}
                   isDialogOpen={isDialogOpen}
                   isFormComplete={isFormComplete()}
                   hasPerformedAnalysis={hasPerformedAnalysis}
