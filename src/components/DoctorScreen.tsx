@@ -126,13 +126,6 @@ const DoctorScreen: React.FC = () => {
     }
   };
 
-  const getEvaluationType = (patient: any) => {
-    // Se já teve consulta completada antes, é reavaliação
-    // Por simplicidade, consideramos primeira avaliação para todos os novos pacientes
-    // Em um sistema real, isso seria baseado em histórico médico
-    return 'Primeira Avaliação';
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-50 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -160,7 +153,6 @@ const DoctorScreen: React.FC = () => {
                     <TableHead>Paciente</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Classificação</TableHead>
-                    <TableHead>Tipo de Avaliação</TableHead>
                     <TableHead className="w-32">Tempo Aguardando</TableHead>
                     <TableHead className="w-32">Tempo Total</TableHead>
                     <TableHead className="w-32">Status SLA</TableHead>
@@ -172,7 +164,6 @@ const DoctorScreen: React.FC = () => {
                     const timeWaiting = getTimeElapsed(patient, 'adminCompleted');
                     const totalTime = getTimeElapsed(patient, 'generated');
                     const slaStatus = isOverSLA(patient);
-                    const evaluationType = getEvaluationType(patient);
                     
                     return (
                       <TableRow 
@@ -196,15 +187,6 @@ const DoctorScreen: React.FC = () => {
                         <TableCell>
                           <span className={`font-medium ${getPriorityColor(patient.triageData?.priority || '')}`}>
                             {patient.triageData?.priority?.toUpperCase() || 'N/A'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            evaluationType === 'Primeira Avaliação' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-purple-100 text-purple-800'
-                          }`}>
-                            {evaluationType}
                           </span>
                         </TableCell>
                         <TableCell>{timeWaiting} min</TableCell>
@@ -239,7 +221,7 @@ const DoctorScreen: React.FC = () => {
                   })}
                   {waitingPatients.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                         Nenhum paciente aguardando consulta
                       </TableCell>
                     </TableRow>
@@ -251,6 +233,7 @@ const DoctorScreen: React.FC = () => {
         </Card>
       </div>
 
+      {/* Dialog de Consulta */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -401,6 +384,7 @@ const DoctorScreen: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Modal de Cancelamento */}
       <CancellationModal
         isOpen={isCancellationModalOpen}
         onClose={() => setIsCancellationModalOpen(false)}
