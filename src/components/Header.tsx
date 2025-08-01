@@ -3,12 +3,13 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useUser } from '@/contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
 import { User, LogOut, Settings, Home } from 'lucide-react';
+import { logout } from '@/stores/usuario';
+import useUsuarioStore from '@/stores/usuario';
 
 const Header = () => {
-  const { currentUser, logout } = useUser();
+  const {usuario} = useUsuarioStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -30,7 +31,7 @@ const Header = () => {
     administrador: 'bg-red-100 text-red-800'
   };
 
-  if (!currentUser) return null;
+  if (!usuario) return null;
 
   return (
     <header className="bg-white shadow-lg border-b-4 border-blue-600">
@@ -50,9 +51,9 @@ const Header = () => {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">Bem-vindo,</span>
-              <span className="font-medium">{currentUser.name}</span>
-              <Badge className={roleColors[currentUser.role]}>
-                {roleLabels[currentUser.role]}
+              <span className="font-medium">{usuario.nome}</span>
+              <Badge className={roleColors[usuario.perfil?.nome.toLowerCase()]}>
+                {roleLabels[usuario.perfil?.nome.toLowerCase()]}
               </Badge>
             </div>
 
@@ -64,7 +65,7 @@ const Header = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                {currentUser.role === 'administrador' && (
+                {usuario?.perfil?.nome === 'administrador' && (
                   <>
                     <DropdownMenuItem onClick={() => navigate('/usuarios')}>
                       <Settings className="h-4 w-4 mr-2" />

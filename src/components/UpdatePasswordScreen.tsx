@@ -6,15 +6,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LogIn, User } from 'lucide-react';
-import { doLogin } from '@/services/auth';
+import { doAlterarSenha } from '@/services/auth';
 import useUsuarioStore from '@/stores/usuario';
+import { useNavigate } from 'react-router-dom';
 
-const LoginScreen = () => {
-  const [email, setEmail] = useState('');
+const UpdatePasswordScreen = () => {
+  const [passwordCopy, setPasswordCopy] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { setUsuario } = useUsuarioStore();
+  const { token } = useUsuarioStore();
+  const navigate = useNavigate();
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,14 +25,14 @@ const LoginScreen = () => {
     setIsLoading(true);
 
     try {
-      const success = await doLogin({email, senha: password});
+      const success = await doAlterarSenha({token, novaSenha: password});
       if (!success) {
-        setError('Email ou senha incorretos');
+        setError('Erro ao alterar senha');
       } else {
-        setUsuario(success.usuario, success.access_token);
+        navigate('/');
       }
     } catch (err) {
-      setError('Erro ao fazer login');
+      setError('Erro ao alterar senha');
     } finally {
       setIsLoading(false);
     }
@@ -42,31 +45,31 @@ const LoginScreen = () => {
           <div className="flex justify-center mb-2">
             <User className="h-12 w-12" />
           </div>
-          <CardTitle className="text-2xl">Sistema Hospitalar</CardTitle>
-          <p className="text-blue-100">Faça login para continuar</p>
+          <CardTitle className="text-2xl">Bem-vindo!</CardTitle>
+          <p className="text-blue-100">Cadastre uma nova senha</p>
         </CardHeader>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="password">Nova Senha</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="password"
+                type="password"
+                placeholder="Digite sua nova senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="passwordCopy">Repita a senha</Label>
               <Input
-                id="senha"
+                id="passwordCopy"
                 type="password"
-                placeholder="Digite sua senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Confirme sua nova senha"
+                value={passwordCopy}
+                onChange={(e) => setPasswordCopy(e.target.value)}
                 required
               />
             </div>
@@ -80,10 +83,9 @@ const LoginScreen = () => {
             <Button 
               type="submit" 
               className="w-full h-12 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
-              disabled={isLoading}
+              disabled={isLoading || password !== passwordCopy}
             >
-              <LogIn className="mr-2 h-4 w-4" />
-              {isLoading ? 'Entrando...' : 'Entrar'}
+              {isLoading ? 'Entrando...' : 'Cadastrar'}
             </Button>
           </form>
         </CardContent>
@@ -92,4 +94,4 @@ const LoginScreen = () => {
   );
 };
 
-export default LoginScreen;
+export default UpdatePasswordScreen;
