@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -146,14 +145,6 @@ const AdminScreen: React.FC = () => {
     }
   };
 
-  const getGenderDisplay = (gender?: string) => {
-    switch (gender) {
-      case 'masculino': return 'M';
-      case 'feminino': return 'F';
-      default: return 'N/A';
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -178,9 +169,6 @@ const AdminScreen: React.FC = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-20">Senha</TableHead>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Idade</TableHead>
-                    <TableHead>Sexo</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Classificação</TableHead>
                     <TableHead className="w-32">Tempo Aguardando</TableHead>
@@ -205,9 +193,6 @@ const AdminScreen: React.FC = () => {
                         }`}
                       >
                         <TableCell className="font-bold">{patient.password}</TableCell>
-                        <TableCell>{patient.personalData?.name || 'Não informado'}</TableCell>
-                        <TableCell>{patient.personalData?.age || 'N/A'}</TableCell>
-                        <TableCell>{getGenderDisplay(patient.personalData?.gender)}</TableCell>
                         <TableCell className="capitalize">
                           {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
                         </TableCell>
@@ -248,7 +233,7 @@ const AdminScreen: React.FC = () => {
                   })}
                   {waitingPatients.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                         Nenhum paciente aguardando atendimento
                       </TableCell>
                     </TableRow>
@@ -262,7 +247,7 @@ const AdminScreen: React.FC = () => {
 
       {/* Dialog de Coleta de Dados */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex justify-between items-center">
               <DialogTitle className="text-xl">Coleta de Dados Pessoais</DialogTitle>
@@ -284,67 +269,13 @@ const AdminScreen: React.FC = () => {
                     {currentPatient.triageData?.priority?.toUpperCase() || 'N/A'}
                   </span>
                 </div>
+                <div className="text-sm text-gray-600">
+                  Queixas: {currentPatient.triageData?.complaints}
+                </div>
                 <div className="text-sm">
                   Tempo no administrativo: {getTimeElapsed(currentPatient, 'adminStarted')} min
                 </div>
               </div>
-
-              {/* Dados da Triagem */}
-              {currentPatient.triageData && (
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-lg mb-3">Dados da Triagem</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <strong>Queixas:</strong> {currentPatient.triageData.complaints}
-                    </div>
-                    {currentPatient.triageData.symptoms && (
-                      <div>
-                        <strong>Sintomas:</strong> {currentPatient.triageData.symptoms}
-                      </div>
-                    )}
-                    {currentPatient.triageData.painScale && (
-                      <div>
-                        <strong>Escala de Dor:</strong> {currentPatient.triageData.painScale}
-                      </div>
-                    )}
-                    {currentPatient.triageData.vitals?.bloodPressure && (
-                      <div>
-                        <strong>Pressão Arterial:</strong> {currentPatient.triageData.vitals.bloodPressure}
-                      </div>
-                    )}
-                    {currentPatient.triageData.vitals?.heartRate && (
-                      <div>
-                        <strong>Frequência Cardíaca:</strong> {currentPatient.triageData.vitals.heartRate} bpm
-                      </div>
-                    )}
-                    {currentPatient.triageData.vitals?.temperature && (
-                      <div>
-                        <strong>Temperatura:</strong> {currentPatient.triageData.vitals.temperature}°C
-                      </div>
-                    )}
-                    {currentPatient.triageData.vitals?.oxygenSaturation && (
-                      <div>
-                        <strong>Saturação O2:</strong> {currentPatient.triageData.vitals.oxygenSaturation}%
-                      </div>
-                    )}
-                    {currentPatient.triageData.chronicDiseases && (
-                      <div>
-                        <strong>Doenças Crônicas:</strong> {currentPatient.triageData.chronicDiseases}
-                      </div>
-                    )}
-                    {currentPatient.triageData.allergies && (
-                      <div>
-                        <strong>Alergias:</strong> {currentPatient.triageData.allergies}
-                      </div>
-                    )}
-                    {currentPatient.triageData.medications && (
-                      <div>
-                        <strong>Medicamentos:</strong> {currentPatient.triageData.medications}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
