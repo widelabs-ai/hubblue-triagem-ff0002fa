@@ -152,6 +152,8 @@ const TriageScreen: React.FC = () => {
       triageData.complaints.trim() !== '' &&
       triageData.symptoms.trim() !== '' &&
       triageData.painScale !== '' &&
+      triageData.manchesterFlow.trim() !== '' && // Agora obrigatório
+      triageData.suggestedSpecialty !== '' && // Agora obrigatório
       vitals.bloodPressure.trim() !== '' &&
       vitals.heartRate.trim() !== '' &&
       vitals.temperature.trim() !== '' &&
@@ -174,7 +176,7 @@ const TriageScreen: React.FC = () => {
         setSelectedFlow(suggestedFlow.id);
         setTriageData(prev => ({ 
           ...prev, 
-          manchesterFlow: suggestedFlow.id,
+          manchesterFlow: suggestedFlow.name,
           suggestedSpecialty: suggestedFlow.suggestedSpecialty || ''
         }));
         setSelectedSpecialty(suggestedFlow.suggestedSpecialty || '');
@@ -306,7 +308,8 @@ const TriageScreen: React.FC = () => {
   // Função para adicionar fluxo customizado
   const handleAddCustomFlow = () => {
     if (customFlowName.trim()) {
-      setSelectedFlow(`custom_${Date.now()}`);
+      const customFlowId = `custom_${Date.now()}`;
+      setSelectedFlow(customFlowId);
       setTriageData(prev => ({ 
         ...prev, 
         manchesterFlow: customFlowName.trim()
@@ -315,7 +318,7 @@ const TriageScreen: React.FC = () => {
       setShowCustomFlowInput(false);
       toast({
         title: "Fluxo personalizado adicionado",
-        description: `Fluxo "${customFlowName.trim()}" foi adicionado com sucesso.`,
+        description: `Fluxo "${customFlowName.trim()}" foi adicionado e selecionado.`,
       });
     }
   };
@@ -725,100 +728,112 @@ const TriageScreen: React.FC = () => {
                         />
                       </div>
 
-                      {/* Sugestão de Fluxos do Protocolo Manchester */}
-                      {suggestedFlows.length > 0 && (
-                        <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Lightbulb className="h-4 w-4 text-amber-600" />
-                            <Label className="text-sm font-medium text-amber-800">Fluxos Sugeridos (Protocolo Manchester)</Label>
+                      {/* Fluxo do Protocolo Manchester - SEMPRE VISÍVEL */}
+                      <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Lightbulb className="h-4 w-4 text-amber-600" />
+                          <Label className="text-sm font-medium text-amber-800">Fluxo do Protocolo Manchester *</Label>
+                        </div>
+                        
+                        {suggestedFlows.length > 0 && (
+                          <div className="mb-3">
+                            <Label className="text-xs text-amber-700 mb-2 block">Fluxos Sugeridos:</Label>
+                            <Select 
+                              value={selectedFlow} 
+                              onValueChange={(value) => {
+                                setSelectedFlow(value);
+                                const flow = suggestedFlows.find(f => f.id === value);
+                                if (flow) {
+                                  setTriageData(prev => ({ 
+                                    ...prev, 
+                                    manchesterFlow: flow.name,
+                                    suggestedSpecialty: flow.suggestedSpecialty || ''
+                                  }));
+                                  setSelectedSpecialty(flow.suggestedSpecialty || '');
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="text-sm bg-white">
+                                <SelectValue placeholder="Selecione um fluxo sugerido" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {suggestedFlows.map((flow) => (
+                                  <SelectItem key={flow.id} value={flow.id}>
+                                    <div>
+                                      <div className="font-medium">{flow.name}</div>
+                                      <div className="text-xs text-gray-600">{flow.description}</div>
+                                      {flow.suggestedSpecialty && (
+                                        <div className="text-xs text-blue-600 mt-1">
+                                          Sugerido: {getSpecialtyLabel(flow.suggestedSpecialty)}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                          <Select 
-                            value={selectedFlow} 
-                            onValueChange={(value) => {
-                              setSelectedFlow(value);
-                              const flow = suggestedFlows.find(f => f.id === value);
-                              if (flow) {
-                                setTriageData(prev => ({ 
-                                  ...prev, 
-                                  manchesterFlow: flow.id,
-                                  suggestedSpecialty: flow.suggestedSpecialty || ''
-                                }));
-                                setSelectedSpecialty(flow.suggestedSpecialty || '');
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="text-sm bg-white">
-                              <SelectValue placeholder="Selecione um fluxo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {suggestedFlows.map((flow) => (
-                                <SelectItem key={flow.id} value={flow.id}>
-                                  <div>
-                                    <div className="font-medium">{flow.name}</div>
-                                    <div className="text-xs text-gray-600">{flow.description}</div>
-                                    {flow.suggestedSpecialty && (
-                                      <div className="text-xs text-blue-600 mt-1">
-                                        Sugerido: {getSpecialtyLabel(flow.suggestedSpecialty)}
-                                      </div>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          
-                          <div className="mt-3 flex items-center gap-2">
-                            {!showCustomFlowInput ? (
+                        )}
+                        
+                        <div className="mb-3">
+                          <Label className="text-xs text-amber-700 mb-2 block">Fluxo Selecionado:</Label>
+                          <Input
+                            value={triageData.manchesterFlow}
+                            onChange={(e) => setTriageData(prev => ({ 
+                              ...prev, 
+                              manchesterFlow: e.target.value
+                            }))}
+                            placeholder="Fluxo do protocolo Manchester..."
+                            className="text-sm bg-white"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          {!showCustomFlowInput ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowCustomFlowInput(true)}
+                              className="text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
+                            >
+                              + Adicionar Novo Fluxo
+                            </Button>
+                          ) : (
+                            <div className="flex gap-2 w-full">
+                              <Input
+                                placeholder="Nome do novo fluxo..."
+                                value={customFlowName}
+                                onChange={(e) => setCustomFlowName(e.target.value)}
+                                className="flex-1 text-xs h-8"
+                                onKeyPress={(e) => e.key === 'Enter' && handleAddCustomFlow()}
+                              />
+                              <Button
+                                size="sm"
+                                onClick={handleAddCustomFlow}
+                                className="h-8 px-3 text-xs bg-amber-600 hover:bg-amber-700"
+                              >
+                                Adicionar
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setShowCustomFlowInput(true)}
-                                className="text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
+                                onClick={() => {
+                                  setShowCustomFlowInput(false);
+                                  setCustomFlowName('');
+                                }}
+                                className="h-8 px-3 text-xs"
                               >
-                                + Adicionar Novo Fluxo
+                                Cancelar
                               </Button>
-                            ) : (
-                              <div className="flex gap-2 w-full">
-                                <Input
-                                  placeholder="Nome do novo fluxo..."
-                                  value={customFlowName}
-                                  onChange={(e) => setCustomFlowName(e.target.value)}
-                                  className="flex-1 text-xs h-8"
-                                  onKeyPress={(e) => e.key === 'Enter' && handleAddCustomFlow()}
-                                />
-                                <Button
-                                  size="sm"
-                                  onClick={handleAddCustomFlow}
-                                  className="h-8 px-3 text-xs bg-amber-600 hover:bg-amber-700"
-                                >
-                                  Adicionar
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setShowCustomFlowInput(false);
-                                    setCustomFlowName('');
-                                  }}
-                                  className="h-8 px-3 text-xs"
-                                >
-                                  Cancelar
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {selectedFlow && (
-                            <div className="mt-2 text-xs text-amber-700">
-                              Fluxo selecionado baseado nas queixas e sintomas relatados
                             </div>
                           )}
                         </div>
-                      )}
+                      </div>
 
-                      {/* Sugestão de Especialidade */}
+                      {/* Especialidade Sugerida */}
                       <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                        <Label className="text-sm font-medium text-blue-800 mb-2 block">Especialidade Sugerida</Label>
+                        <Label className="text-sm font-medium text-blue-800 mb-2 block">Especialidade Sugerida *</Label>
                         <Select 
                           value={selectedSpecialty} 
                           onValueChange={(value) => {
@@ -828,6 +843,7 @@ const TriageScreen: React.FC = () => {
                               suggestedSpecialty: value
                             }));
                           }}
+                          required
                         >
                           <SelectTrigger className="text-sm bg-white">
                             <SelectValue placeholder="Selecione a especialidade" />
