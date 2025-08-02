@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface Patient {
@@ -5,7 +6,7 @@ export interface Patient {
   password: string;
   specialty: 'prioritario' | 'nao-prioritario';
   phone: string;
-  status: 'waiting-triage' | 'in-triage' | 'waiting-admin' | 'in-admin' | 'waiting-doctor' | 'in-consultation' | 'completed' | 'cancelled';
+  status: 'waiting-triage' | 'in-triage' | 'waiting-admin' | 'in-admin' | 'waiting-doctor' | 'in-consultation' | 'waiting-reevaluation' | 'ready-for-reevaluation' | 'completed' | 'cancelled';
   timestamps: {
     generated: Date;
     triageStarted?: Date;
@@ -14,6 +15,8 @@ export interface Patient {
     adminCompleted?: Date;
     consultationStarted?: Date;
     consultationCompleted?: Date;
+    waitingReevaluationStarted?: Date;
+    readyForReevaluationStarted?: Date;
     cancelled?: Date;
   };
   personalData?: {
@@ -53,6 +56,11 @@ export interface Patient {
       gender?: string;
       dateOfBirth?: string;
     };
+  };
+  reevaluationData?: {
+    reason: string;
+    instructions: string;
+    expectedReturn?: string;
   };
   cancellationData?: {
     reason: string;
@@ -138,6 +146,15 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             break;
           case 'in-consultation':
             updatedPatient.timestamps.consultationStarted = new Date();
+            break;
+          case 'waiting-reevaluation':
+            updatedPatient.timestamps.waitingReevaluationStarted = new Date();
+            if (additionalData?.reevaluationData) {
+              updatedPatient.reevaluationData = additionalData.reevaluationData;
+            }
+            break;
+          case 'ready-for-reevaluation':
+            updatedPatient.timestamps.readyForReevaluationStarted = new Date();
             break;
           case 'completed':
             updatedPatient.timestamps.consultationCompleted = new Date();
