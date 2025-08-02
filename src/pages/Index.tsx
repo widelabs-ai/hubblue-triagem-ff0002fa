@@ -16,7 +16,7 @@ import { useUser } from "@/contexts/UserContext";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { currentUser } = useUser();
 
   const modules = [
     {
@@ -71,7 +71,7 @@ const Index = () => {
   ];
 
   // Add user management for admin users
-  if (user?.role === 'admin') {
+  if (currentUser?.role === 'administrador') {
     modules.unshift({
       title: "Gerenciar Usuários",
       description: "Cadastro e gestão de usuários",
@@ -88,7 +88,7 @@ const Index = () => {
           Sistema de Gestão Hospitalar
         </h1>
         <p className="text-xl text-gray-600">
-          Bem-vindo, {user?.name}! Selecione um módulo para começar.
+          Bem-vindo, {currentUser?.name}! Selecione um módulo para começar.
         </p>
       </div>
 
