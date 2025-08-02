@@ -359,22 +359,28 @@ const TriageScreen: React.FC = () => {
       return;
     }
 
-    // Trigger análise da LIA
+    // Apenas trigger análise da LIA - NÃO conclui a triagem
     if (isFormComplete() && !hasPerformedAnalysis) {
       setHasPerformedAnalysis(true);
       toast({
         title: "Revisão iniciada",
-        description: "A LIA está analisando os dados do paciente.",
+        description: "A LIA está analisando os dados do paciente em formato de ficha clínica.",
       });
-    } else {
+    } else if (hasPerformedAnalysis) {
       toast({
         title: "Revisão já realizada",
         description: "Os dados já foram analisados pela LIA.",
       });
+    } else {
+      toast({
+        title: "Dados incompletos",
+        description: "Preencha todos os campos obrigatórios para revisar.",
+        variant: "destructive"
+      });
     }
   };
 
-  // Função para concluir triagem
+  // Função para concluir triagem (separada da revisão)
   const handleCompleteTriagem = () => {
     if (!currentPatient || !triageData.priority || !triageData.complaints) {
       toast({
@@ -389,6 +395,15 @@ const TriageScreen: React.FC = () => {
       toast({
         title: "Dados inválidos",
         description: "Por favor, corrija os valores dos sinais vitais antes de concluir.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!isFormComplete()) {
+      toast({
+        title: "Dados incompletos",
+        description: "Preencha todos os campos obrigatórios para concluir a triagem.",
         variant: "destructive"
       });
       return;
@@ -899,7 +914,7 @@ const TriageScreen: React.FC = () => {
                     <Button 
                       onClick={handleCompleteTriagem}
                       className="bg-green-600 hover:bg-green-700"
-                      disabled={hasValidationErrors}
+                      disabled={hasValidationErrors || !isFormComplete()}
                       size="sm"
                     >
                       Concluir Triagem
@@ -914,15 +929,8 @@ const TriageScreen: React.FC = () => {
                   triageData={triageData} 
                   onSuggestPriority={handleSuggestPriority}
                   onCompleteTriagem={() => {
-                    // Complete triage after analysis is done
-                    updatePatientStatus(currentPatient.id, 'waiting-admin', { triageData });
-                    resetTriageData();
-                    setIsDialogOpen(false);
-                    
-                    toast({
-                      title: "Triagem concluída",
-                      description: "Paciente encaminhado para o administrativo.",
-                    });
+                    // This callback is not used anymore since we have separate buttons
+                    console.log("Complete triage callback - not used");
                   }}
                   isDialogOpen={isDialogOpen}
                   isFormComplete={isFormComplete()}

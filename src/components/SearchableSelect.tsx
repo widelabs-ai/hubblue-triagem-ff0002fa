@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,7 +35,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const handleAddItem = (item: string) => {
     onAddItem(item);
     setSearchTerm('');
-    setIsOpen(false);
+    setIsOpen(false); // Close dropdown after selection
     inputRef.current?.focus();
   };
 
@@ -50,7 +49,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
       e.preventDefault();
       onAddItem(searchTerm.trim());
       setSearchTerm('');
-      setIsOpen(false);
+      setIsOpen(false); // Close dropdown after adding new item
     } else if (e.key === 'Escape') {
       setIsOpen(false);
       setSearchTerm('');
