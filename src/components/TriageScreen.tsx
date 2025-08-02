@@ -134,7 +134,7 @@ const TriageScreen: React.FC = () => {
   const calculatedPAM = calculatePAM(triageData.vitals.bloodPressure);
   const calculatedAge = calculateAge(triageData.personalData.dateOfBirth);
 
-  // Função para verificar se todos os campos obrigatórios estão preenchidos
+  // Função para verificar se os campos obrigatórios estão preenchidos
   const isFormComplete = () => {
     const { personalData, vitals } = triageData;
     return (
@@ -143,9 +143,6 @@ const TriageScreen: React.FC = () => {
       personalData.gender !== '' &&
       triageData.complaints.trim() !== '' &&
       triageData.symptoms.trim() !== '' &&
-      triageData.chronicDiseases.trim() !== '' &&
-      triageData.allergies.length > 0 &&
-      triageData.medications.length > 0 &&
       triageData.painScale !== '' &&
       vitals.bloodPressure.trim() !== '' &&
       vitals.heartRate.trim() !== '' &&
@@ -153,8 +150,7 @@ const TriageScreen: React.FC = () => {
       vitals.oxygenSaturation.trim() !== '' &&
       vitals.respiratoryRate.trim() !== '' &&
       vitals.glasgow.trim() !== '' &&
-      vitals.glucose.trim() !== '' &&
-      triageData.observations.trim() !== ''
+      vitals.glucose.trim() !== ''
     );
   };
 
@@ -343,6 +339,42 @@ const TriageScreen: React.FC = () => {
     });
   };
 
+  // Função para revisar (apenas triggerar análise da LIA)
+  const handleReview = () => {
+    if (!currentPatient || !triageData.priority || !triageData.complaints) {
+      toast({
+        title: "Dados incompletos",
+        description: "Por favor, preencha pelo menos a prioridade e as queixas principais.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (hasValidationErrors) {
+      toast({
+        title: "Dados inválidos",
+        description: "Por favor, corrija os valores dos sinais vitais antes de revisar.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Trigger análise da LIA
+    if (isFormComplete() && !hasPerformedAnalysis) {
+      setHasPerformedAnalysis(true);
+      toast({
+        title: "Revisão iniciada",
+        description: "A LIA está analisando os dados do paciente.",
+      });
+    } else {
+      toast({
+        title: "Revisão já realizada",
+        description: "Os dados já foram analisados pela LIA.",
+      });
+    }
+  };
+
+  // Função para concluir triagem
   const handleCompleteTriagem = () => {
     if (!currentPatient || !triageData.priority || !triageData.complaints) {
       toast({
@@ -362,21 +394,15 @@ const TriageScreen: React.FC = () => {
       return;
     }
 
-    // Trigger LIA analysis before completing
-    if (isFormComplete() && !hasPerformedAnalysis) {
-      // Set analysis performed flag and let TriageChat handle the analysis
-      setHasPerformedAnalysis(true);
-    } else {
-      // Complete triage if analysis was already done
-      updatePatientStatus(currentPatient.id, 'waiting-admin', { triageData });
-      resetTriageData();
-      setIsDialogOpen(false);
-      
-      toast({
-        title: "Triagem concluída",
-        description: "Paciente encaminhado para o administrativo.",
-      });
-    }
+    // Concluir triagem
+    updatePatientStatus(currentPatient.id, 'waiting-admin', { triageData });
+    resetTriageData();
+    setIsDialogOpen(false);
+    
+    toast({
+      title: "Triagem concluída",
+      description: "Paciente encaminhado para o administrativo.",
+    });
   };
 
   const handleCloseDialog = () => {
@@ -626,21 +652,20 @@ const TriageScreen: React.FC = () => {
                       </div>
 
                       <div>
-                        <Label className="text-sm font-medium">Doenças Crônicas e Comorbidades *</Label>
+                        <Label className="text-sm font-medium">Doenças Crônicas e Comorbidades</Label>
                         <Textarea
-                          placeholder="Diabetes, hipertensão, doença de Crohn, etc..."
+                          placeholder="Diabetes, hipertensão, doença de Crohn, etc... (opcional)"
                           value={triageData.chronicDiseases}
                           onChange={(e) => setTriageData({...triageData, chronicDiseases: e.target.value})}
                           rows={3}
                           className="text-sm"
-                          required
                         />
                       </div>
 
                       <div className="grid grid-cols-1 gap-3">
                         {/* Alergias com lista suspensa */}
                         <SearchableSelect
-                          label="Alergias Conhecidas *"
+                          label="Alergias Conhecidas"
                           options={commonAllergies}
                           selectedItems={triageData.allergies}
                           onAddItem={(allergy) => setTriageData(prev => ({
@@ -651,12 +676,12 @@ const TriageScreen: React.FC = () => {
                             ...prev,
                             allergies: prev.allergies.filter(a => a !== allergy)
                           }))}
-                          placeholder="Digite para buscar ou adicionar alergia..."
+                          placeholder="Digite para buscar ou adicionar alergia... (opcional)"
                         />
 
                         {/* Medicamentos com lista suspensa */}
                         <SearchableSelect
-                          label="Medicamentos em Uso *"
+                          label="Medicamentos em Uso"
                           options={commonMedications}
                           selectedItems={triageData.medications}
                           onAddItem={(medication) => setTriageData(prev => ({
@@ -667,7 +692,7 @@ const TriageScreen: React.FC = () => {
                             ...prev,
                             medications: prev.medications.filter(m => m !== medication)
                           }))}
-                          placeholder="Digite para buscar ou adicionar medicamento..."
+                          placeholder="Digite para buscar ou adicionar medicamento... (opcional)"
                         />
                       </div>
                     </div>
@@ -810,14 +835,13 @@ const TriageScreen: React.FC = () => {
                       </div>
 
                       <div>
-                        <Label className="text-sm font-medium">Observações *</Label>
+                        <Label className="text-sm font-medium">Observações</Label>
                         <Textarea
-                          placeholder="Informações adicionais relevantes..."
+                          placeholder="Informações adicionais relevantes... (opcional)"
                           value={triageData.observations}
                           onChange={(e) => setTriageData({...triageData, observations: e.target.value})}
                           rows={3}
                           className="text-sm"
-                          required
                         />
                       </div>
 
@@ -865,12 +889,20 @@ const TriageScreen: React.FC = () => {
                       Fechar
                     </Button>
                     <Button 
+                      onClick={handleReview}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      disabled={hasValidationErrors}
+                      size="sm"
+                    >
+                      Revisar com LIA
+                    </Button>
+                    <Button 
                       onClick={handleCompleteTriagem}
                       className="bg-green-600 hover:bg-green-700"
                       disabled={hasValidationErrors}
                       size="sm"
                     >
-                      Revisar e Concluir
+                      Concluir Triagem
                     </Button>
                   </div>
                 </div>
