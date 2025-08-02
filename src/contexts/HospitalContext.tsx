@@ -45,6 +45,7 @@ export interface Patient {
     medications?: string;
     observations?: string;
     manchesterFlow?: string;
+    suggestedSpecialty?: string;
     personalData?: {
       fullName?: string;
       name: string;

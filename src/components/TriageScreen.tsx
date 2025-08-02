@@ -27,7 +27,7 @@ import {
   calculatePAM,
   VITAL_RANGES
 } from '@/utils/vitalsValidation';
-import { suggestManchesterFlow, ManchesterFlow } from '@/utils/manchesterFlows';
+import { suggestManchesterFlow, ManchesterFlow, getSpecialtyLabel } from '@/utils/manchesterFlows';
 
 const TriageScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
@@ -36,6 +36,9 @@ const TriageScreen: React.FC = () => {
   const [hasPerformedAnalysis, setHasPerformedAnalysis] = useState(false);
   const [suggestedFlows, setSuggestedFlows] = useState<ManchesterFlow[]>([]);
   const [selectedFlow, setSelectedFlow] = useState<string>('');
+  const [customFlowName, setCustomFlowName] = useState<string>('');
+  const [showCustomFlowInput, setShowCustomFlowInput] = useState(false);
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string>('');
   const [triageData, setTriageData] = useState({
     priority: '',
     vitals: {
@@ -59,7 +62,8 @@ const TriageScreen: React.FC = () => {
     allergies: [] as string[],
     medications: [] as string[],
     observations: '',
-    manchesterFlow: ''
+    manchesterFlow: '',
+    suggestedSpecialty: ''
   });
 
   // Lista de medicamentos comuns com dosagens
@@ -158,7 +162,7 @@ const TriageScreen: React.FC = () => {
     );
   };
 
-  // Função para sugerir fluxos Manchester baseado nas queixas e sintomas
+  // Função para sugerir fluxos Manchester e especialidade baseado nas queixas e sintomas
   useEffect(() => {
     if (triageData.complaints || triageData.symptoms) {
       const flows = suggestManchesterFlow(triageData.complaints, triageData.symptoms);
@@ -166,13 +170,24 @@ const TriageScreen: React.FC = () => {
       
       // Se há uma sugestão clara (primeiro resultado), definir automaticamente
       if (flows.length > 0 && !selectedFlow) {
-        setSelectedFlow(flows[0].id);
-        setTriageData(prev => ({ ...prev, manchesterFlow: flows[0].id }));
+        const suggestedFlow = flows[0];
+        setSelectedFlow(suggestedFlow.id);
+        setTriageData(prev => ({ 
+          ...prev, 
+          manchesterFlow: suggestedFlow.id,
+          suggestedSpecialty: suggestedFlow.suggestedSpecialty || ''
+        }));
+        setSelectedSpecialty(suggestedFlow.suggestedSpecialty || '');
       }
     } else {
       setSuggestedFlows([]);
       setSelectedFlow('');
-      setTriageData(prev => ({ ...prev, manchesterFlow: '' }));
+      setSelectedSpecialty('');
+      setTriageData(prev => ({ 
+        ...prev, 
+        manchesterFlow: '',
+        suggestedSpecialty: ''
+      }));
     }
   }, [triageData.complaints, triageData.symptoms]);
 
@@ -288,6 +303,23 @@ const TriageScreen: React.FC = () => {
     }));
   };
 
+  // Função para adicionar fluxo customizado
+  const handleAddCustomFlow = () => {
+    if (customFlowName.trim()) {
+      setSelectedFlow(`custom_${Date.now()}`);
+      setTriageData(prev => ({ 
+        ...prev, 
+        manchesterFlow: customFlowName.trim()
+      }));
+      setCustomFlowName('');
+      setShowCustomFlowInput(false);
+      toast({
+        title: "Fluxo personalizado adicionado",
+        description: `Fluxo "${customFlowName.trim()}" foi adicionado com sucesso.`,
+      });
+    }
+  };
+
   const handleCallPatient = (patientId: string) => {
     console.log('Chamando paciente:', patientId);
     updatePatientStatus(patientId, 'in-triage');
@@ -348,11 +380,15 @@ const TriageScreen: React.FC = () => {
       allergies: [],
       medications: [],
       observations: '',
-      manchesterFlow: ''
+      manchesterFlow: '',
+      suggestedSpecialty: ''
     });
     setHasPerformedAnalysis(false);
     setSuggestedFlows([]);
     setSelectedFlow('');
+    setSelectedSpecialty('');
+    setCustomFlowName('');
+    setShowCustomFlowInput(false);
   };
 
   const handleSuggestPriority = (priority: string, reasoning: string) => {
@@ -700,7 +736,15 @@ const TriageScreen: React.FC = () => {
                             value={selectedFlow} 
                             onValueChange={(value) => {
                               setSelectedFlow(value);
-                              setTriageData(prev => ({ ...prev, manchesterFlow: value }));
+                              const flow = suggestedFlows.find(f => f.id === value);
+                              if (flow) {
+                                setTriageData(prev => ({ 
+                                  ...prev, 
+                                  manchesterFlow: flow.id,
+                                  suggestedSpecialty: flow.suggestedSpecialty || ''
+                                }));
+                                setSelectedSpecialty(flow.suggestedSpecialty || '');
+                              }
                             }}
                           >
                             <SelectTrigger className="text-sm bg-white">
@@ -712,11 +756,58 @@ const TriageScreen: React.FC = () => {
                                   <div>
                                     <div className="font-medium">{flow.name}</div>
                                     <div className="text-xs text-gray-600">{flow.description}</div>
+                                    {flow.suggestedSpecialty && (
+                                      <div className="text-xs text-blue-600 mt-1">
+                                        Sugerido: {getSpecialtyLabel(flow.suggestedSpecialty)}
+                                      </div>
+                                    )}
                                   </div>
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
+                          
+                          <div className="mt-3 flex items-center gap-2">
+                            {!showCustomFlowInput ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowCustomFlowInput(true)}
+                                className="text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
+                              >
+                                + Adicionar Novo Fluxo
+                              </Button>
+                            ) : (
+                              <div className="flex gap-2 w-full">
+                                <Input
+                                  placeholder="Nome do novo fluxo..."
+                                  value={customFlowName}
+                                  onChange={(e) => setCustomFlowName(e.target.value)}
+                                  className="flex-1 text-xs h-8"
+                                  onKeyPress={(e) => e.key === 'Enter' && handleAddCustomFlow()}
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={handleAddCustomFlow}
+                                  className="h-8 px-3 text-xs bg-amber-600 hover:bg-amber-700"
+                                >
+                                  Adicionar
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setShowCustomFlowInput(false);
+                                    setCustomFlowName('');
+                                  }}
+                                  className="h-8 px-3 text-xs"
+                                >
+                                  Cancelar
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                          
                           {selectedFlow && (
                             <div className="mt-2 text-xs text-amber-700">
                               Fluxo selecionado baseado nas queixas e sintomas relatados
@@ -724,6 +815,36 @@ const TriageScreen: React.FC = () => {
                           )}
                         </div>
                       )}
+
+                      {/* Sugestão de Especialidade */}
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <Label className="text-sm font-medium text-blue-800 mb-2 block">Especialidade Sugerida</Label>
+                        <Select 
+                          value={selectedSpecialty} 
+                          onValueChange={(value) => {
+                            setSelectedSpecialty(value);
+                            setTriageData(prev => ({ 
+                              ...prev, 
+                              suggestedSpecialty: value
+                            }));
+                          }}
+                        >
+                          <SelectTrigger className="text-sm bg-white">
+                            <SelectValue placeholder="Selecione a especialidade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="clinica-medica">🩺 Clínica Médica</SelectItem>
+                            <SelectItem value="cirurgia-geral">🔪 Cirurgia Geral</SelectItem>
+                            <SelectItem value="ortopedia">🦴 Ortopedia</SelectItem>
+                            <SelectItem value="pediatria">👶 Pediatria</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {selectedSpecialty && (
+                          <div className="mt-2 text-xs text-blue-700">
+                            Especialidade: {getSpecialtyLabel(selectedSpecialty)}
+                          </div>
+                        )}
+                      </div>
 
                       <div>
                         <Label className="text-sm font-medium">Doenças Crônicas e Comorbidades</Label>
