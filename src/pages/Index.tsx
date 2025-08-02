@@ -52,6 +52,13 @@ const Index = () => {
       color: "bg-orange-500"
     },
     {
+      title: "Painel de TV",
+      description: "Painel para exibição em TV",
+      icon: <Monitor className="h-8 w-8" />,
+      path: "/painel",
+      color: "bg-cyan-500"
+    },
+    {
       title: "Usuários",
       description: "Gerenciar usuários do sistema",
       icon: <Users className="h-8 w-8" />,
