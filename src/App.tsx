@@ -16,7 +16,6 @@ import AdminScreen from "./components/AdminScreen";
 import DoctorScreen from "./components/DoctorScreen";
 import MonitoringDashboard from "./components/MonitoringDashboard";
 import ReportsScreen from "./components/ReportsScreen";
-import PanelScreen from "./components/PanelScreen";
 import Header from "./components/Header";
 
 const queryClient = new QueryClient();
@@ -30,25 +29,18 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Header />
       <HospitalProvider>
         <Routes>
-          <Route path="/painel" element={<PanelScreen />} />
-          <Route path="/*" element={
-            <>
-              <Header />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/usuarios" element={<UserManagement />} />
-                <Route path="/totem" element={<TotemScreen />} />
-                <Route path="/triagem" element={<TriageScreen />} />
-                <Route path="/administrativo" element={<AdminScreen />} />
-                <Route path="/medico" element={<DoctorScreen />} />
-                <Route path="/monitoramento" element={<MonitoringDashboard />} />
-                <Route path="/relatorios" element={<ReportsScreen />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </>
-          } />
+          <Route path="/" element={<Index />} />
+          <Route path="/usuarios" element={<UserManagement />} />
+          <Route path="/totem" element={<TotemScreen />} />
+          <Route path="/triagem" element={<TriageScreen />} />
+          <Route path="/administrativo" element={<AdminScreen />} />
+          <Route path="/medico" element={<DoctorScreen />} />
+          <Route path="/monitoramento" element={<MonitoringDashboard />} />
+          <Route path="/relatorios" element={<ReportsScreen />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </HospitalProvider>
     </div>
