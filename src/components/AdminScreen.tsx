@@ -215,6 +215,7 @@ const AdminScreen: React.FC = () => {
                     const timeWaiting = getTimeElapsed(patient, 'triageCompleted');
                     const totalTime = getTimeElapsed(patient, 'generated');
                     const slaStatus = isOverSLA(patient);
+                    const triagePersonalData = patient.triageData?.personalData;
                     
                     return (
                       <TableRow 
@@ -227,13 +228,13 @@ const AdminScreen: React.FC = () => {
                       >
                         <TableCell className="font-bold">{patient.password}</TableCell>
                         <TableCell className="max-w-[150px] truncate">
-                          {patient.triageData?.personalData?.name || 'Nome não coletado'}
+                          {triagePersonalData?.name || 'Nome não coletado'}
                         </TableCell>
                         <TableCell>
-                          {patient.triageData?.personalData?.age || 'N/A'}
+                          {triagePersonalData?.age || 'N/A'}
                         </TableCell>
                         <TableCell>
-                          {getGenderDisplay(patient.triageData?.personalData?.gender)}
+                          {getGenderDisplay(triagePersonalData?.gender)}
                         </TableCell>
                         <TableCell className="capitalize">
                           {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
