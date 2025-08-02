@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, X, MessageSquare } from 'lucide-react';
+import { ArrowLeft, X, MessageSquare, Lightbulb } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TriageChat from './TriageChat';
 import CancellationModal from './CancellationModal';
@@ -27,12 +27,15 @@ import {
   calculatePAM,
   VITAL_RANGES
 } from '@/utils/vitalsValidation';
+import { suggestManchesterFlow, ManchesterFlow } from '@/utils/manchesterFlows';
 
 const TriageScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
   const [hasPerformedAnalysis, setHasPerformedAnalysis] = useState(false);
+  const [suggestedFlows, setSuggestedFlows] = useState<ManchesterFlow[]>([]);
+  const [selectedFlow, setSelectedFlow] = useState<string>('');
   const [triageData, setTriageData] = useState({
     priority: '',
     vitals: {
@@ -55,7 +58,8 @@ const TriageScreen: React.FC = () => {
     chronicDiseases: '',
     allergies: [] as string[],
     medications: [] as string[],
-    observations: ''
+    observations: '',
+    manchesterFlow: ''
   });
 
   // Lista de medicamentos comuns com dosagens
@@ -153,6 +157,24 @@ const TriageScreen: React.FC = () => {
       vitals.glucose.trim() !== ''
     );
   };
+
+  // Função para sugerir fluxos Manchester baseado nas queixas e sintomas
+  useEffect(() => {
+    if (triageData.complaints || triageData.symptoms) {
+      const flows = suggestManchesterFlow(triageData.complaints, triageData.symptoms);
+      setSuggestedFlows(flows);
+      
+      // Se há uma sugestão clara (primeiro resultado), definir automaticamente
+      if (flows.length > 0 && !selectedFlow) {
+        setSelectedFlow(flows[0].id);
+        setTriageData(prev => ({ ...prev, manchesterFlow: flows[0].id }));
+      }
+    } else {
+      setSuggestedFlows([]);
+      setSelectedFlow('');
+      setTriageData(prev => ({ ...prev, manchesterFlow: '' }));
+    }
+  }, [triageData.complaints, triageData.symptoms]);
 
   // Função para calcular classificação automática baseada no protocolo Manchester
   const calculateAutomaticPriority = (data: typeof triageData) => {
@@ -325,9 +347,12 @@ const TriageScreen: React.FC = () => {
       chronicDiseases: '',
       allergies: [],
       medications: [],
-      observations: ''
+      observations: '',
+      manchesterFlow: ''
     });
     setHasPerformedAnalysis(false);
+    setSuggestedFlows([]);
+    setSelectedFlow('');
   };
 
   const handleSuggestPriority = (priority: string, reasoning: string) => {
@@ -475,7 +500,6 @@ const TriageScreen: React.FC = () => {
                   <TableRow>
                     <TableHead className="w-20">Senha</TableHead>
                     <TableHead>Especialidade</TableHead>
-                    <TableHead>Telefone</TableHead>
                     <TableHead className="w-32">Tempo Aguardando</TableHead>
                     <TableHead className="w-32">Status SLA</TableHead>
                     <TableHead className="w-24">Ações</TableHead>
@@ -499,7 +523,6 @@ const TriageScreen: React.FC = () => {
                         <TableCell className="capitalize">
                           {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
                         </TableCell>
-                        <TableCell>-</TableCell>
                         <TableCell className={`font-medium ${
                           slaStatus.triageSLA ? 'text-red-600' : 
                           timeWaiting > 7 ? 'text-yellow-600' : 
@@ -531,7 +554,7 @@ const TriageScreen: React.FC = () => {
                   })}
                   {waitingPatients.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                         Nenhum paciente aguardando triagem
                       </TableCell>
                     </TableRow>
@@ -666,6 +689,42 @@ const TriageScreen: React.FC = () => {
                         />
                       </div>
 
+                      {/* Sugestão de Fluxos do Protocolo Manchester */}
+                      {suggestedFlows.length > 0 && (
+                        <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Lightbulb className="h-4 w-4 text-amber-600" />
+                            <Label className="text-sm font-medium text-amber-800">Fluxos Sugeridos (Protocolo Manchester)</Label>
+                          </div>
+                          <Select 
+                            value={selectedFlow} 
+                            onValueChange={(value) => {
+                              setSelectedFlow(value);
+                              setTriageData(prev => ({ ...prev, manchesterFlow: value }));
+                            }}
+                          >
+                            <SelectTrigger className="text-sm bg-white">
+                              <SelectValue placeholder="Selecione um fluxo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {suggestedFlows.map((flow) => (
+                                <SelectItem key={flow.id} value={flow.id}>
+                                  <div>
+                                    <div className="font-medium">{flow.name}</div>
+                                    <div className="text-xs text-gray-600">{flow.description}</div>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {selectedFlow && (
+                            <div className="mt-2 text-xs text-amber-700">
+                              Fluxo selecionado baseado nas queixas e sintomas relatados
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div>
                         <Label className="text-sm font-medium">Doenças Crônicas e Comorbidades</Label>
                         <Textarea
@@ -712,7 +771,7 @@ const TriageScreen: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Coluna direita */}
+                    {/* Coluna direita - sinais vitais e classificação */}
                     <div className="space-y-4">
                       {/* Sinais Vitais */}
                       <div className="bg-blue-50 p-4 rounded-lg">

@@ -44,10 +44,13 @@ export interface Patient {
     allergies?: string;
     medications?: string;
     observations?: string;
+    manchesterFlow?: string;
     personalData?: {
+      fullName?: string;
       name: string;
       age: number;
       gender?: string;
+      dateOfBirth?: string;
     };
   };
   cancellationData?: {
