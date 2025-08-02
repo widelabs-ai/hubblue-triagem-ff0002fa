@@ -44,6 +44,11 @@ export interface Patient {
     allergies?: string;
     medications?: string;
     observations?: string;
+    personalData?: {
+      name: string;
+      age: number;
+      gender?: string;
+    };
   };
   cancellationData?: {
     reason: string;

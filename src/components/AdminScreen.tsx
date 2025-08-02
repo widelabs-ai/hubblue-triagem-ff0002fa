@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +47,25 @@ const AdminScreen: React.FC = () => {
     return timeB - timeA;
   });
   const currentPatient = getPatientsByStatus('in-admin')[0];
+
+  // Pre-populate form when currentPatient changes
+  useEffect(() => {
+    if (currentPatient && isDialogOpen) {
+      const triagePersonalData = currentPatient.triageData?.personalData;
+      setPersonalData({
+        name: triagePersonalData?.name || '',
+        cpf: '',
+        age: triagePersonalData?.age?.toString() || '',
+        gender: triagePersonalData?.gender || '',
+        address: '',
+        emergencyContact: '',
+        emergencyPhone: '',
+        healthInsurance: '',
+        insuranceNumber: '',
+        canBeAttended: true
+      });
+    }
+  }, [currentPatient, isDialogOpen]);
 
   const handleCallPatient = (patientId: string) => {
     updatePatientStatus(patientId, 'in-admin');
@@ -145,6 +164,17 @@ const AdminScreen: React.FC = () => {
     }
   };
 
+  const getGenderDisplay = (gender?: string) => {
+    if (!gender) return 'N/A';
+    switch (gender.toLowerCase()) {
+      case 'masculino': return 'M';
+      case 'feminino': return 'F';
+      case 'outro': return 'O';
+      case 'nao-informar': return 'N/I';
+      default: return gender.charAt(0).toUpperCase();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -164,11 +194,14 @@ const AdminScreen: React.FC = () => {
           </CardHeader>
           <CardContent className="p-6">
             <h3 className="text-xl font-semibold mb-4">Pacientes Aguardando Atendimento</h3>
-            <div className="border rounded-lg">
+            <div className="border rounded-lg overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-20">Senha</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead className="w-16">Idade</TableHead>
+                    <TableHead className="w-16">Gênero</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Classificação</TableHead>
                     <TableHead className="w-32">Tempo Aguardando</TableHead>
@@ -182,6 +215,7 @@ const AdminScreen: React.FC = () => {
                     const timeWaiting = getTimeElapsed(patient, 'triageCompleted');
                     const totalTime = getTimeElapsed(patient, 'generated');
                     const slaStatus = isOverSLA(patient);
+                    const triagePersonalData = patient.triageData?.personalData;
                     
                     return (
                       <TableRow 
@@ -193,6 +227,15 @@ const AdminScreen: React.FC = () => {
                         }`}
                       >
                         <TableCell className="font-bold">{patient.password}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">
+                          {triagePersonalData?.name || 'Nome não coletado'}
+                        </TableCell>
+                        <TableCell>
+                          {triagePersonalData?.age || 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {getGenderDisplay(triagePersonalData?.gender)}
+                        </TableCell>
                         <TableCell className="capitalize">
                           {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
                         </TableCell>
@@ -233,7 +276,7 @@ const AdminScreen: React.FC = () => {
                   })}
                   {waitingPatients.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={10} className="text-center py-8 text-gray-500">
                         Nenhum paciente aguardando atendimento
                       </TableCell>
                     </TableRow>
@@ -309,7 +352,10 @@ const AdminScreen: React.FC = () => {
                     </div>
                     <div>
                       <Label>Gênero</Label>
-                      <Select onValueChange={(value) => setPersonalData({...personalData, gender: value})}>
+                      <Select 
+                        value={personalData.gender}
+                        onValueChange={(value) => setPersonalData({...personalData, gender: value})}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
