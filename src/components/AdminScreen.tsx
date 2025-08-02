@@ -53,7 +53,7 @@ const AdminScreen: React.FC = () => {
     if (currentPatient && isDialogOpen) {
       const triagePersonalData = currentPatient.triageData?.personalData;
       setPersonalData({
-        name: triagePersonalData?.name || '',
+        name: triagePersonalData?.fullName || '',
         cpf: '',
         age: triagePersonalData?.age?.toString() || '',
         gender: triagePersonalData?.gender || '',
@@ -215,7 +215,6 @@ const AdminScreen: React.FC = () => {
                     const timeWaiting = getTimeElapsed(patient, 'triageCompleted');
                     const totalTime = getTimeElapsed(patient, 'generated');
                     const slaStatus = isOverSLA(patient);
-                    const triagePersonalData = patient.triageData?.personalData;
                     
                     return (
                       <TableRow 
@@ -228,13 +227,13 @@ const AdminScreen: React.FC = () => {
                       >
                         <TableCell className="font-bold">{patient.password}</TableCell>
                         <TableCell className="max-w-[150px] truncate">
-                          {triagePersonalData?.name || 'Nome não coletado'}
+                          {patient.triageData?.personalData?.fullName || 'Nome não coletado'}
                         </TableCell>
                         <TableCell>
-                          {triagePersonalData?.age || 'N/A'}
+                          {patient.triageData?.personalData?.age || 'N/A'}
                         </TableCell>
                         <TableCell>
-                          {getGenderDisplay(triagePersonalData?.gender)}
+                          {getGenderDisplay(patient.triageData?.personalData?.gender)}
                         </TableCell>
                         <TableCell className="capitalize">
                           {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
