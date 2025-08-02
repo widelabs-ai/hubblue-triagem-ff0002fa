@@ -10,7 +10,7 @@ interface PatientListProps {
 }
 
 const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isOverSLA }) => {
-  const activePatients = patients.filter(p => p.status !== 'completed');
+  const activePatients = patients.filter(p => !['completed', 'cancelled', 'discharged', 'deceased', 'transferred'].includes(p.status));
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -24,27 +24,65 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case 'waiting-triage': return 'Aguardando Triagem';
-      case 'in-triage': return 'Em Triagem';
-      case 'waiting-admin': return 'Aguardando Admin';
-      case 'in-admin': return 'Em Admin';
-      case 'waiting-doctor': return 'Aguardando Médico';
-      case 'in-consultation': return 'Em Consulta';
-      default: return status;
-    }
+    const statusMap: { [key: string]: string } = {
+      'waiting-triage': 'Aguardando Triagem',
+      'in-triage': 'Em Triagem',
+      'waiting-admin': 'Aguardando Admin',
+      'in-admin': 'Em Admin',
+      'waiting-doctor': 'Aguardando Médico',
+      'in-consultation': 'Em Consulta',
+      'waiting-exam': 'Aguardando Exame',
+      'in-exam': 'Em Exame',
+      'waiting-medication': 'Aguardando Medicação',
+      'in-medication': 'Em Medicação',
+      'waiting-hospitalization': 'Aguardando Internação',
+      'in-hospitalization': 'Internado',
+      'waiting-inter-consultation': 'Aguardando Inter-consulta',
+      'in-inter-consultation': 'Em Inter-consulta',
+      'waiting-transfer': 'Aguardando Transferência',
+      'prescription-issued': 'Prescrição Emitida',
+      'discharged': 'Alta',
+      'transferred': 'Transferido',
+      'deceased': 'Óbito'
+    };
+    return statusMap[status] || status;
+  };
+
+  const getStatusIcon = (status: string) => {
+    const iconMap: { [key: string]: string } = {
+      'waiting-triage': '🏥',
+      'in-triage': '🩺',
+      'waiting-admin': '📋',
+      'in-admin': '📝',
+      'waiting-doctor': '⏳',
+      'in-consultation': '👨‍⚕️',
+      'waiting-exam': '🔬',
+      'in-exam': '🧪',
+      'waiting-medication': '💊',
+      'in-medication': '💉',
+      'waiting-hospitalization': '🏥',
+      'in-hospitalization': '🛏️',
+      'waiting-inter-consultation': '🔄',
+      'in-inter-consultation': '🤝',
+      'waiting-transfer': '🚑',
+      'prescription-issued': '📄',
+      'discharged': '✅',
+      'transferred': '↗️',
+      'deceased': '💔'
+    };
+    return iconMap[status] || '📄';
   };
 
   return (
     <div>
-      <h3 className="text-xl font-semibold mb-4">Pacientes Ativos</h3>
+      <h3 className="text-xl font-semibold mb-4">👥 Pacientes Ativos no Sistema ({activePatients.length})</h3>
       <div className="border rounded-lg max-h-96 overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-20">Senha</TableHead>
               <TableHead>Tipo</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Status Atual</TableHead>
               <TableHead>Classificação</TableHead>
               <TableHead className="w-32">Tempo Total</TableHead>
               <TableHead className="w-32">Status SLA</TableHead>
@@ -60,7 +98,7 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
                   key={patient.id}
                   className={`${
                     sla.totalSLA ? 'bg-red-50 border-red-200' : 
-                    totalTime > 80 ? 'bg-yellow-50 border-yellow-200' : 
+                    totalTime > 180 ? 'bg-yellow-50 border-yellow-200' : 
                     'bg-green-50 border-green-200'
                   }`}
                 >
@@ -68,7 +106,12 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
                   <TableCell className="capitalize">
                     {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
                   </TableCell>
-                  <TableCell>{getStatusText(patient.status)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span>{getStatusIcon(patient.status)}</span>
+                      <span className="text-sm">{getStatusText(patient.status)}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <span className={`font-medium ${getPriorityColor(patient.triageData?.priority || '')}`}>
                       {patient.triageData?.priority?.toUpperCase() || 'N/A'}
@@ -76,7 +119,7 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
                   </TableCell>
                   <TableCell className={`font-medium ${
                     sla.totalSLA ? 'text-red-600' : 
-                    totalTime > 80 ? 'text-yellow-600' : 
+                    totalTime > 180 ? 'text-yellow-600' : 
                     'text-green-600'
                   }`}>
                     {totalTime} min
@@ -84,10 +127,10 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
                   <TableCell>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
                       sla.totalSLA ? 'bg-red-100 text-red-800' : 
-                      totalTime > 80 ? 'bg-yellow-100 text-yellow-800' : 
+                      totalTime > 180 ? 'bg-yellow-100 text-yellow-800' : 
                       'bg-green-100 text-green-800'
                     }`}>
-                      {sla.totalSLA ? 'Atrasado' : totalTime > 80 ? 'Atenção' : 'No prazo'}
+                      {sla.totalSLA ? 'Atrasado' : totalTime > 180 ? 'Atenção' : 'No prazo'}
                     </span>
                   </TableCell>
                 </TableRow>

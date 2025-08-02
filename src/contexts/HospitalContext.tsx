@@ -5,7 +5,10 @@ export interface Patient {
   password: string;
   specialty: 'prioritario' | 'nao-prioritario';
   phone: string;
-  status: 'waiting-triage' | 'in-triage' | 'waiting-admin' | 'in-admin' | 'waiting-doctor' | 'in-consultation' | 'completed' | 'cancelled';
+  status: 'waiting-triage' | 'in-triage' | 'waiting-admin' | 'in-admin' | 'waiting-doctor' | 'in-consultation' | 
+          'waiting-exam' | 'in-exam' | 'waiting-medication' | 'in-medication' | 'waiting-hospitalization' | 
+          'in-hospitalization' | 'waiting-inter-consultation' | 'in-inter-consultation' | 'waiting-transfer' | 
+          'transferred' | 'prescription-issued' | 'discharged' | 'deceased' | 'completed' | 'cancelled';
   timestamps: {
     generated: Date;
     triageStarted?: Date;
@@ -14,6 +17,19 @@ export interface Patient {
     adminCompleted?: Date;
     consultationStarted?: Date;
     consultationCompleted?: Date;
+    examStarted?: Date;
+    examCompleted?: Date;
+    medicationStarted?: Date;
+    medicationCompleted?: Date;
+    hospitalizationStarted?: Date;
+    hospitalizationCompleted?: Date;
+    interConsultationStarted?: Date;
+    interConsultationCompleted?: Date;
+    transferStarted?: Date;
+    transferCompleted?: Date;
+    prescriptionIssued?: Date;
+    discharged?: Date;
+    deceased?: Date;
     cancelled?: Date;
   };
   personalData?: {
@@ -70,6 +86,7 @@ interface HospitalContextType {
   getPatientById: (id: string) => Patient | undefined;
   getTimeElapsed: (patient: Patient, from: keyof Patient['timestamps'], to?: keyof Patient['timestamps']) => number;
   isOverSLA: (patient: Patient) => { triageSLA: boolean; totalSLA: boolean };
+  getPatientFlowStats: () => any;
 }
 
 const HospitalContext = createContext<HospitalContextType | undefined>(undefined);
@@ -139,8 +156,47 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           case 'in-consultation':
             updatedPatient.timestamps.consultationStarted = new Date();
             break;
-          case 'completed':
+          case 'waiting-exam':
             updatedPatient.timestamps.consultationCompleted = new Date();
+            break;
+          case 'in-exam':
+            updatedPatient.timestamps.examStarted = new Date();
+            break;
+          case 'waiting-medication':
+            updatedPatient.timestamps.examCompleted = new Date();
+            break;
+          case 'in-medication':
+            updatedPatient.timestamps.medicationStarted = new Date();
+            break;
+          case 'waiting-hospitalization':
+            updatedPatient.timestamps.medicationCompleted = new Date();
+            break;
+          case 'in-hospitalization':
+            updatedPatient.timestamps.hospitalizationStarted = new Date();
+            break;
+          case 'waiting-inter-consultation':
+            updatedPatient.timestamps.hospitalizationCompleted = new Date();
+            break;
+          case 'in-inter-consultation':
+            updatedPatient.timestamps.interConsultationStarted = new Date();
+            break;
+          case 'waiting-transfer':
+            updatedPatient.timestamps.interConsultationCompleted = new Date();
+            break;
+          case 'transferred':
+            updatedPatient.timestamps.transferCompleted = new Date();
+            break;
+          case 'prescription-issued':
+            updatedPatient.timestamps.prescriptionIssued = new Date();
+            break;
+          case 'discharged':
+            updatedPatient.timestamps.discharged = new Date();
+            break;
+          case 'deceased':
+            updatedPatient.timestamps.deceased = new Date();
+            break;
+          case 'completed':
+            updatedPatient.timestamps.discharged = new Date();
             break;
         }
         
@@ -189,11 +245,42 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const isOverSLA = (patient: Patient) => {
     const triageTime = getTimeElapsed(patient, 'generated', patient.timestamps.triageCompleted ? 'triageCompleted' : undefined);
-    const totalTime = getTimeElapsed(patient, 'generated', patient.timestamps.consultationCompleted ? 'consultationCompleted' : undefined);
+    const totalTime = getTimeElapsed(patient, 'generated', patient.timestamps.discharged ? 'discharged' : undefined);
     
     return {
       triageSLA: triageTime > 10, // 10 minutes SLA for triage
-      totalSLA: totalTime > 110 // 1h50 total SLA
+      totalSLA: totalTime > 240 // 4 hours total SLA
+    };
+  };
+
+  const getPatientFlowStats = () => {
+    const activePatients = patients.filter(p => !['completed', 'cancelled', 'discharged', 'deceased', 'transferred'].includes(p.status));
+    
+    return {
+      totalActive: activePatients.length,
+      totalProcessed: patients.filter(p => ['completed', 'discharged', 'transferred'].includes(p.status)).length,
+      byStatus: {
+        waitingTriage: getPatientsByStatus('waiting-triage').length,
+        inTriage: getPatientsByStatus('in-triage').length,
+        waitingAdmin: getPatientsByStatus('waiting-admin').length,
+        inAdmin: getPatientsByStatus('in-admin').length,
+        waitingDoctor: getPatientsByStatus('waiting-doctor').length,
+        inConsultation: getPatientsByStatus('in-consultation').length,
+        waitingExam: getPatientsByStatus('waiting-exam').length,
+        inExam: getPatientsByStatus('in-exam').length,
+        waitingMedication: getPatientsByStatus('waiting-medication').length,
+        inMedication: getPatientsByStatus('in-medication').length,
+        waitingHospitalization: getPatientsByStatus('waiting-hospitalization').length,
+        inHospitalization: getPatientsByStatus('in-hospitalization').length,
+        waitingInterConsultation: getPatientsByStatus('waiting-inter-consultation').length,
+        inInterConsultation: getPatientsByStatus('in-inter-consultation').length,
+        waitingTransfer: getPatientsByStatus('waiting-transfer').length,
+        prescriptionIssued: getPatientsByStatus('prescription-issued').length,
+        discharged: getPatientsByStatus('discharged').length,
+        deceased: getPatientsByStatus('deceased').length,
+        transferred: getPatientsByStatus('transferred').length,
+        completed: getPatientsByStatus('completed').length,
+      }
     };
   };
 
@@ -207,7 +294,8 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       getPatientsByStatus,
       getPatientById,
       getTimeElapsed,
-      isOverSLA
+      isOverSLA,
+      getPatientFlowStats
     }}>
       {children}
     </HospitalContext.Provider>
