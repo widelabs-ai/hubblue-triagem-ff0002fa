@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Monitor, Clock, User } from 'lucide-react';
 
 const PanelScreen = () => {
-  const { patients, getPatientsByStatus } = useHospital();
+  const { patients } = useHospital();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
