@@ -1,158 +1,121 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
-import { Users, Stethoscope, FileText, Monitor, UserPlus, ClipboardList, BarChart3, AlertTriangle, Info, Clock } from "lucide-react";
+import { 
+  Users, 
+  Activity, 
+  UserCheck, 
+  ClipboardList, 
+  Stethoscope, 
+  BarChart3, 
+  FileText,
+  Monitor
+} from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user } = useUser();
 
-  const menuItems = [
+  const modules = [
     {
-      title: "Totem de Atendimento",
-      description: "Gerar senhas para pacientes",
-      icon: <UserPlus className="h-8 w-8" />,
+      title: "Totem de Senhas",
+      description: "Geração de senhas para pacientes",
+      icon: Activity,
       path: "/totem",
-      color: "bg-blue-500"
+      color: "bg-blue-500 hover:bg-blue-600"
     },
     {
       title: "Triagem",
-      description: "Classificação de risco dos pacientes",
-      icon: <ClipboardList className="h-8 w-8" />,
+      description: "Atendimento de triagem e classificação",
+      icon: UserCheck,
       path: "/triagem",
-      color: "bg-red-500"
+      color: "bg-green-500 hover:bg-green-600"
     },
     {
       title: "Administrativo",
       description: "Coleta de dados pessoais",
-      icon: <FileText className="h-8 w-8" />,
+      icon: ClipboardList,
       path: "/administrativo",
-      color: "bg-purple-500"
+      color: "bg-yellow-500 hover:bg-yellow-600"
     },
     {
       title: "Médico",
-      description: "Consultas médicas",
-      icon: <Stethoscope className="h-8 w-8" />,
+      description: "Atendimento médico",
+      icon: Stethoscope,
       path: "/medico",
-      color: "bg-green-500"
+      color: "bg-purple-500 hover:bg-purple-600"
     },
     {
       title: "Monitoramento",
       description: "Dashboard de acompanhamento",
-      icon: <Monitor className="h-8 w-8" />,
+      icon: BarChart3,
       path: "/monitoramento",
-      color: "bg-indigo-500"
+      color: "bg-indigo-500 hover:bg-indigo-600"
     },
     {
       title: "Relatórios",
-      description: "Visualizar dados de todos os pacientes",
-      icon: <BarChart3 className="h-8 w-8" />,
+      description: "Relatórios e estatísticas",
+      icon: FileText,
       path: "/relatorios",
-      color: "bg-orange-500"
+      color: "bg-gray-500 hover:bg-gray-600"
     },
     {
-      title: "Usuários",
-      description: "Gerenciar usuários do sistema",
-      icon: <Users className="h-8 w-8" />,
-      path: "/usuarios",
-      color: "bg-gray-500"
+      title: "Painel",
+      description: "Painel de TV para exibição de senhas",
+      icon: Monitor,
+      path: "/painel",
+      color: "bg-orange-500 hover:bg-orange-600"
     }
   ];
 
+  // Add user management for admin users
+  if (user?.role === 'admin') {
+    modules.unshift({
+      title: "Gerenciar Usuários",
+      description: "Cadastro e gestão de usuários",
+      icon: Users,
+      path: "/usuarios",
+      color: "bg-red-500 hover:bg-red-600"
+    });
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">🏥 Sistema Hospitalar</h1>
-          <p className="text-xl text-gray-600">Gestão integrada de atendimento</p>
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          Sistema de Gestão Hospitalar
+        </h1>
+        <p className="text-xl text-gray-600">
+          Bem-vindo, {user?.name}! Selecione um módulo para começar.
+        </p>
+      </div>
 
-        {/* Alertas e Avisos */}
-        <div className="mb-8 space-y-4">
-          <Alert className="border-red-200 bg-red-50">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertTitle className="text-red-800">Atenção - Protocolo de Emergência</AlertTitle>
-            <AlertDescription className="text-red-700">
-              Em casos de emergência (vermelho), encaminhe imediatamente para sala de trauma. 
-              Tempo de espera máximo: 0 minutos.
-            </AlertDescription>
-          </Alert>
-
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <Clock className="h-4 w-4 text-yellow-600" />
-            <AlertTitle className="text-yellow-800">Tempos de Atendimento - Protocolo Manchester</AlertTitle>
-            <AlertDescription className="text-yellow-700">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-sm">Vermelho: 0 min</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                  <span className="text-sm">Laranja: 10 min</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <span className="text-sm">Amarelo: 60 min</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm">Verde: 120 min</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm">Azul: 240 min</span>
-                </div>
-              </div>
-            </AlertDescription>
-          </Alert>
-
-          <Alert className="border-blue-200 bg-blue-50">
-            <Info className="h-4 w-4 text-blue-600" />
-            <AlertTitle className="text-blue-800">Orientações Gerais</AlertTitle>
-            <AlertDescription className="text-blue-700">
-              <ul className="list-disc list-inside space-y-1 mt-2">
-                <li>Sempre registre a chegada do paciente no totem antes de iniciar a triagem</li>
-                <li>Complete todos os dados administrativos antes do atendimento médico</li>
-                <li>Monitore constantemente os pacientes em espera através do dashboard</li>
-                <li>Utilize o sistema de relatórios para acompanhar métricas de atendimento</li>
-              </ul>
-            </AlertDescription>
-          </Alert>
-        </div>
-
-        {/* Menu Principal */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {menuItems.map((item, index) => (
-            <Card 
-              key={index} 
-              className="hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105"
-              onClick={() => navigate(item.path)}
-            >
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {modules.map((module) => {
+          const Icon = module.icon;
+          return (
+            <Card key={module.path} className="hover:shadow-lg transition-shadow duration-200">
               <CardHeader className="text-center">
-                <div className={`${item.color} text-white rounded-full p-4 w-16 h-16 mx-auto flex items-center justify-center mb-4`}>
-                  {item.icon}
+                <div className={`w-16 h-16 ${module.color} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                  <Icon className="w-8 h-8 text-white" />
                 </div>
-                <CardTitle className="text-xl">{item.title}</CardTitle>
-                <CardDescription className="text-gray-600">
-                  {item.description}
-                </CardDescription>
+                <CardTitle className="text-xl">{module.title}</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
+                <p className="text-gray-600 mb-4">{module.description}</p>
                 <Button 
+                  onClick={() => navigate(module.path)}
                   className="w-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(item.path);
-                  }}
+                  variant="outline"
                 >
                   Acessar
                 </Button>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );
