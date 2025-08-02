@@ -305,7 +305,7 @@ const TriageScreen: React.FC = () => {
     }));
   };
 
-  // Função para adicionar fluxo customizado
+  // Função para adicionar fluxo customizado - agora substitui o sugerido
   const handleAddCustomFlow = () => {
     if (customFlowName.trim()) {
       const customFlowId = `custom_${Date.now()}`;
@@ -318,7 +318,7 @@ const TriageScreen: React.FC = () => {
       setShowCustomFlowInput(false);
       toast({
         title: "Fluxo personalizado adicionado",
-        description: `Fluxo "${customFlowName.trim()}" foi adicionado e selecionado.`,
+        description: `Fluxo "${customFlowName.trim()}" foi adicionado e selecionado, substituindo a sugestão anterior.`,
       });
     }
   };
@@ -775,19 +775,22 @@ const TriageScreen: React.FC = () => {
                           </div>
                         )}
                         
-                        <div className="mb-3">
-                          <Label className="text-xs text-amber-700 mb-2 block">Fluxo Selecionado:</Label>
-                          <Input
-                            value={triageData.manchesterFlow}
-                            onChange={(e) => setTriageData(prev => ({ 
-                              ...prev, 
-                              manchesterFlow: e.target.value
-                            }))}
-                            placeholder="Fluxo do protocolo Manchester..."
-                            className="text-sm bg-white"
-                            required
-                          />
-                        </div>
+                        {/* Campo de fluxo selecionado - apenas visível quando adicionando novo fluxo */}
+                        {showCustomFlowInput && (
+                          <div className="mb-3">
+                            <Label className="text-xs text-amber-700 mb-2 block">Fluxo Selecionado:</Label>
+                            <Input
+                              value={triageData.manchesterFlow}
+                              onChange={(e) => setTriageData(prev => ({ 
+                                ...prev, 
+                                manchesterFlow: e.target.value
+                              }))}
+                              placeholder="Fluxo do protocolo Manchester..."
+                              className="text-sm bg-white"
+                              required
+                            />
+                          </div>
+                        )}
                         
                         <div className="flex items-center gap-2">
                           {!showCustomFlowInput ? (
