@@ -53,7 +53,7 @@ const AdminScreen: React.FC = () => {
     if (currentPatient && isDialogOpen) {
       const triagePersonalData = currentPatient.triageData?.personalData;
       setPersonalData({
-        name: triagePersonalData?.fullName || '',
+        name: triagePersonalData?.name || '',
         cpf: '',
         age: triagePersonalData?.age?.toString() || '',
         gender: triagePersonalData?.gender || '',
@@ -227,7 +227,7 @@ const AdminScreen: React.FC = () => {
                       >
                         <TableCell className="font-bold">{patient.password}</TableCell>
                         <TableCell className="max-w-[150px] truncate">
-                          {patient.triageData?.personalData?.fullName || 'Nome não coletado'}
+                          {patient.triageData?.personalData?.name || 'Nome não coletado'}
                         </TableCell>
                         <TableCell>
                           {patient.triageData?.personalData?.age || 'N/A'}
