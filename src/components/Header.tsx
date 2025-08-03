@@ -43,7 +43,7 @@ const Header = () => {
               className="flex items-center space-x-2"
             >
               <Home className="h-5 w-5" />
-              <span className="font-semibold">Sistema Hospitalar</span>
+              <span className="font-semibold">LIA - Leitura Inteligente de Avaliação</span>
             </Button>
           </div>
 

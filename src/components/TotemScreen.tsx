@@ -84,7 +84,7 @@ const TotemScreen: React.FC = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex-1">
-              <CardTitle className="text-3xl font-bold">🏥 Totem de Atendimento</CardTitle>
+              <CardTitle className="text-3xl font-bold">🏥 LIA - Totem de Atendimento</CardTitle>
               <p className="text-blue-100 mt-2">Selecione o tipo de atendimento e gere sua senha</p>
             </div>
             <div className="w-10"></div>
