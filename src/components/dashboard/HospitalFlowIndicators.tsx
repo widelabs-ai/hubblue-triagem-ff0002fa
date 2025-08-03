@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useHospital } from '@/contexts/HospitalContext';
 import { getPatientName } from '@/utils/patientUtils';
+import type { Patient } from '@/contexts/HospitalContext';
 
 const HospitalFlowIndicators: React.FC = () => {
   const { getPatientFlowStats, getPatientsByStatus, patients, getTimeElapsed, isOverSLA } = useHospital();
@@ -11,36 +11,170 @@ const HospitalFlowIndicators: React.FC = () => {
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
 
   // Mock data to ensure we always have some data to display
-  const mockPatients = [
-    { id: 'mock1', password: 'PR001', status: 'waiting-triage', specialty: 'prioritario', phone: '(11) 99999-9999', 
-      timestamps: { generated: new Date(Date.now() - 15 * 60000) }, 
+  const mockPatients: Patient[] = [
+    { 
+      id: 'mock1', 
+      password: 'PR001', 
+      status: 'waiting-triage', 
+      specialty: 'prioritario', 
+      phone: '(11) 99999-9999', 
+      timestamps: { 
+        generated: new Date(Date.now() - 15 * 60000),
+        triageStarted: undefined,
+        triageCompleted: undefined,
+        adminStarted: undefined,
+        adminCompleted: undefined,
+        consultationStarted: undefined,
+        consultationCompleted: undefined,
+        examStarted: undefined,
+        examCompleted: undefined,
+        medicationStarted: undefined,
+        medicationCompleted: undefined,
+        hospitalizationStarted: undefined,
+        hospitalizationCompleted: undefined,
+        interConsultationStarted: undefined,
+        interConsultationCompleted: undefined,
+        transferStarted: undefined,
+        transferCompleted: undefined,
+        prescriptionIssued: undefined,
+        discharged: undefined,
+        deceased: undefined,
+        cancelled: undefined
+      }, 
       personalData: { name: 'João Silva', age: 45, gender: 'masculino', cpf: '123.456.789-00', canBeAttended: true },
-      triageData: { priority: 'amarelo' as const, complaints: 'Dor no peito' }
+      triageData: { priority: 'amarelo', complaints: 'Dor no peito' }
     },
-    { id: 'mock2', password: 'NP002', status: 'in-consultation', specialty: 'nao-prioritario', phone: '(11) 88888-8888',
-      timestamps: { generated: new Date(Date.now() - 45 * 60000), consultationStarted: new Date(Date.now() - 20 * 60000) },
+    { 
+      id: 'mock2', 
+      password: 'NP002', 
+      status: 'in-consultation', 
+      specialty: 'nao-prioritario', 
+      phone: '(11) 88888-8888',
+      timestamps: { 
+        generated: new Date(Date.now() - 45 * 60000), 
+        consultationStarted: new Date(Date.now() - 20 * 60000),
+        triageStarted: undefined,
+        triageCompleted: new Date(Date.now() - 40 * 60000),
+        adminStarted: undefined,
+        adminCompleted: new Date(Date.now() - 30 * 60000),
+        examStarted: undefined,
+        examCompleted: undefined,
+        medicationStarted: undefined,
+        medicationCompleted: undefined,
+        hospitalizationStarted: undefined,
+        hospitalizationCompleted: undefined,
+        interConsultationStarted: undefined,
+        interConsultationCompleted: undefined,
+        transferStarted: undefined,
+        transferCompleted: undefined,
+        prescriptionIssued: undefined,
+        discharged: undefined,
+        deceased: undefined,
+        cancelled: undefined
+      },
       personalData: { name: 'Maria Santos', age: 32, gender: 'feminino', cpf: '987.654.321-00', canBeAttended: true },
-      triageData: { priority: 'verde' as const, complaints: 'Febre e dor de cabeça' }
+      triageData: { priority: 'verde', complaints: 'Febre e dor de cabeça' }
     },
-    { id: 'mock3', password: 'PR003', status: 'waiting-exam', specialty: 'prioritario', phone: '(11) 77777-7777',
-      timestamps: { generated: new Date(Date.now() - 90 * 60000), consultationCompleted: new Date(Date.now() - 30 * 60000) },
+    { 
+      id: 'mock3', 
+      password: 'PR003', 
+      status: 'waiting-exam', 
+      specialty: 'prioritario', 
+      phone: '(11) 77777-7777',
+      timestamps: { 
+        generated: new Date(Date.now() - 90 * 60000), 
+        consultationCompleted: new Date(Date.now() - 30 * 60000),
+        triageStarted: undefined,
+        triageCompleted: new Date(Date.now() - 80 * 60000),
+        adminStarted: undefined,
+        adminCompleted: new Date(Date.now() - 70 * 60000),
+        consultationStarted: new Date(Date.now() - 50 * 60000),
+        examStarted: undefined,
+        examCompleted: undefined,
+        medicationStarted: undefined,
+        medicationCompleted: undefined,
+        hospitalizationStarted: undefined,
+        hospitalizationCompleted: undefined,
+        interConsultationStarted: undefined,
+        interConsultationCompleted: undefined,
+        transferStarted: undefined,
+        transferCompleted: undefined,
+        prescriptionIssued: undefined,
+        discharged: undefined,
+        deceased: undefined,
+        cancelled: undefined
+      },
       personalData: { name: 'Carlos Oliveira', age: 67, gender: 'masculino', cpf: '456.789.123-00', canBeAttended: true },
-      triageData: { priority: 'laranja' as const, complaints: 'Dificuldade para respirar' }
+      triageData: { priority: 'laranja', complaints: 'Dificuldade para respirar' }
     },
-    { id: 'mock4', password: 'NP004', status: 'in-medication', specialty: 'nao-prioritario', phone: '(11) 66666-6666',
-      timestamps: { generated: new Date(Date.now() - 60 * 60000), medicationStarted: new Date(Date.now() - 15 * 60000) },
+    { 
+      id: 'mock4', 
+      password: 'NP004', 
+      status: 'in-medication', 
+      specialty: 'nao-prioritario', 
+      phone: '(11) 66666-6666',
+      timestamps: { 
+        generated: new Date(Date.now() - 60 * 60000), 
+        medicationStarted: new Date(Date.now() - 15 * 60000),
+        triageStarted: undefined,
+        triageCompleted: new Date(Date.now() - 55 * 60000),
+        adminStarted: undefined,
+        adminCompleted: new Date(Date.now() - 45 * 60000),
+        consultationStarted: new Date(Date.now() - 35 * 60000),
+        consultationCompleted: new Date(Date.now() - 25 * 60000),
+        examStarted: undefined,
+        examCompleted: undefined,
+        medicationCompleted: undefined,
+        hospitalizationStarted: undefined,
+        hospitalizationCompleted: undefined,
+        interConsultationStarted: undefined,
+        interConsultationCompleted: undefined,
+        transferStarted: undefined,
+        transferCompleted: undefined,
+        prescriptionIssued: undefined,
+        discharged: undefined,
+        deceased: undefined,
+        cancelled: undefined
+      },
       personalData: { name: 'Ana Costa', age: 28, gender: 'feminino', cpf: '654.321.987-00', canBeAttended: true },
-      triageData: { priority: 'azul' as const, complaints: 'Dor nas costas' }
+      triageData: { priority: 'azul', complaints: 'Dor nas costas' }
     },
-    { id: 'mock5', password: 'PR005', status: 'discharged', specialty: 'prioritario', phone: '(11) 55555-5555',
-      timestamps: { generated: new Date(Date.now() - 120 * 60000), discharged: new Date(Date.now() - 10 * 60000) },
+    { 
+      id: 'mock5', 
+      password: 'PR005', 
+      status: 'discharged', 
+      specialty: 'prioritario', 
+      phone: '(11) 55555-5555',
+      timestamps: { 
+        generated: new Date(Date.now() - 120 * 60000), 
+        discharged: new Date(Date.now() - 10 * 60000),
+        triageStarted: undefined,
+        triageCompleted: new Date(Date.now() - 110 * 60000),
+        adminStarted: undefined,
+        adminCompleted: new Date(Date.now() - 100 * 60000),
+        consultationStarted: new Date(Date.now() - 80 * 60000),
+        consultationCompleted: new Date(Date.now() - 60 * 60000),
+        examStarted: undefined,
+        examCompleted: undefined,
+        medicationStarted: undefined,
+        medicationCompleted: undefined,
+        hospitalizationStarted: undefined,
+        hospitalizationCompleted: undefined,
+        interConsultationStarted: undefined,
+        interConsultationCompleted: undefined,
+        transferStarted: undefined,
+        transferCompleted: undefined,
+        prescriptionIssued: undefined,
+        deceased: undefined,
+        cancelled: undefined
+      },
       personalData: { name: 'Roberto Lima', age: 55, gender: 'masculino', cpf: '321.987.654-00', canBeAttended: true },
-      triageData: { priority: 'verde' as const, complaints: 'Check-up de rotina' }
+      triageData: { priority: 'verde', complaints: 'Check-up de rotina' }
     }
   ];
 
   // Combine real and mock data
-  const allPatients = [...patients, ...mockPatients];
+  const allPatients: Patient[] = [...patients, ...mockPatients];
 
   const indicators = [
     { key: 'waitingTriage', label: 'Aguard. Triagem', icon: '🏥', color: 'bg-yellow-50 border-yellow-200 text-yellow-600', slaMinutes: 10 },
@@ -62,7 +196,6 @@ const HospitalFlowIndicators: React.FC = () => {
     { key: 'prescriptionIssued', label: 'Prescrição Emitida', icon: '📄', color: 'bg-slate-50 border-slate-200 text-slate-600', slaMinutes: 0 },
   ];
 
-  // Removed 'completed' from finalOutcomes as requested
   const finalOutcomes = [
     { key: 'discharged', label: 'Alta', icon: '✅', color: 'bg-green-50 border-green-200 text-green-600' },
     { key: 'transferred', label: 'Transferido', icon: '↗️', color: 'bg-blue-50 border-blue-200 text-blue-600' },
@@ -85,7 +218,7 @@ const HospitalFlowIndicators: React.FC = () => {
     });
   };
 
-  const getReadyForReassessmentPatients = () => {
+  const getReadyForReassessmentPatients = (): Patient[] => {
     return allPatients.filter(p => {
       return p.timestamps.examCompleted || 
              p.timestamps.medicationCompleted || 
@@ -93,14 +226,14 @@ const HospitalFlowIndicators: React.FC = () => {
     });
   };
 
-  const getPatientsInStage = (statusKey: string) => {
+  const getPatientsInStage = (statusKey: string): Patient[] => {
     if (statusKey === 'readyForReassessment') {
       return getReadyForReassessmentPatients();
     }
     return allPatients.filter(p => p.status === statusKey);
   };
 
-  const getPatientTimeInStage = (patient: any) => {
+  const getPatientTimeInStage = (patient: Patient) => {
     return getTimeElapsed(patient, 'generated');
   };
 
@@ -155,7 +288,7 @@ const HospitalFlowIndicators: React.FC = () => {
                   <div className="space-y-4">
                     {count > 0 ? (
                       <div className="grid gap-3">
-                        {getPatientsInStage(indicator.key).map((patient: any) => {
+                        {getPatientsInStage(indicator.key).map((patient: Patient) => {
                           const timeElapsed = getPatientTimeInStage(patient);
                           const isOverSLA = timeElapsed > indicator.slaMinutes;
                           
@@ -210,7 +343,7 @@ const HospitalFlowIndicators: React.FC = () => {
           })}
         </div>
 
-        {/* Desfechos Finais - Removed 'completed' option */}
+        {/* Desfechos Finais */}
         <div>
           <h4 className="text-lg font-semibold mb-3 text-gray-700">📊 Desfechos Finais</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -238,7 +371,7 @@ const HospitalFlowIndicators: React.FC = () => {
                     <div className="space-y-4">
                       {count > 0 ? (
                         <div className="grid gap-3">
-                          {getPatientsInStage(outcome.key).map((patient: any) => (
+                          {getPatientsInStage(outcome.key).map((patient: Patient) => (
                             <Card key={patient.id} className="border-gray-200">
                               <CardContent className="p-4">
                                 <div className="flex justify-between items-center">
