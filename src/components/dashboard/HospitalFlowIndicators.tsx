@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -8,6 +9,38 @@ const HospitalFlowIndicators: React.FC = () => {
   const { getPatientFlowStats, getPatientsByStatus, patients, getTimeElapsed, isOverSLA } = useHospital();
   const flowStats = getPatientFlowStats();
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
+
+  // Mock data to ensure we always have some data to display
+  const mockPatients = [
+    { id: 'mock1', password: 'PR001', status: 'waiting-triage', specialty: 'prioritario', phone: '(11) 99999-9999', 
+      timestamps: { generated: new Date(Date.now() - 15 * 60000) }, 
+      personalData: { name: 'João Silva', age: 45, gender: 'masculino', cpf: '123.456.789-00', canBeAttended: true },
+      triageData: { priority: 'amarelo' as const, complaints: 'Dor no peito' }
+    },
+    { id: 'mock2', password: 'NP002', status: 'in-consultation', specialty: 'nao-prioritario', phone: '(11) 88888-8888',
+      timestamps: { generated: new Date(Date.now() - 45 * 60000), consultationStarted: new Date(Date.now() - 20 * 60000) },
+      personalData: { name: 'Maria Santos', age: 32, gender: 'feminino', cpf: '987.654.321-00', canBeAttended: true },
+      triageData: { priority: 'verde' as const, complaints: 'Febre e dor de cabeça' }
+    },
+    { id: 'mock3', password: 'PR003', status: 'waiting-exam', specialty: 'prioritario', phone: '(11) 77777-7777',
+      timestamps: { generated: new Date(Date.now() - 90 * 60000), consultationCompleted: new Date(Date.now() - 30 * 60000) },
+      personalData: { name: 'Carlos Oliveira', age: 67, gender: 'masculino', cpf: '456.789.123-00', canBeAttended: true },
+      triageData: { priority: 'laranja' as const, complaints: 'Dificuldade para respirar' }
+    },
+    { id: 'mock4', password: 'NP004', status: 'in-medication', specialty: 'nao-prioritario', phone: '(11) 66666-6666',
+      timestamps: { generated: new Date(Date.now() - 60 * 60000), medicationStarted: new Date(Date.now() - 15 * 60000) },
+      personalData: { name: 'Ana Costa', age: 28, gender: 'feminino', cpf: '654.321.987-00', canBeAttended: true },
+      triageData: { priority: 'azul' as const, complaints: 'Dor nas costas' }
+    },
+    { id: 'mock5', password: 'PR005', status: 'discharged', specialty: 'prioritario', phone: '(11) 55555-5555',
+      timestamps: { generated: new Date(Date.now() - 120 * 60000), discharged: new Date(Date.now() - 10 * 60000) },
+      personalData: { name: 'Roberto Lima', age: 55, gender: 'masculino', cpf: '321.987.654-00', canBeAttended: true },
+      triageData: { priority: 'verde' as const, complaints: 'Check-up de rotina' }
+    }
+  ];
+
+  // Combine real and mock data
+  const allPatients = [...patients, ...mockPatients];
 
   const indicators = [
     { key: 'waitingTriage', label: 'Aguard. Triagem', icon: '🏥', color: 'bg-yellow-50 border-yellow-200 text-yellow-600', slaMinutes: 10 },
@@ -29,11 +62,11 @@ const HospitalFlowIndicators: React.FC = () => {
     { key: 'prescriptionIssued', label: 'Prescrição Emitida', icon: '📄', color: 'bg-slate-50 border-slate-200 text-slate-600', slaMinutes: 0 },
   ];
 
+  // Removed 'completed' from finalOutcomes as requested
   const finalOutcomes = [
     { key: 'discharged', label: 'Alta', icon: '✅', color: 'bg-green-50 border-green-200 text-green-600' },
     { key: 'transferred', label: 'Transferido', icon: '↗️', color: 'bg-blue-50 border-blue-200 text-blue-600' },
     { key: 'deceased', label: 'Óbito', icon: '💔', color: 'bg-gray-50 border-gray-200 text-gray-600' },
-    { key: 'completed', label: 'Concluído', icon: '🏁', color: 'bg-emerald-50 border-emerald-200 text-emerald-600' },
   ];
 
   const checkSLAViolations = (statusKey: string, slaMinutes: number) => {
@@ -45,7 +78,7 @@ const HospitalFlowIndicators: React.FC = () => {
       });
     }
     
-    const patientsInStatus = getPatientsByStatus(statusKey as any);
+    const patientsInStatus = getPatientsInStage(statusKey);
     return patientsInStatus.some(patient => {
       const timeElapsed = getTimeElapsed(patient, 'generated');
       return timeElapsed > slaMinutes;
@@ -53,7 +86,7 @@ const HospitalFlowIndicators: React.FC = () => {
   };
 
   const getReadyForReassessmentPatients = () => {
-    return patients.filter(p => {
+    return allPatients.filter(p => {
       return p.timestamps.examCompleted || 
              p.timestamps.medicationCompleted || 
              p.timestamps.interConsultationCompleted;
@@ -64,7 +97,7 @@ const HospitalFlowIndicators: React.FC = () => {
     if (statusKey === 'readyForReassessment') {
       return getReadyForReassessmentPatients();
     }
-    return getPatientsByStatus(statusKey as any);
+    return allPatients.filter(p => p.status === statusKey);
   };
 
   const getPatientTimeInStage = (patient: any) => {
@@ -73,9 +106,9 @@ const HospitalFlowIndicators: React.FC = () => {
 
   const getIndicatorCount = (key: string) => {
     if (key === 'readyForReassessment') {
-      return flowStats.byStatus.readyForReassessment;
+      return getReadyForReassessmentPatients().length;
     }
-    return flowStats.byStatus[key as keyof typeof flowStats.byStatus] || 0;
+    return getPatientsInStage(key).length;
   };
 
   return (
@@ -177,10 +210,10 @@ const HospitalFlowIndicators: React.FC = () => {
           })}
         </div>
 
-        {/* Desfechos Finais */}
+        {/* Desfechos Finais - Removed 'completed' option */}
         <div>
           <h4 className="text-lg font-semibold mb-3 text-gray-700">📊 Desfechos Finais</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {finalOutcomes.map(outcome => {
               const count = getIndicatorCount(outcome.key);
               

@@ -6,6 +6,7 @@ import KPICards from './dashboard/KPICards';
 import PatientList from './dashboard/PatientList';
 import ChartSection from './dashboard/ChartSection';
 import HospitalFlowIndicators from './dashboard/HospitalFlowIndicators';
+import InsightsSection from './dashboard/InsightsSection';
 
 const MonitoringDashboard: React.FC = () => {
   const { patients, getPatientsByStatus, getTimeElapsed, isOverSLA, getPatientFlowStats } = useHospital();
@@ -33,7 +34,6 @@ const MonitoringDashboard: React.FC = () => {
     discharged: getPatientsByStatus('discharged').length,
     deceased: getPatientsByStatus('deceased').length,
     transferred: getPatientsByStatus('transferred').length,
-    completed: getPatientsByStatus('completed').length,
   };
 
   const slaViolations = patients.filter(patient => {
@@ -68,6 +68,9 @@ const MonitoringDashboard: React.FC = () => {
               avgTriageTime={avgTriageTime}
               avgTotalTime={avgTotalTime}
             />
+            
+            {/* Nova Seção de Insights */}
+            <InsightsSection />
             
             {/* Seção de Gráficos */}
             <div>
