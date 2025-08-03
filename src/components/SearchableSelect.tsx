@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X, ChevronDown } from 'lucide-react';
@@ -25,6 +26,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const filteredOptions = options.filter(
     option =>
@@ -32,10 +34,24 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
       option.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Fechar dropdown quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handleAddItem = (item: string) => {
     onAddItem(item);
     setSearchTerm('');
-    setIsOpen(false); // Close dropdown after selection
+    setIsOpen(false); // Fechar dropdown após seleção
     inputRef.current?.focus();
   };
 
@@ -49,7 +65,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
       e.preventDefault();
       onAddItem(searchTerm.trim());
       setSearchTerm('');
-      setIsOpen(false); // Close dropdown after adding new item
+      setIsOpen(false); // Fechar dropdown após adicionar novo item
     } else if (e.key === 'Escape') {
       setIsOpen(false);
       setSearchTerm('');
@@ -57,7 +73,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   };
 
   return (
-    <div className={className}>
+    <div className={className} ref={containerRef}>
       <Label className="text-xs font-medium">{label}</Label>
       <div className="relative">
         <div className="relative">

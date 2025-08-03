@@ -39,6 +39,7 @@ const TriageScreen: React.FC = () => {
   const [customFlowName, setCustomFlowName] = useState<string>('');
   const [showCustomFlowInput, setShowCustomFlowInput] = useState(false);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>('');
+  const [chatExpanded, setChatExpanded] = useState(false);
   const [triageData, setTriageData] = useState({
     priority: '',
     vitals: {
@@ -328,6 +329,13 @@ const TriageScreen: React.FC = () => {
     updatePatientStatus(patientId, 'in-triage');
     setIsDialogOpen(true);
     setHasPerformedAnalysis(false); // Reset da análise
+    setChatExpanded(false); // Iniciar com chat minimizado
+    
+    // Expandir chat após um pequeno delay para criar o efeito
+    setTimeout(() => {
+      setChatExpanded(true);
+    }, 300);
+    
     toast({
       title: "Paciente chamado",
       description: "Paciente está sendo atendido na triagem.",
@@ -489,6 +497,7 @@ const TriageScreen: React.FC = () => {
       updatePatientStatus(currentPatient.id, 'waiting-triage');
     }
     setIsDialogOpen(false);
+    setChatExpanded(false); // Reset do estado do chat
     resetTriageData();
   };
 
@@ -1122,20 +1131,26 @@ const TriageScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* Chat da LIA com scroll adicionado */}
-              <div className="w-1/3 border-l border-gray-200 overflow-hidden">
-                <TriageChat 
-                  triageData={triageData} 
-                  onSuggestPriority={handleSuggestPriority}
-                  onCompleteTriagem={() => {
-                    // This callback is not used anymore since we have separate buttons
-                    console.log("Complete triage callback - not used");
-                  }}
-                  isDialogOpen={isDialogOpen}
-                  isFormComplete={isFormComplete()}
-                  hasPerformedAnalysis={hasPerformedAnalysis}
-                  onAnalysisPerformed={() => setHasPerformedAnalysis(true)}
-                />
+              {/* Chat da LIA com efeito de abertura lenta */}
+              <div className={`border-l border-gray-200 overflow-hidden transition-all duration-700 ease-out ${
+                chatExpanded ? 'w-1/3 opacity-100' : 'w-0 opacity-0'
+              }`}>
+                <div className={`h-full transition-transform duration-500 ease-out ${
+                  chatExpanded ? 'scale-100' : 'scale-95'
+                }`}>
+                  <TriageChat 
+                    triageData={triageData} 
+                    onSuggestPriority={handleSuggestPriority}
+                    onCompleteTriagem={() => {
+                      // This callback is not used anymore since we have separate buttons
+                      console.log("Complete triage callback - not used");
+                    }}
+                    isDialogOpen={isDialogOpen}
+                    isFormComplete={isFormComplete()}
+                    hasPerformedAnalysis={hasPerformedAnalysis}
+                    onAnalysisPerformed={() => setHasPerformedAnalysis(true)}
+                  />
+                </div>
               </div>
             </div>
           )}
