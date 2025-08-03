@@ -12,6 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CancellationModal from './CancellationModal';
+import { getPatientName, getPatientAge, getPatientGender, getPatientGenderFull } from '@/utils/patientUtils';
 
 const AdminScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
@@ -48,10 +49,10 @@ const AdminScreen: React.FC = () => {
   });
   const currentPatient = getPatientsByStatus('in-admin')[0];
 
-  // Pre-populate form when currentPatient changes - agora busca dados da triagem também
+  // Pre-populate form when currentPatient changes - com prioridade para dados existentes
   useEffect(() => {
     if (currentPatient && isDialogOpen) {
-      // Busca dados existentes (prioriza personalData, depois triageData)
+      // Merge dados da triagem com dados pessoais existentes
       const existingPersonalData = currentPatient.personalData;
       const triagePersonalData = currentPatient.triageData?.personalData;
       
@@ -131,7 +132,8 @@ const AdminScreen: React.FC = () => {
 
     const dataToSave = {
       ...personalData,
-      age: parseInt(personalData.age)
+      age: parseInt(personalData.age),
+      fullName: personalData.name // Garante que fullName seja definido
     };
 
     const nextStatus = personalData.canBeAttended ? 'waiting-doctor' : 'completed';
@@ -165,39 +167,6 @@ const AdminScreen: React.FC = () => {
       case 'vermelho': return 'text-red-600';
       default: return 'text-gray-600';
     }
-  };
-
-  const getGenderDisplay = (gender?: string) => {
-    if (!gender) return 'N/A';
-    switch (gender.toLowerCase()) {
-      case 'masculino': return 'M';
-      case 'feminino': return 'F';
-      case 'outro': return 'O';
-      case 'nao-informar': return 'N/I';
-      default: return gender.charAt(0).toUpperCase();
-    }
-  };
-
-  // Função para obter o nome do paciente (prioriza personalData, depois triageData)
-  const getPatientDisplayName = (patient: any) => {
-    if (patient.personalData?.name) {
-      return patient.personalData.name;
-    }
-    if (patient.triageData?.personalData?.name) {
-      return patient.triageData.personalData.name;
-    }
-    return 'Nome não coletado';
-  };
-
-  // Função para obter dados combinados do paciente
-  const getPatientDisplayData = (patient: any) => {
-    const personalData = patient.personalData;
-    const triageData = patient.triageData?.personalData;
-    
-    return {
-      age: personalData?.age || triageData?.age || 'N/A',
-      gender: personalData?.gender || triageData?.gender
-    };
   };
 
   return (
@@ -240,7 +209,6 @@ const AdminScreen: React.FC = () => {
                     const timeWaiting = getTimeElapsed(patient, 'triageCompleted');
                     const totalTime = getTimeElapsed(patient, 'generated');
                     const slaStatus = isOverSLA(patient);
-                    const displayData = getPatientDisplayData(patient);
                     
                     return (
                       <TableRow 
@@ -253,13 +221,13 @@ const AdminScreen: React.FC = () => {
                       >
                         <TableCell className="font-bold">{patient.password}</TableCell>
                         <TableCell className="max-w-[150px] truncate">
-                          {getPatientDisplayName(patient)}
+                          {getPatientName(patient)}
                         </TableCell>
                         <TableCell>
-                          {displayData.age}
+                          {getPatientAge(patient)}
                         </TableCell>
                         <TableCell>
-                          {getGenderDisplay(displayData.gender)}
+                          {getPatientGender(patient)}
                         </TableCell>
                         <TableCell className="capitalize">
                           {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
@@ -318,7 +286,7 @@ const AdminScreen: React.FC = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex justify-between items-center">
-              <DialogTitle className="text-xl">Coleta de Dados Pessoais</DialogTitle>
+              <DialogTitle className="text-xl">Complemento de Dados Pessoais</DialogTitle>
               <Button variant="ghost" onClick={handleCloseDialog}>
                 <X className="h-4 w-4" />
               </Button>
@@ -343,12 +311,21 @@ const AdminScreen: React.FC = () => {
                 <div className="text-sm">
                   Tempo no administrativo: {getTimeElapsed(currentPatient, 'adminStarted')} min
                 </div>
-                {/* Exibir dados pré-preenchidos da triagem */}
-                {currentPatient.triageData?.personalData && (
-                  <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
-                    <strong>Dados da triagem:</strong> Nome: {currentPatient.triageData.personalData.name}, 
-                    Idade: {currentPatient.triageData.personalData.age} anos
-                    {currentPatient.triageData.personalData.gender && `, Gênero: ${currentPatient.triageData.personalData.gender}`}
+                {/* Mostrar dados já coletados na triagem */}
+                {(currentPatient.triageData?.personalData || currentPatient.personalData) && (
+                  <div className="mt-2 p-3 bg-green-50 rounded border-l-4 border-green-400">
+                    <strong className="text-green-800">✅ Dados já coletados na triagem:</strong>
+                    <div className="text-sm text-green-700 mt-1">
+                      {getPatientName(currentPatient) !== 'Nome não informado' && (
+                        <div>• Nome: {getPatientName(currentPatient)}</div>
+                      )}
+                      {getPatientAge(currentPatient) !== 'N/A' && (
+                        <div>• Idade: {getPatientAge(currentPatient)} anos</div>
+                      )}
+                      {getPatientGenderFull(currentPatient) !== 'Não informado' && (
+                        <div>• Gênero: {getPatientGenderFull(currentPatient)}</div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -358,10 +335,14 @@ const AdminScreen: React.FC = () => {
                   <div>
                     <Label>Nome Completo *</Label>
                     <Input
-                      placeholder="Nome do paciente"
+                      placeholder="Nome completo do paciente"
                       value={personalData.name}
                       onChange={(e) => setPersonalData({...personalData, name: e.target.value})}
+                      className={personalData.name ? "border-green-300 bg-green-50" : ""}
                     />
+                    {personalData.name && (
+                      <div className="text-xs text-green-600 mt-1">✅ Preenchido</div>
+                    )}
                   </div>
                   
                   <div>
@@ -381,7 +362,11 @@ const AdminScreen: React.FC = () => {
                         placeholder="Idade em anos"
                         value={personalData.age}
                         onChange={(e) => setPersonalData({...personalData, age: e.target.value})}
+                        className={personalData.age ? "border-green-300 bg-green-50" : ""}
                       />
+                      {personalData.age && (
+                        <div className="text-xs text-green-600 mt-1">✅ Preenchido</div>
+                      )}
                     </div>
                     <div>
                       <Label>Gênero</Label>
@@ -389,7 +374,7 @@ const AdminScreen: React.FC = () => {
                         value={personalData.gender}
                         onValueChange={(value) => setPersonalData({...personalData, gender: value})}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className={personalData.gender ? "border-green-300 bg-green-50" : ""}>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
@@ -399,6 +384,9 @@ const AdminScreen: React.FC = () => {
                           <SelectItem value="nao-informar">Prefiro não informar</SelectItem>
                         </SelectContent>
                       </Select>
+                      {personalData.gender && (
+                        <div className="text-xs text-green-600 mt-1">✅ Preenchido</div>
+                      )}
                     </div>
                   </div>
 

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Patient } from '@/contexts/HospitalContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { getPatientName, getPatientAge, getPatientGender } from '@/utils/patientUtils';
 
 interface PatientListProps {
   patients: Patient[];
@@ -71,42 +72,6 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
       'deceased': '💔'
     };
     return iconMap[status] || '📄';
-  };
-
-  // Função para obter o nome do paciente (prioriza personalData, depois triageData)
-  const getPatientName = (patient: Patient) => {
-    if (patient.personalData?.name) {
-      return patient.personalData.name;
-    }
-    if (patient.triageData?.personalData?.name) {
-      return patient.triageData.personalData.name;
-    }
-    return 'Nome não coletado';
-  };
-
-  // Função para obter a idade do paciente
-  const getPatientAge = (patient: Patient) => {
-    if (patient.personalData?.age) {
-      return patient.personalData.age;
-    }
-    if (patient.triageData?.personalData?.age) {
-      return patient.triageData.personalData.age;
-    }
-    return 'N/A';
-  };
-
-  // Função para obter o gênero do paciente
-  const getPatientGender = (patient: Patient) => {
-    const gender = patient.personalData?.gender || patient.triageData?.personalData?.gender;
-    if (!gender) return 'N/A';
-    
-    switch (gender.toLowerCase()) {
-      case 'masculino': return 'M';
-      case 'feminino': return 'F';
-      case 'outro': return 'O';
-      case 'nao-informar': return 'N/I';
-      default: return gender.charAt(0).toUpperCase();
-    }
   };
 
   return (

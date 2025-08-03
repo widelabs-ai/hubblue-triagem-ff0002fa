@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useHospital } from '@/contexts/HospitalContext';
+import { getPatientName } from '@/utils/patientUtils';
 
 const HospitalFlowIndicators: React.FC = () => {
   const { getPatientFlowStats, getPatientsByStatus, patients, getTimeElapsed, isOverSLA } = useHospital();
@@ -133,7 +133,7 @@ const HospitalFlowIndicators: React.FC = () => {
                                   <div>
                                     <div className="font-bold text-lg">{patient.password}</div>
                                     <div className="text-sm text-gray-600">
-                                      {patient.personalData?.name || 'Nome não informado'}
+                                      {getPatientName(patient)}
                                     </div>
                                     <div className="text-sm">
                                       {patient.triageData?.priority && (
@@ -212,7 +212,7 @@ const HospitalFlowIndicators: React.FC = () => {
                                   <div>
                                     <div className="font-bold text-lg">{patient.password}</div>
                                     <div className="text-sm text-gray-600">
-                                      {patient.personalData?.name || 'Nome não informado'}
+                                      {getPatientName(patient)}
                                     </div>
                                     <div className="text-sm">
                                       {patient.triageData?.priority && (

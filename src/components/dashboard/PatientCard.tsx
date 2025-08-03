@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Patient } from '@/contexts/HospitalContext';
+import { getPatientName, getPatientAge, getPatientGender } from '@/utils/patientUtils';
 
 interface PatientCardProps {
   patient: Patient;
@@ -30,41 +31,9 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, totalTime, sla }) =>
     'completed': 'Concluído'
   };
 
-  // Busca o nome prioritariamente dos dados pessoais, depois da triagem
-  const getPatientName = () => {
-    if (patient.personalData?.name) {
-      return patient.personalData.name;
-    }
-    if (patient.triageData?.personalData?.name) {
-      return patient.triageData.personalData.name;
-    }
-    return 'Nome não coletado';
-  };
-
-  // Busca informações adicionais do paciente
-  const getPatientAge = () => {
-    if (patient.personalData?.age) {
-      return `${patient.personalData.age} anos`;
-    }
-    if (patient.triageData?.personalData?.age) {
-      return `${patient.triageData.personalData.age} anos`;
-    }
-    return '';
-  };
-
-  const getPatientGender = () => {
-    if (patient.personalData?.gender) {
-      return patient.personalData.gender === 'masculino' ? 'M' : 
-             patient.personalData.gender === 'feminino' ? 'F' : 
-             patient.personalData.gender.charAt(0).toUpperCase();
-    }
-    if (patient.triageData?.personalData?.gender) {
-      return patient.triageData.personalData.gender === 'masculino' ? 'M' : 
-             patient.triageData.personalData.gender === 'feminino' ? 'F' : 
-             patient.triageData.personalData.gender.charAt(0).toUpperCase();
-    }
-    return '';
-  };
+  const patientName = getPatientName(patient);
+  const patientAge = getPatientAge(patient);
+  const patientGender = getPatientGender(patient);
 
   return (
     <Card 
@@ -77,10 +46,10 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, totalTime, sla }) =>
           <div>
             <div className="font-bold text-lg">{patient.password}</div>
             <div className="text-sm text-gray-600">
-              {getPatientName()}
-              {getPatientAge() && (
+              {patientName}
+              {patientAge !== 'N/A' && (
                 <span className="ml-2 text-xs text-gray-500">
-                  {getPatientAge()} {getPatientGender() && `• ${getPatientGender()}`}
+                  {patientAge} anos {patientGender !== 'N/A' && `• ${patientGender}`}
                 </span>
               )}
             </div>

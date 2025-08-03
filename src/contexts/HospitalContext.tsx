@@ -146,16 +146,17 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             updatedPatient.timestamps.triageCompleted = new Date();
             if (additionalData?.triageData) {
               updatedPatient.triageData = additionalData.triageData;
-              // Se há dados pessoais na triagem, merge com personalData existente
+              
+              // CRITICAL: Merge triage personal data into main personalData
               if (additionalData.triageData.personalData) {
                 updatedPatient.personalData = {
                   ...updatedPatient.personalData,
                   name: additionalData.triageData.personalData.name,
+                  fullName: additionalData.triageData.personalData.fullName || additionalData.triageData.personalData.name,
                   age: additionalData.triageData.personalData.age,
                   gender: additionalData.triageData.personalData.gender,
                   dateOfBirth: additionalData.triageData.personalData.dateOfBirth,
-                  fullName: additionalData.triageData.personalData.fullName,
-                  cpf: updatedPatient.personalData?.cpf || '',
+                  cpf: updatedPatient.personalData?.cpf || '', // Manter CPF se já existir
                   canBeAttended: updatedPatient.personalData?.canBeAttended ?? true
                 };
               }
@@ -167,10 +168,13 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           case 'waiting-doctor':
             updatedPatient.timestamps.adminCompleted = new Date();
             if (additionalData?.personalData) {
-              // Merge dados administrativos com dados existentes da triagem
+              // Merge administrative data with existing data
               updatedPatient.personalData = {
                 ...updatedPatient.personalData,
-                ...additionalData.personalData
+                ...additionalData.personalData,
+                // Preserve name from triage if not provided in admin
+                name: additionalData.personalData.name || updatedPatient.personalData?.name || '',
+                fullName: additionalData.personalData.fullName || updatedPatient.personalData?.fullName || additionalData.personalData.name || updatedPatient.personalData?.name || ''
               };
             }
             break;
