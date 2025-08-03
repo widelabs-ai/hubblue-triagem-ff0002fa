@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useHospital } from '@/contexts/HospitalContext';
@@ -7,6 +6,7 @@ import PatientList from './dashboard/PatientList';
 import ChartSection from './dashboard/ChartSection';
 import HospitalFlowIndicators from './dashboard/HospitalFlowIndicators';
 import InsightsSection from './dashboard/InsightsSection';
+import DataChatAgent from './dashboard/DataChatAgent';
 
 const MonitoringDashboard: React.FC = () => {
   const { patients, getPatientsByStatus, getTimeElapsed, isOverSLA, getPatientFlowStats } = useHospital();
@@ -71,6 +71,12 @@ const MonitoringDashboard: React.FC = () => {
             
             {/* Nova Seção de Insights */}
             <InsightsSection />
+            
+            {/* Agente Conversacional */}
+            <div>
+              <h3 className="text-xl font-semibold mb-4 text-gray-800">🤖 Assistente Inteligente de Dados</h3>
+              <DataChatAgent />
+            </div>
             
             {/* Seção de Gráficos */}
             <div>
