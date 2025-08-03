@@ -58,7 +58,8 @@ const DataChatAgent: React.FC = () => {
     const lowerQuestion = question.toLowerCase();
     
     const totalPatients = patients.length;
-    const activePatients = patients.filter(p => !['discharged', 'deceased', 'transferred', 'cancelled'].includes(p.status)).length;
+    const activePatientsArray = patients.filter(p => !['discharged', 'deceased', 'transferred', 'cancelled'].includes(p.status));
+    const activePatients = activePatientsArray.length;
     const waitingTriage = getPatientsByStatus('waiting-triage').length;
     const inConsultation = getPatientsByStatus('in-consultation').length;
     
@@ -68,7 +69,7 @@ const DataChatAgent: React.FC = () => {
     }).length;
 
     const avgWaitTime = activePatients > 0 
-      ? Math.round(activePatients.reduce((acc, p) => acc + getTimeElapsed(p, 'generated'), 0) / activePatients)
+      ? Math.round(activePatientsArray.reduce((acc, p) => acc + getTimeElapsed(p, 'generated'), 0) / activePatients)
       : 0;
 
     // Análise baseada na pergunta
