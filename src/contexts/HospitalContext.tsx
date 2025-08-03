@@ -276,6 +276,13 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         inInterConsultation: getPatientsByStatus('in-inter-consultation').length,
         waitingTransfer: getPatientsByStatus('waiting-transfer').length,
         prescriptionIssued: getPatientsByStatus('prescription-issued').length,
+        readyForReassessment: patients.filter(p => {
+          // Pacientes prontos para reavaliação: aqueles que completaram algum procedimento
+          // e podem precisar de nova avaliação médica
+          return p.timestamps.examCompleted || 
+                 p.timestamps.medicationCompleted || 
+                 p.timestamps.interConsultationCompleted;
+        }).length,
         discharged: getPatientsByStatus('discharged').length,
         deceased: getPatientsByStatus('deceased').length,
         transferred: getPatientsByStatus('transferred').length,

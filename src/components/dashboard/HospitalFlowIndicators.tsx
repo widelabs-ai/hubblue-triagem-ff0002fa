@@ -25,7 +25,8 @@ const HospitalFlowIndicators: React.FC = () => {
     { key: 'waitingInterConsultation', label: 'Aguard. Inter-consulta', icon: '🔄', color: 'bg-lime-50 border-lime-200 text-lime-600', slaMinutes: 90 },
     { key: 'inInterConsultation', label: 'Em Inter-consulta', icon: '🤝', color: 'bg-green-50 border-green-200 text-green-600', slaMinutes: 60 },
     { key: 'waitingTransfer', label: 'Aguard. Transfer.', icon: '🚑', color: 'bg-emerald-50 border-emerald-200 text-emerald-600', slaMinutes: 30 },
-    { key: 'prescriptionIssued', label: 'Prescrição Emitida', icon: '📄', color: 'bg-violet-50 border-violet-200 text-violet-600', slaMinutes: 0 },
+    { key: 'readyForReassessment', label: 'Prontos p/ Reavaliação', icon: '🔄', color: 'bg-violet-50 border-violet-200 text-violet-600', slaMinutes: 60 },
+    { key: 'prescriptionIssued', label: 'Prescrição Emitida', icon: '📄', color: 'bg-slate-50 border-slate-200 text-slate-600', slaMinutes: 0 },
   ];
 
   const finalOutcomes = [
@@ -36,6 +37,14 @@ const HospitalFlowIndicators: React.FC = () => {
   ];
 
   const checkSLAViolations = (statusKey: string, slaMinutes: number) => {
+    if (statusKey === 'readyForReassessment') {
+      const readyPatients = getReadyForReassessmentPatients();
+      return readyPatients.some(patient => {
+        const timeElapsed = getTimeElapsed(patient, 'generated');
+        return timeElapsed > slaMinutes;
+      });
+    }
+    
     const patientsInStatus = getPatientsByStatus(statusKey as any);
     return patientsInStatus.some(patient => {
       const timeElapsed = getTimeElapsed(patient, 'generated');
@@ -43,20 +52,31 @@ const HospitalFlowIndicators: React.FC = () => {
     });
   };
 
-  const getPatientsInStage = (statusKey: string) => {
-    return getPatientsByStatus(statusKey as any);
+  const getReadyForReassessmentPatients = () => {
+    return patients.filter(p => {
+      return p.timestamps.examCompleted || 
+             p.timestamps.medicationCompleted || 
+             p.timestamps.interConsultationCompleted;
+    });
   };
 
-  const openDrilldown = (statusKey: string, label: string) => {
-    setSelectedStage(statusKey);
+  const getPatientsInStage = (statusKey: string) => {
+    if (statusKey === 'readyForReassessment') {
+      return getReadyForReassessmentPatients();
+    }
+    return getPatientsByStatus(statusKey as any);
   };
 
   const getPatientTimeInStage = (patient: any) => {
     return getTimeElapsed(patient, 'generated');
   };
 
-  const selectedStageData = selectedStage ? indicators.find(i => i.key === selectedStage) || finalOutcomes.find(i => i.key === selectedStage) : null;
-  const selectedPatients = selectedStage ? getPatientsInStage(selectedStage) : [];
+  const getIndicatorCount = (key: string) => {
+    if (key === 'readyForReassessment') {
+      return flowStats.byStatus.readyForReassessment;
+    }
+    return flowStats.byStatus[key as keyof typeof flowStats.byStatus] || 0;
+  };
 
   return (
     <div className="space-y-6">
@@ -68,7 +88,7 @@ const HospitalFlowIndicators: React.FC = () => {
         {/* Indicadores do Fluxo */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 mb-6">
           {indicators.map(indicator => {
-            const count = flowStats.byStatus[indicator.key as keyof typeof flowStats.byStatus];
+            const count = getIndicatorCount(indicator.key);
             const hasSLAViolation = checkSLAViolations(indicator.key, indicator.slaMinutes);
             
             return (
@@ -100,7 +120,7 @@ const HospitalFlowIndicators: React.FC = () => {
                     </DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    {selectedPatients.length > 0 ? (
+                    {count > 0 ? (
                       <div className="grid gap-3">
                         {getPatientsInStage(indicator.key).map((patient: any) => {
                           const timeElapsed = getPatientTimeInStage(patient);
@@ -162,7 +182,7 @@ const HospitalFlowIndicators: React.FC = () => {
           <h4 className="text-lg font-semibold mb-3 text-gray-700">📊 Desfechos Finais</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {finalOutcomes.map(outcome => {
-              const count = flowStats.byStatus[outcome.key as keyof typeof flowStats.byStatus];
+              const count = getIndicatorCount(outcome.key);
               
               return (
                 <Dialog key={outcome.key}>
