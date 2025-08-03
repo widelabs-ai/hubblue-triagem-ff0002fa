@@ -6,7 +6,7 @@ import PatientList from './dashboard/PatientList';
 import ChartSection from './dashboard/ChartSection';
 import HospitalFlowIndicators from './dashboard/HospitalFlowIndicators';
 import InsightsSection from './dashboard/InsightsSection';
-import DataChatAgent from './dashboard/DataChatAgent';
+import FloatingChatAgent from './dashboard/FloatingChatAgent';
 
 const MonitoringDashboard: React.FC = () => {
   const { patients, getPatientsByStatus, getTimeElapsed, isOverSLA, getPatientFlowStats } = useHospital();
@@ -72,12 +72,6 @@ const MonitoringDashboard: React.FC = () => {
             {/* Nova Seção de Insights */}
             <InsightsSection />
             
-            {/* Agente Conversacional */}
-            <div>
-              <h3 className="text-xl font-semibold mb-4 text-gray-800">🤖 Assistente Inteligente de Dados</h3>
-              <DataChatAgent />
-            </div>
-            
             {/* Seção de Gráficos */}
             <div>
               <h3 className="text-xl font-semibold mb-4 text-gray-800">📈 Análises Visuais</h3>
@@ -93,6 +87,9 @@ const MonitoringDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Agente Conversacional Suspenso */}
+      <FloatingChatAgent />
     </div>
   );
 };
