@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useHospital } from '@/contexts/HospitalContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -117,7 +118,7 @@ const PanelScreen = () => {
               <div className="bg-white/30 rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 border-2 border-white/50 shadow-2xl">
                 {/* Senha Principal */}
                 <div className="text-center mb-4 lg:mb-6">
-                  <div className="text-4xl sm:text-6xl lg:text-8xl font-black text-white mb-2 tracking-wider drop-shadow-lg">
+                  <div className="text-3xl sm:text-5xl lg:text-6xl font-black text-white mb-2 tracking-wider drop-shadow-lg">
                     {currentData.password}
                   </div>
                   <Badge className="bg-green-500 text-white text-sm sm:text-base lg:text-lg px-3 sm:px-4 py-1 sm:py-2 font-bold">
