@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -412,7 +413,7 @@ const TriageScreen: React.FC = () => {
     });
   };
 
-  // Função para revisar (apenas triggerar análise da LIA)
+  // Função para revisar (agora faz análise completa no formato ficha clínica)
   const handleReview = () => {
     if (!currentPatient || !triageData.priority || !triageData.complaints) {
       toast({
@@ -432,25 +433,13 @@ const TriageScreen: React.FC = () => {
       return;
     }
 
-    // Apenas trigger análise da LIA - NÃO conclui a triagem
-    if (isFormComplete() && !hasPerformedAnalysis) {
-      setHasPerformedAnalysis(true);
-      toast({
-        title: "Revisão iniciada",
-        description: "A LIA está analisando os dados do paciente em formato de ficha clínica.",
-      });
-    } else if (hasPerformedAnalysis) {
-      toast({
-        title: "Revisão já realizada",
-        description: "Os dados já foram analisados pela LIA.",
-      });
-    } else {
-      toast({
-        title: "Dados incompletos",
-        description: "Preencha todos os campos obrigatórios para revisar.",
-        variant: "destructive"
-      });
-    }
+    // Trigger análise completa da LIA em formato de ficha clínica
+    setHasPerformedAnalysis(true);
+    toast({
+      title: "Revisão completa iniciada",
+      description: "A LIA está realizando uma análise completa dos dados em formato de ficha clínica e identificando informações em falta.",
+      duration: 4000
+    });
   };
 
   // Função para concluir triagem (separada da revisão)
