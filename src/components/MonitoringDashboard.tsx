@@ -2,12 +2,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useHospital } from '@/contexts/HospitalContext';
-import StatsGrid from './dashboard/StatsGrid';
 import KPICards from './dashboard/KPICards';
 import PatientList from './dashboard/PatientList';
 import ChartSection from './dashboard/ChartSection';
 import HospitalFlowIndicators from './dashboard/HospitalFlowIndicators';
-import PatientFlowVisualization from './dashboard/PatientFlowVisualization';
 
 const MonitoringDashboard: React.FC = () => {
   const { patients, getPatientsByStatus, getTimeElapsed, isOverSLA, getPatientFlowStats } = useHospital();
@@ -63,15 +61,6 @@ const MonitoringDashboard: React.FC = () => {
           <CardContent className="p-6 space-y-8">
             {/* Indicadores do Fluxo Completo */}
             <HospitalFlowIndicators />
-            
-            {/* Visualização do Fluxo */}
-            <PatientFlowVisualization />
-            
-            {/* Grid de Estatísticas Detalhadas */}
-            <div>
-              <h3 className="text-xl font-semibold mb-4 text-gray-800">📊 Estatísticas Detalhadas</h3>
-              <StatsGrid stats={stats} />
-            </div>
             
             {/* KPIs Principais */}
             <KPICards 
