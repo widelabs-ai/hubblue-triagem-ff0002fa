@@ -73,6 +73,42 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
     return iconMap[status] || '📄';
   };
 
+  // Função para obter o nome do paciente (prioriza personalData, depois triageData)
+  const getPatientName = (patient: Patient) => {
+    if (patient.personalData?.name) {
+      return patient.personalData.name;
+    }
+    if (patient.triageData?.personalData?.name) {
+      return patient.triageData.personalData.name;
+    }
+    return 'Nome não coletado';
+  };
+
+  // Função para obter a idade do paciente
+  const getPatientAge = (patient: Patient) => {
+    if (patient.personalData?.age) {
+      return patient.personalData.age;
+    }
+    if (patient.triageData?.personalData?.age) {
+      return patient.triageData.personalData.age;
+    }
+    return 'N/A';
+  };
+
+  // Função para obter o gênero do paciente
+  const getPatientGender = (patient: Patient) => {
+    const gender = patient.personalData?.gender || patient.triageData?.personalData?.gender;
+    if (!gender) return 'N/A';
+    
+    switch (gender.toLowerCase()) {
+      case 'masculino': return 'M';
+      case 'feminino': return 'F';
+      case 'outro': return 'O';
+      case 'nao-informar': return 'N/I';
+      default: return gender.charAt(0).toUpperCase();
+    }
+  };
+
   return (
     <div>
       <h3 className="text-xl font-semibold mb-4">👥 Pacientes Ativos no Sistema ({activePatients.length})</h3>
@@ -81,6 +117,10 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
           <TableHeader>
             <TableRow>
               <TableHead className="w-20">Senha</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead className="w-16">Idade</TableHead>
+              <TableHead className="w-16">Gênero</TableHead>
+              <TableHead>Convênio</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Status Atual</TableHead>
               <TableHead>Classificação</TableHead>
@@ -103,6 +143,14 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
                   }`}
                 >
                   <TableCell className="font-bold">{patient.password}</TableCell>
+                  <TableCell className="max-w-[150px] truncate">
+                    {getPatientName(patient)}
+                  </TableCell>
+                  <TableCell>{getPatientAge(patient)}</TableCell>
+                  <TableCell>{getPatientGender(patient)}</TableCell>
+                  <TableCell className="max-w-[100px] truncate">
+                    {patient.personalData?.healthInsurance || 'Particular'}
+                  </TableCell>
                   <TableCell className="capitalize">
                     {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
                   </TableCell>
@@ -138,7 +186,7 @@ const PatientList: React.FC<PatientListProps> = ({ patients, getTimeElapsed, isO
             })}
             {activePatients.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={10} className="text-center py-8 text-gray-500">
                   Nenhum paciente ativo no momento
                 </TableCell>
               </TableRow>

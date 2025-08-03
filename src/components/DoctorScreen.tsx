@@ -41,6 +41,28 @@ const DoctorScreen: React.FC = () => {
   });
   const currentPatient = getPatientsByStatus('in-consultation')[0];
 
+  // Função para obter o nome do paciente (prioriza personalData, depois triageData)
+  const getPatientName = (patient: any) => {
+    if (patient.personalData?.name) {
+      return patient.personalData.name;
+    }
+    if (patient.triageData?.personalData?.name) {
+      return patient.triageData.personalData.name;
+    }
+    return 'Nome não coletado';
+  };
+
+  // Função para obter dados combinados do paciente
+  const getPatientAge = (patient: any) => {
+    if (patient.personalData?.age) {
+      return patient.personalData.age;
+    }
+    if (patient.triageData?.personalData?.age) {
+      return patient.triageData.personalData.age;
+    }
+    return 'N/A';
+  };
+
   const handleCallPatient = (patientId: string) => {
     updatePatientStatus(patientId, 'in-consultation');
     setIsDialogOpen(true);
@@ -151,6 +173,7 @@ const DoctorScreen: React.FC = () => {
                   <TableRow>
                     <TableHead className="w-20">Senha</TableHead>
                     <TableHead>Paciente</TableHead>
+                    <TableHead>Convênio</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Classificação</TableHead>
                     <TableHead className="w-32">Tempo Aguardando</TableHead>
@@ -177,9 +200,12 @@ const DoctorScreen: React.FC = () => {
                         <TableCell className="font-bold">{patient.password}</TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div className="font-medium">{patient.personalData?.name}</div>
-                            <div className="text-gray-600">{patient.personalData?.age} anos</div>
+                            <div className="font-medium">{getPatientName(patient)}</div>
+                            <div className="text-gray-600">{getPatientAge(patient)} anos</div>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {patient.personalData?.healthInsurance || 'Particular'}
                         </TableCell>
                         <TableCell className="capitalize">
                           {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
@@ -221,7 +247,7 @@ const DoctorScreen: React.FC = () => {
                   })}
                   {waitingPatients.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                         Nenhum paciente aguardando consulta
                       </TableCell>
                     </TableRow>
@@ -247,16 +273,16 @@ const DoctorScreen: React.FC = () => {
           
           {currentPatient && (
             <div className="space-y-6">
-              {/* Dados do Paciente */}
+              {/* Dados do Paciente - agora com informações completas */}
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="font-bold text-xl">{currentPatient.password}</div>
                 <div className="text-lg font-semibold">
-                  {currentPatient.personalData?.name}
+                  {getPatientName(currentPatient)}
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
-                  <div><strong>Idade:</strong> {currentPatient.personalData?.age} anos</div>
-                  <div><strong>Gênero:</strong> {currentPatient.personalData?.gender || 'N/I'}</div>
-                  <div><strong>CPF:</strong> {currentPatient.personalData?.cpf}</div>
+                  <div><strong>Idade:</strong> {getPatientAge(currentPatient)} anos</div>
+                  <div><strong>Gênero:</strong> {currentPatient.personalData?.gender || currentPatient.triageData?.personalData?.gender || 'N/I'}</div>
+                  <div><strong>CPF:</strong> {currentPatient.personalData?.cpf || 'N/I'}</div>
                   <div className="col-span-2">
                     <strong>Tipo:</strong> 
                     <span className="capitalize ml-1">
@@ -266,6 +292,17 @@ const DoctorScreen: React.FC = () => {
                   <div className="col-span-2">
                     <strong>Convênio:</strong> {currentPatient.personalData?.healthInsurance || 'Particular'}
                   </div>
+                  {currentPatient.personalData?.address && (
+                    <div className="col-span-2">
+                      <strong>Endereço:</strong> {currentPatient.personalData.address}
+                    </div>
+                  )}
+                  {currentPatient.personalData?.emergencyContact && (
+                    <div className="col-span-2">
+                      <strong>Contato emergência:</strong> {currentPatient.personalData.emergencyContact} 
+                      {currentPatient.personalData.emergencyPhone && ` - ${currentPatient.personalData.emergencyPhone}`}
+                    </div>
+                  )}
                 </div>
               </div>
 

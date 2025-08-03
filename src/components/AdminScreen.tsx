@@ -48,21 +48,24 @@ const AdminScreen: React.FC = () => {
   });
   const currentPatient = getPatientsByStatus('in-admin')[0];
 
-  // Pre-populate form when currentPatient changes
+  // Pre-populate form when currentPatient changes - agora busca dados da triagem também
   useEffect(() => {
     if (currentPatient && isDialogOpen) {
+      // Busca dados existentes (prioriza personalData, depois triageData)
+      const existingPersonalData = currentPatient.personalData;
       const triagePersonalData = currentPatient.triageData?.personalData;
+      
       setPersonalData({
-        name: triagePersonalData?.name || '',
-        cpf: '',
-        age: triagePersonalData?.age?.toString() || '',
-        gender: triagePersonalData?.gender || '',
-        address: '',
-        emergencyContact: '',
-        emergencyPhone: '',
-        healthInsurance: '',
-        insuranceNumber: '',
-        canBeAttended: true
+        name: existingPersonalData?.name || triagePersonalData?.name || '',
+        cpf: existingPersonalData?.cpf || '',
+        age: existingPersonalData?.age?.toString() || triagePersonalData?.age?.toString() || '',
+        gender: existingPersonalData?.gender || triagePersonalData?.gender || '',
+        address: existingPersonalData?.address || '',
+        emergencyContact: existingPersonalData?.emergencyContact || '',
+        emergencyPhone: existingPersonalData?.emergencyPhone || '',
+        healthInsurance: existingPersonalData?.healthInsurance || '',
+        insuranceNumber: existingPersonalData?.insuranceNumber || '',
+        canBeAttended: existingPersonalData?.canBeAttended ?? true
       });
     }
   }, [currentPatient, isDialogOpen]);
@@ -175,6 +178,28 @@ const AdminScreen: React.FC = () => {
     }
   };
 
+  // Função para obter o nome do paciente (prioriza personalData, depois triageData)
+  const getPatientDisplayName = (patient: any) => {
+    if (patient.personalData?.name) {
+      return patient.personalData.name;
+    }
+    if (patient.triageData?.personalData?.name) {
+      return patient.triageData.personalData.name;
+    }
+    return 'Nome não coletado';
+  };
+
+  // Função para obter dados combinados do paciente
+  const getPatientDisplayData = (patient: any) => {
+    const personalData = patient.personalData;
+    const triageData = patient.triageData?.personalData;
+    
+    return {
+      age: personalData?.age || triageData?.age || 'N/A',
+      gender: personalData?.gender || triageData?.gender
+    };
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -215,7 +240,7 @@ const AdminScreen: React.FC = () => {
                     const timeWaiting = getTimeElapsed(patient, 'triageCompleted');
                     const totalTime = getTimeElapsed(patient, 'generated');
                     const slaStatus = isOverSLA(patient);
-                    const triagePersonalData = patient.triageData?.personalData;
+                    const displayData = getPatientDisplayData(patient);
                     
                     return (
                       <TableRow 
@@ -228,13 +253,13 @@ const AdminScreen: React.FC = () => {
                       >
                         <TableCell className="font-bold">{patient.password}</TableCell>
                         <TableCell className="max-w-[150px] truncate">
-                          {triagePersonalData?.name || 'Nome não coletado'}
+                          {getPatientDisplayName(patient)}
                         </TableCell>
                         <TableCell>
-                          {triagePersonalData?.age || 'N/A'}
+                          {displayData.age}
                         </TableCell>
                         <TableCell>
-                          {getGenderDisplay(triagePersonalData?.gender)}
+                          {getGenderDisplay(displayData.gender)}
                         </TableCell>
                         <TableCell className="capitalize">
                           {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
@@ -318,6 +343,14 @@ const AdminScreen: React.FC = () => {
                 <div className="text-sm">
                   Tempo no administrativo: {getTimeElapsed(currentPatient, 'adminStarted')} min
                 </div>
+                {/* Exibir dados pré-preenchidos da triagem */}
+                {currentPatient.triageData?.personalData && (
+                  <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
+                    <strong>Dados da triagem:</strong> Nome: {currentPatient.triageData.personalData.name}, 
+                    Idade: {currentPatient.triageData.personalData.age} anos
+                    {currentPatient.triageData.personalData.gender && `, Gênero: ${currentPatient.triageData.personalData.gender}`}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

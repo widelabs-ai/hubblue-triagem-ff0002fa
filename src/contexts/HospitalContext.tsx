@@ -39,7 +39,11 @@ export interface Patient {
     age: number;
     dateOfBirth?: string;
     gender?: string;
+    address?: string;
+    emergencyContact?: string;
+    emergencyPhone?: string;
     healthInsurance?: string;
+    insuranceNumber?: string;
     canBeAttended: boolean;
   };
   triageData?: {
@@ -142,6 +146,19 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             updatedPatient.timestamps.triageCompleted = new Date();
             if (additionalData?.triageData) {
               updatedPatient.triageData = additionalData.triageData;
+              // Se há dados pessoais na triagem, merge com personalData existente
+              if (additionalData.triageData.personalData) {
+                updatedPatient.personalData = {
+                  ...updatedPatient.personalData,
+                  name: additionalData.triageData.personalData.name,
+                  age: additionalData.triageData.personalData.age,
+                  gender: additionalData.triageData.personalData.gender,
+                  dateOfBirth: additionalData.triageData.personalData.dateOfBirth,
+                  fullName: additionalData.triageData.personalData.fullName,
+                  cpf: updatedPatient.personalData?.cpf || '',
+                  canBeAttended: updatedPatient.personalData?.canBeAttended ?? true
+                };
+              }
             }
             break;
           case 'in-admin':
@@ -150,7 +167,11 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           case 'waiting-doctor':
             updatedPatient.timestamps.adminCompleted = new Date();
             if (additionalData?.personalData) {
-              updatedPatient.personalData = additionalData.personalData;
+              // Merge dados administrativos com dados existentes da triagem
+              updatedPatient.personalData = {
+                ...updatedPatient.personalData,
+                ...additionalData.personalData
+              };
             }
             break;
           case 'in-consultation':
