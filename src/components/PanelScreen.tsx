@@ -47,51 +47,54 @@ const PanelScreen = () => {
     }
   };
 
-  // Separar pacientes por tipo de atendimento
-  const triagePatients = {
-    current: patients.find(patient => patient.status === 'in-triage'),
-    recent: patients
-      .filter(patient => patient.status === 'waiting-admin' && patient.timestamps.triageCompleted)
-      .sort((a, b) => {
-        const aTime = a.timestamps.triageCompleted?.getTime() || 0;
-        const bTime = b.timestamps.triageCompleted?.getTime() || 0;
-        return bTime - aTime;
-      })
-      .slice(0, 5)
-  };
-
-  const adminPatients = {
-    current: patients.find(patient => patient.status === 'in-admin'),
-    recent: patients
-      .filter(patient => patient.status === 'waiting-doctor' && patient.timestamps.adminCompleted)
-      .sort((a, b) => {
-        const aTime = a.timestamps.adminCompleted?.getTime() || 0;
-        const bTime = b.timestamps.adminCompleted?.getTime() || 0;
-        return bTime - aTime;
-      })
-      .slice(0, 5)
-  };
-
-  const consultationPatients = {
-    current: patients.find(patient => patient.status === 'in-consultation'),
-    recent: patients
-      .filter(patient => 
-        (patient.status === 'completed' || patient.status === 'discharged' || patient.status === 'waiting-exam') && 
-        patient.timestamps.consultationCompleted
-      )
-      .sort((a, b) => {
-        const aTime = a.timestamps.consultationCompleted?.getTime() || 0;
-        const bTime = b.timestamps.consultationCompleted?.getTime() || 0;
-        return bTime - aTime;
-      })
-      .slice(0, 5)
+  // Dados mockados para simular um dia típico no hospital
+  const mockData = {
+    triagem: {
+      current: {
+        password: 'PR007',
+        priority: 'laranja'
+      },
+      recent: [
+        { password: 'NP024', priority: 'verde' },
+        { password: 'PR006', priority: 'vermelho' },
+        { password: 'NP023', priority: 'amarelo' },
+        { password: 'NP022', priority: 'verde' },
+        { password: 'PR005', priority: 'laranja' }
+      ]
+    },
+    administrativo: {
+      current: {
+        password: 'NP021',
+        priority: 'verde'
+      },
+      recent: [
+        { password: 'PR004', priority: 'vermelho' },
+        { password: 'NP020', priority: 'azul' },
+        { password: 'NP019', priority: 'verde' },
+        { password: 'PR003', priority: 'amarelo' },
+        { password: 'NP018', priority: 'verde' }
+      ]
+    },
+    consulta: {
+      current: {
+        password: 'PR002',
+        priority: 'vermelho'
+      },
+      recent: [
+        { password: 'NP017', priority: 'verde' },
+        { password: 'NP016', priority: 'azul' },
+        { password: 'PR001', priority: 'laranja' },
+        { password: 'NP015', priority: 'amarelo' },
+        { password: 'NP014', priority: 'verde' }
+      ]
+    }
   };
 
   const renderSection = (
     title: string,
     icon: React.ReactNode,
-    current: any,
-    recent: any[],
+    currentData: any,
+    recentData: any[],
     bgColor: string,
     serviceType: string
   ) => {
@@ -112,12 +115,12 @@ const PanelScreen = () => {
               <User className="h-6 w-6 mr-2" />
               SENDO ATENDIDA AGORA
             </h4>
-            {current ? (
+            {currentData ? (
               <div className="bg-white/30 rounded-2xl p-8 border-2 border-white/50 shadow-2xl">
                 {/* Senha Principal */}
                 <div className="text-center mb-6">
                   <div className="text-8xl font-black text-white mb-2 tracking-wider drop-shadow-lg">
-                    {current.password}
+                    {currentData.password}
                   </div>
                   <Badge className="bg-green-500 text-white text-lg px-4 py-2 font-bold">
                     ATUAL
@@ -133,11 +136,11 @@ const PanelScreen = () => {
                 </div>
 
                 {/* Prioridade */}
-                {current.triageData?.priority && (
+                {currentData.priority && (
                   <div className="flex items-center justify-center">
-                    <div className={`w-4 h-4 rounded-full ${getPriorityColor(current.triageData.priority)} mr-3`}></div>
+                    <div className={`w-4 h-4 rounded-full ${getPriorityColor(currentData.priority)} mr-3`}></div>
                     <span className="text-white/90 capitalize text-lg font-semibold">
-                      Prioridade: {current.triageData.priority}
+                      Prioridade: {currentData.priority}
                     </span>
                   </div>
                 )}
@@ -156,23 +159,29 @@ const PanelScreen = () => {
               ÚLTIMAS CHAMADAS
             </h4>
             <div className="space-y-2">
-              {recent.length > 0 ? (
-                recent.map((patient, index) => (
+              {recentData.length > 0 ? (
+                recentData.map((item, index) => (
                   <div
-                    key={patient.id}
-                    className="bg-white/10 rounded-lg p-3 border border-white/20 flex items-center justify-between opacity-80"
+                    key={`${item.password}-${index}`}
+                    className="bg-white/10 rounded-lg p-3 border border-white/20 opacity-80"
                   >
-                    <div className="flex items-center">
-                      <span className="text-lg font-semibold text-white/80 mr-3">
-                        {patient.password}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <span className="text-lg font-semibold text-white/80 mr-3">
+                          {item.password}
+                        </span>
+                        {item.priority && (
+                          <div className={`w-2 h-2 rounded-full ${getPriorityColor(item.priority)} mr-2`}></div>
+                        )}
+                        <div className="flex items-center text-white/60 text-xs">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          <span>{locationInfo.location}</span>
+                        </div>
+                      </div>
+                      <span className="text-white/50 text-xs">
+                        {index === 0 ? 'Mais recente' : `${index + 1}ª`}
                       </span>
-                      {patient.triageData?.priority && (
-                        <div className={`w-2 h-2 rounded-full ${getPriorityColor(patient.triageData.priority)}`}></div>
-                      )}
                     </div>
-                    <span className="text-white/50 text-xs">
-                      {index === 0 ? 'Mais recente' : `${index + 1}ª`}
-                    </span>
                   </div>
                 ))
               ) : (
@@ -206,8 +215,8 @@ const PanelScreen = () => {
         {renderSection(
           'TRIAGEM',
           <Stethoscope className="h-6 w-6" />,
-          triagePatients.current,
-          triagePatients.recent,
+          mockData.triagem.current,
+          mockData.triagem.recent,
           'bg-red-600',
           'triagem'
         )}
@@ -216,8 +225,8 @@ const PanelScreen = () => {
         {renderSection(
           'ADMINISTRATIVO',
           <FileText className="h-6 w-6" />,
-          adminPatients.current,
-          adminPatients.recent,
+          mockData.administrativo.current,
+          mockData.administrativo.recent,
           'bg-purple-600',
           'administrativo'
         )}
@@ -226,8 +235,8 @@ const PanelScreen = () => {
         {renderSection(
           'CONSULTA',
           <UserCheck className="h-6 w-6" />,
-          consultationPatients.current,
-          consultationPatients.recent,
+          mockData.consulta.current,
+          mockData.consulta.recent,
           'bg-green-600',
           'consulta'
         )}
