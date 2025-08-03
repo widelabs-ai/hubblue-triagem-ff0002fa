@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +17,7 @@ import DoctorScreen from "./components/DoctorScreen";
 import MonitoringDashboard from "./components/MonitoringDashboard";
 import ReportsScreen from "./components/ReportsScreen";
 import PanelScreen from "./components/PanelScreen";
+import ExamStatusScreen from "./components/ExamStatusScreen";
 import Header from "./components/Header";
 
 const queryClient = new QueryClient();
@@ -41,6 +43,7 @@ const AppContent = () => {
           <Route path="/monitoramento" element={<MonitoringDashboard />} />
           <Route path="/relatorios" element={<ReportsScreen />} />
           <Route path="/painel" element={<PanelScreen />} />
+          <Route path="/exames" element={<ExamStatusScreen />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </HospitalProvider>
