@@ -43,22 +43,22 @@ const ExamStatusScreen = () => {
 
   const mockExams = {
     processando: [
-      { password: 'PR007', exam: 'Raio-X Tórax', estimatedTime: '15 min' },
-      { password: 'NP024', exam: 'Hemograma Completo', estimatedTime: '30 min' },
-      { password: 'PR006', exam: 'Tomografia Craniana', estimatedTime: '45 min' },
-      { password: 'NP023', exam: 'Ultrassom Abdominal', estimatedTime: '20 min' },
+      { password: 'PR007' },
+      { password: 'NP024' },
+      { password: 'PR006' },
+      { password: 'NP023' },
     ],
     parcial: [
-      { password: 'NP021', exam: 'Exames Laboratoriais', ready: ['Glicemia', 'Colesterol'], pending: ['Hemoglobina', 'Ureia'] },
-      { password: 'PR004', exam: 'Ressonância Magnética', ready: ['Imagens'], pending: ['Laudo Médico'] },
-      { password: 'NP020', exam: 'Eletrocardiograma', ready: ['ECG'], pending: ['Análise Cardiológica'] },
+      { password: 'NP021' },
+      { password: 'PR004' },
+      { password: 'NP020' },
     ],
     prontos: [
-      { password: 'NP019', exam: 'Raio-X Joelho', completedAt: '14:30' },
-      { password: 'PR003', exam: 'Exames de Sangue', completedAt: '14:15' },
-      { password: 'NP018', exam: 'Ultrassom Pélvico', completedAt: '14:00' },
-      { password: 'NP017', exam: 'Mamografia', completedAt: '13:45' },
-      { password: 'NP016', exam: 'Densitometria Óssea', completedAt: '13:30' },
+      { password: 'NP019' },
+      { password: 'PR003' },
+      { password: 'NP018' },
+      { password: 'NP017' },
+      { password: 'NP016' },
     ]
   };
 
@@ -91,44 +91,15 @@ const ExamStatusScreen = () => {
                   key={`${item.password}-${index}`}
                   className="bg-white/20 rounded-lg p-3 sm:p-4 border border-white/30"
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+                      {item.password}
+                    </span>
                     <div className="flex items-center">
-                      <span className="text-lg sm:text-xl lg:text-2xl font-bold text-white mr-3">
-                        {item.password}
-                      </span>
-                      <div className={`w-3 h-3 rounded-full ${getStatusColor(status)} flex-shrink-0`}></div>
+                      <div className={`w-3 h-3 rounded-full ${getStatusColor(status)} flex-shrink-0 mr-2`}></div>
+                      {getStatusIcon(status)}
                     </div>
-                    {getStatusIcon(status)}
                   </div>
-                  
-                  <div className="text-white/90 text-sm sm:text-base mb-2">
-                    <strong>{item.exam}</strong>
-                  </div>
-                  
-                  {status === 'processando' && item.estimatedTime && (
-                    <div className="text-white/70 text-xs sm:text-sm flex items-center">
-                      <Clock className="h-3 w-3 mr-1" />
-                      Tempo estimado: {item.estimatedTime}
-                    </div>
-                  )}
-                  
-                  {status === 'parcial' && (
-                    <div className="text-xs sm:text-sm">
-                      <div className="text-green-300 mb-1">
-                        ✓ Prontos: {item.ready.join(', ')}
-                      </div>
-                      <div className="text-yellow-300">
-                        ⏳ Pendentes: {item.pending.join(', ')}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {status === 'pronto' && item.completedAt && (
-                    <div className="text-white/70 text-xs sm:text-sm flex items-center">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Finalizado às {item.completedAt}
-                    </div>
-                  )}
                 </div>
               ))
             ) : (
