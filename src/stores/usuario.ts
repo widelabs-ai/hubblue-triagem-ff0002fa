@@ -6,7 +6,8 @@ import { doLogout } from '@/services/auth';
 type UsuarioStore = {
   usuario: User | null;
   token: string | null;
-  setUsuario: (usuario: User, token: string) => void;
+  setUsuario: (usuario: User) => void;
+  setToken: (token: string) => void;
   logout: () => Promise<void>;
   primeiroAcesso: boolean;
 };
@@ -18,12 +19,16 @@ const useUsuarioStore = create<UsuarioStore>()(
     token: null,
     primeiroAcesso: false,
     
-    setUsuario: (usuario, token) => {
-      set({ usuario, token })
-      // if(usuario.perfil.criadoEm === usuario.perfil.atualizadoEm) {
-      //   set({ primeiroAcesso: true })
-      // }
-      return { ...usuario, token }
+    setUsuario: (usuario) => {
+      set({ usuario })
+      if(usuario.criadoEm === usuario.atualizadoEm) {
+        set({ primeiroAcesso: true })
+      }
+      return { ...usuario }
+    },
+
+    setToken: (token) => {
+      set({ token })
     },
     
     logout: async () => set({ usuario: null, token: null }),

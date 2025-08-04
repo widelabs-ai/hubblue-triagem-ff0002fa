@@ -5,17 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { LogIn, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { doAlterarSenha } from '@/services/auth';
-import useUsuarioStore from '@/stores/usuario';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const UpdatePasswordScreen = () => {
   const [passwordCopy, setPasswordCopy] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { token } = useUsuarioStore();
+  const { token } = useParams();
   const navigate = useNavigate();
 
 

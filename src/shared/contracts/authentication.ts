@@ -3,7 +3,9 @@ export interface User {
     email: string;
     id: string,
     perfil: Perfil,
-    permissoes: string[]
+    permissoes: string[],
+    criadoEm: string,
+    atualizadoEm: string
   }
 
   interface Perfil {
@@ -36,4 +38,8 @@ export interface User {
   export interface AlterarSenhaRequest {
    token: string;
    novaSenha: string;
+  }
+
+  export interface EsqueciMinhaSenhaRequest {
+    email: string;
   }

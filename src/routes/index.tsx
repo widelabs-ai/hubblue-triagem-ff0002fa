@@ -1,31 +1,45 @@
 import useUsuarioStore from "@/stores/usuario";
 import LoginScreen from "@/components/LoginScreen";
+import ForgotPasswordScreen from "@/components/ForgotPasswordScreen";
 import UpdatePasswordScreen from "@/components/UpdatePasswordScreen";
 import Header from "@/components/Header";
 import PrivateRoutes from "./privateRoutes";
 import TotemScreen from "@/components/TotemScreen";
+import { useLocation } from "react-router-dom";
+import AuthRoutes from "./authRoutes";
 
 const AppRoutes = () => {
-    const {primeiroAcesso, token} = useUsuarioStore();
+  const { primeiroAcesso, usuario} = useUsuarioStore();
+  const location = useLocation();
+  const currentPath = location.pathname;
 
-    if (!token) {
-      return <LoginScreen />;
+  const routeConfig = [
+    {
+      condition: !usuario && currentPath === "/totem-atendimento",
+      component: <TotemScreen />
+    },
+    {
+      condition: !usuario,
+      component: <AuthRoutes />
+    },
+    {
+      condition: primeiroAcesso,
+      component: <UpdatePasswordScreen />
     }
-  
-    if (primeiroAcesso) {
-      return <UpdatePasswordScreen />;
-    }
-  
-    if (!token && location.pathname === "/totem-atendimento") {
-      return <TotemScreen />
-    }
+  ];
 
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <PrivateRoutes/>
-      </div>
-    );
-  };
+  const matchedRoute = routeConfig.find(route => route.condition);
+
+  if (matchedRoute) {
+    return matchedRoute.component;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <PrivateRoutes />
+    </div>
+  );
+};
 
 export default AppRoutes;
