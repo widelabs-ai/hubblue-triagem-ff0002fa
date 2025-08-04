@@ -9,7 +9,7 @@ import { useLocation } from "react-router-dom";
 import AuthRoutes from "./authRoutes";
 
 const AppRoutes = () => {
-  const { primeiroAcesso, usuario} = useUsuarioStore();
+  const { usuario, token} = useUsuarioStore();
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -19,11 +19,7 @@ const AppRoutes = () => {
       component: <TotemScreen />
     },
     {
-      condition: !usuario,
-      component: <AuthRoutes />
-    },
-    {
-      condition: primeiroAcesso,
+      condition: usuario && usuario.criadoEm === usuario.atualizadoEm,
       component: <UpdatePasswordScreen />
     }
   ];
@@ -36,8 +32,15 @@ const AppRoutes = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-      <PrivateRoutes />
+      {
+        !usuario ? 
+          <AuthRoutes />
+        :
+        <>
+          <Header />
+          <PrivateRoutes />
+        </>
+      }
     </div>
   );
 };

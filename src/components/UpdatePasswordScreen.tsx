@@ -8,13 +8,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { User } from 'lucide-react';
 import { doAlterarSenha } from '@/services/auth';
 import { useNavigate, useParams } from 'react-router-dom';
+import useUsuarioStore from '@/stores/usuario';
 
 const UpdatePasswordScreen = () => {
   const [passwordCopy, setPasswordCopy] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { token } = useParams();
+  const { tokenEmail } = useParams();
+  const { token, usuario, setUsuario } = useUsuarioStore()
   const navigate = useNavigate();
 
 
@@ -24,10 +26,15 @@ const UpdatePasswordScreen = () => {
     setIsLoading(true);
 
     try {
-      const success = await doAlterarSenha({token, novaSenha: password});
+      const success = await doAlterarSenha({token: token, novaSenha: password});
       if (!success) {
         setError('Erro ao alterar senha');
+        navigate('/');
       } else {
+        setUsuario({
+          ...usuario,
+          atualizadoEm: new Date().toISOString()
+        });
         navigate('/');
       }
     } catch (err) {

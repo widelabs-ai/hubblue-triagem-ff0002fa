@@ -9,7 +9,6 @@ type UsuarioStore = {
   setUsuario: (usuario: User) => void;
   setToken: (token: string) => void;
   logout: () => Promise<void>;
-  primeiroAcesso: boolean;
 };
 
 const useUsuarioStore = create<UsuarioStore>()(
@@ -17,13 +16,9 @@ const useUsuarioStore = create<UsuarioStore>()(
     (set) => ({
     usuario: null,
     token: null,
-    primeiroAcesso: false,
     
     setUsuario: (usuario) => {
       set({ usuario })
-      if(usuario.criadoEm === usuario.atualizadoEm) {
-        set({ primeiroAcesso: true })
-      }
       return { ...usuario }
     },
 

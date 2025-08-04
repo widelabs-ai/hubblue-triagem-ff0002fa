@@ -42,7 +42,7 @@ const LoginScreen = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-t-lg">
-      <ArrowLeft onClick={() => navigate('/login')} className="h-5 w-5 cursor-pointer" />
+      <ArrowLeft onClick={() => navigate('/')} className="h-5 w-5 cursor-pointer" />
           <div className="flex justify-center mb-2">
             <User className="h-12 w-12" />
           </div>

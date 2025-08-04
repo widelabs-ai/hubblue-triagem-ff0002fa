@@ -1,4 +1,4 @@
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import LoginScreen from "@/components/LoginScreen";
 import ForgotPasswordScreen from "@/components/ForgotPasswordScreen";
 import UpdatePasswordScreen from "@/components/UpdatePasswordScreen";
