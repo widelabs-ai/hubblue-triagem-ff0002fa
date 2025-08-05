@@ -18,6 +18,7 @@ const AdminScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
+  const [currentPatientId, setCurrentPatientId] = useState<string>('');
   const [personalData, setPersonalData] = useState({
     fullName: '',
     dateOfBirth: '',
@@ -38,7 +39,6 @@ const AdminScreen: React.FC = () => {
 
   const navigate = useNavigate();
   const waitingPatients = getPatientsByStatus('waiting-admin').sort((a, b) => {
-    // Primeiro ordena por prioridade (vermelho > laranja > amarelo > verde > azul)
     const priorityOrder = { 'vermelho': 5, 'laranja': 4, 'amarelo': 3, 'verde': 2, 'azul': 1 };
     const priorityA = priorityOrder[a.triageData?.priority as keyof typeof priorityOrder] || 0;
     const priorityB = priorityOrder[b.triageData?.priority as keyof typeof priorityOrder] || 0;
@@ -47,21 +47,19 @@ const AdminScreen: React.FC = () => {
       return priorityB - priorityA; // Maior prioridade primeiro
     }
     
-    // Se a prioridade for igual, ordena por tempo de espera (mais tempo primeiro)
     const timeA = getTimeElapsed(a, 'triageCompleted');
     const timeB = getTimeElapsed(b, 'triageCompleted');
     return timeB - timeA;
   });
-  const currentPatient = getPatientsByStatus('in-admin')[0];
 
-  // Função para calcular idade a partir da data de nascimento
+  const currentPatient = currentPatientId ? getPatientsByStatus('in-admin').find(p => p.id === currentPatientId) : undefined;
+
   const calculateAgeFromBirthDate = (birthDate: string): string => {
     if (!birthDate) return '';
     
     const today = new Date();
     const birth = new Date(birthDate);
     
-    // Verifica se a data é válida
     if (isNaN(birth.getTime())) return '';
     
     let age = today.getFullYear() - birth.getFullYear();
@@ -74,17 +72,13 @@ const AdminScreen: React.FC = () => {
     return age >= 0 ? age.toString() : '';
   };
 
-  // Pre-populate form when currentPatient changes - com prioridade para dados existentes
   useEffect(() => {
     if (currentPatient && isDialogOpen) {
-      // Merge dados da triagem com dados pessoais existentes
       const existingPersonalData = currentPatient.personalData;
       const triagePersonalData = currentPatient.triageData?.personalData;
       
-      // Determina a data de nascimento prioritária
       const dateOfBirth = existingPersonalData?.dateOfBirth || triagePersonalData?.dateOfBirth || '';
       
-      // Calcula a idade automaticamente se há data de nascimento
       const calculatedAge = dateOfBirth ? calculateAgeFromBirthDate(dateOfBirth) : 
                            (existingPersonalData?.age?.toString() || triagePersonalData?.age?.toString() || '');
       
@@ -108,7 +102,6 @@ const AdminScreen: React.FC = () => {
     }
   }, [currentPatient, isDialogOpen]);
 
-  // Atualiza a idade quando a data de nascimento é alterada
   useEffect(() => {
     if (personalData.dateOfBirth) {
       const calculatedAge = calculateAgeFromBirthDate(personalData.dateOfBirth);
@@ -129,8 +122,15 @@ const AdminScreen: React.FC = () => {
   };
 
   const handleCallPatient = (patientId: string) => {
+    console.log('Iniciando cadastro para paciente:', patientId);
+    
+    setCurrentPatientId(patientId);
+    
     updatePatientStatus(patientId, 'in-admin');
+    
     setIsDialogOpen(true);
+    console.log('Diálogo de cadastro aberto para paciente:', patientId);
+    
     toast({
       title: "Paciente chamado",
       description: "Paciente está sendo atendido no administrativo.",
@@ -138,8 +138,9 @@ const AdminScreen: React.FC = () => {
   };
 
   const handleReturnToQueue = () => {
-    if (currentPatient) {
-      updatePatientStatus(currentPatient.id, 'waiting-admin');
+    if (currentPatientId) {
+      updatePatientStatus(currentPatientId, 'waiting-admin');
+      setCurrentPatientId('');
       resetPersonalData();
       setIsDialogOpen(false);
       toast({
@@ -150,8 +151,9 @@ const AdminScreen: React.FC = () => {
   };
 
   const handleCancelPatient = (reason: string) => {
-    if (currentPatient) {
-      cancelPatient(currentPatient.id, reason);
+    if (currentPatientId) {
+      cancelPatient(currentPatientId, reason);
+      setCurrentPatientId('');
       resetPersonalData();
       setIsDialogOpen(false);
       setIsCancellationModalOpen(false);
@@ -183,7 +185,7 @@ const AdminScreen: React.FC = () => {
   };
 
   const handleCompleteAdmin = () => {
-    if (!currentPatient || !personalData.fullName || !personalData.cpf || (!personalData.age && !personalData.dateOfBirth)) {
+    if (!currentPatientId || !personalData.fullName || !personalData.cpf || (!personalData.age && !personalData.dateOfBirth)) {
       toast({
         title: "Dados incompletos",
         description: "Por favor, preencha todos os campos obrigatórios (nome completo, CPF e idade/data de nascimento).",
@@ -192,7 +194,6 @@ const AdminScreen: React.FC = () => {
       return;
     }
 
-    // Validação específica por tipo de vínculo
     if (personalData.linkType === 'SUS' && !personalData.susCard) {
       toast({
         title: "Dados incompletos",
@@ -214,16 +215,17 @@ const AdminScreen: React.FC = () => {
     const dataToSave = {
       ...personalData,
       age: personalData.age ? parseInt(personalData.age) : undefined,
-      name: personalData.fullName, // Para compatibilidade
-      address: personalData.fullAddress, // Para compatibilidade
-      emergencyContact: personalData.emergencyContactName, // Para compatibilidade
-      emergencyPhone: personalData.emergencyContactPhone, // Para compatibilidade
-      healthInsurance: personalData.linkType, // Para compatibilidade
+      name: personalData.fullName,
+      address: personalData.fullAddress,
+      emergencyContact: personalData.emergencyContactName,
+      emergencyPhone: personalData.emergencyContactPhone,
+      healthInsurance: personalData.linkType,
     };
 
     const nextStatus = personalData.canBeAttended ? 'waiting-doctor' : 'completed';
-    updatePatientStatus(currentPatient.id, nextStatus, { personalData: dataToSave });
+    updatePatientStatus(currentPatientId, nextStatus, { personalData: dataToSave });
     
+    setCurrentPatientId('');
     resetPersonalData();
     setIsDialogOpen(false);
     
@@ -236,8 +238,9 @@ const AdminScreen: React.FC = () => {
   };
 
   const handleCloseDialog = () => {
-    if (currentPatient) {
-      updatePatientStatus(currentPatient.id, 'waiting-admin');
+    if (currentPatientId) {
+      updatePatientStatus(currentPatientId, 'waiting-admin');
+      setCurrentPatientId('');
     }
     setIsDialogOpen(false);
     resetPersonalData();
@@ -352,7 +355,7 @@ const AdminScreen: React.FC = () => {
                             </Button>
                             <Button 
                               onClick={() => handleCallPatient(patient.id)}
-                              disabled={!!currentPatient}
+                              disabled={!!currentPatientId}
                               size="sm"
                               className="bg-green-600 hover:bg-green-700"
                             >
@@ -378,7 +381,6 @@ const AdminScreen: React.FC = () => {
         </Card>
       </div>
 
-      {/* Dialog de Coleta de Dados */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -408,7 +410,6 @@ const AdminScreen: React.FC = () => {
                 <div className="text-sm">
                   Tempo no administrativo: {getTimeElapsed(currentPatient, 'adminStarted')} min
                 </div>
-                {/* Mostrar dados já coletados na triagem */}
                 {(currentPatient.triageData?.personalData || currentPatient.personalData) && (
                   <div className="mt-2 p-3 bg-green-50 rounded border-l-4 border-green-400">
                     <strong className="text-green-800">✅ Dados já coletados na triagem:</strong>
@@ -431,7 +432,6 @@ const AdminScreen: React.FC = () => {
               </div>
 
               <div className="space-y-8">
-                {/* Dados Pessoais */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 text-blue-700">Dados Pessoais</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -568,7 +568,6 @@ const AdminScreen: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Dados de Contato e Localização */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 text-blue-700">Dados de Contato e Localização</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -649,7 +648,6 @@ const AdminScreen: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Cancelamento */}
       <CancellationModal
         isOpen={isCancellationModalOpen}
         onClose={() => setIsCancellationModalOpen(false)}
