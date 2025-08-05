@@ -1,6 +1,6 @@
 
 
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
@@ -15,7 +15,8 @@ import ReportsScreen from "@/components/ReportsScreen";
 const PrivateRoutes = () => {
    return(
        <Routes>
-            <Route path="/"  element={<Index />}/>
+            <Route path="/" element={<Navigate to="/home" replace />} />
+            <Route path="/home"  element={<Index />}/>           
             <Route path="/usuarios" element={<UserManagement />} />
             <Route path="/totem" element={<TotemScreen />} />
             <Route path="/triagem" element={<TriageScreen />} />

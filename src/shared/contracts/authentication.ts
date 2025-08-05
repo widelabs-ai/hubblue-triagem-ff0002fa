@@ -28,6 +28,11 @@ export interface User {
     senha: string;
   }
 
+  export interface LogoutRequest {
+    token: string;
+    refreshToken: string;
+  }
+
   export interface CadastroRequest {
     nome: string;
     email: string;

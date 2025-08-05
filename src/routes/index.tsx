@@ -1,7 +1,4 @@
 import useUsuarioStore from "@/stores/usuario";
-import LoginScreen from "@/components/LoginScreen";
-import ForgotPasswordScreen from "@/components/ForgotPasswordScreen";
-import UpdatePasswordScreen from "@/components/UpdatePasswordScreen";
 import Header from "@/components/Header";
 import PrivateRoutes from "./privateRoutes";
 import TotemScreen from "@/components/TotemScreen";
@@ -9,7 +6,7 @@ import { useLocation } from "react-router-dom";
 import AuthRoutes from "./authRoutes";
 
 const AppRoutes = () => {
-  const { usuario, token} = useUsuarioStore();
+  const { usuario, primeiroAcesso} = useUsuarioStore();
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -17,10 +14,6 @@ const AppRoutes = () => {
     {
       condition: !usuario && currentPath === "/totem-atendimento",
       component: <TotemScreen />
-    },
-    {
-      condition: usuario && usuario.criadoEm === usuario.atualizadoEm,
-      component: <UpdatePasswordScreen />
     }
   ];
 
@@ -33,13 +26,13 @@ const AppRoutes = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {
-        !usuario ? 
+        !usuario || primeiroAcesso ? 
           <AuthRoutes />
         :
-        <>
-          <Header />
-          <PrivateRoutes />
-        </>
+        <div>
+              <Header />
+              <PrivateRoutes />
+        </div>
       }
     </div>
   );

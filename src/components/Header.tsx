@@ -9,11 +9,11 @@ import { logout } from '@/stores/usuario';
 import useUsuarioStore from '@/stores/usuario';
 
 const Header = () => {
-  const {usuario} = useUsuarioStore();
+  const {usuario, token, refreshToken} = useUsuarioStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout();
+    logout(token, refreshToken);
     navigate('/');
   };
 
