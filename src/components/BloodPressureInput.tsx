@@ -91,7 +91,7 @@ const BloodPressureInput: React.FC<BloodPressureInputProps> = ({
       )}
       {validation.isValid && validation.isOutOfRange && validation.message && (
         <div className={`${size === 'sm' ? 'text-xs' : 'text-sm'} text-yellow-600 mt-1`}>
-          ⚠️ {validation.message}
+          ⚠️ Valor fora da referência - {validation.message}
         </div>
       )}
     </div>

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, X, MessageSquare, Lightbulb } from 'lucide-react';
+import { ArrowLeft, X, MessageSquare, Lightbulb, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TriageChat from './TriageChat';
 import CancellationModal from './CancellationModal';
@@ -579,7 +579,6 @@ const TriageScreen: React.FC = () => {
                           <div className="flex gap-2">
                             <Button 
                               onClick={() => {
-                                // Função para chamar no painel
                                 toast({
                                   title: "Paciente chamado no painel",
                                   description: `Senha ${patient.password} foi chamada no painel.`,
@@ -589,6 +588,7 @@ const TriageScreen: React.FC = () => {
                               size="sm"
                               className="text-blue-600 border-blue-200 hover:bg-blue-50"
                             >
+                              <Phone className="h-3 w-3 mr-1" />
                               Chamar no Painel
                             </Button>
                             <Button 
@@ -879,7 +879,7 @@ const TriageScreen: React.FC = () => {
                       </div>
 
                       <div>
-                        <Label className="text-sm font-medium">Doenças Crônicas e Comorbidades</Label>
+                        <Label className="text-sm font-medium">Comorbidades</Label>
                         <Textarea
                           placeholder="Diabetes, hipertensão, doença de Crohn, etc... (opcional)"
                           value={triageData.chronicDiseases}
