@@ -85,10 +85,11 @@ const Index = () => {
         <div className="mb-8 space-y-4">
           <Alert className="border-red-200 bg-red-50">
             <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertTitle className="text-red-800">Atenção - Protocolo de Emergência</AlertTitle>
+            <AlertTitle className="text-red-800">Atenção – Protocolo de Emergência</AlertTitle>
             <AlertDescription className="text-red-700">
-              Em casos de emergência (vermelho), encaminhe imediatamente para sala de trauma. 
-              Tempo de espera máximo: 0 minutos.
+              Em casos classificados como emergência (cor vermelha), o paciente deve ser
+              encaminhado imediatamente para a Sala Vermelha.
+              Tempo de espera: zero minutos.
             </AlertDescription>
           </Alert>
 
