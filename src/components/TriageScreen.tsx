@@ -537,9 +537,9 @@ const TriageScreen: React.FC = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-20">Senha</TableHead>
-                    <TableHead>Especialidade</TableHead>
+                    <TableHead>Tipo de atendimento</TableHead>
                     <TableHead className="w-32">Tempo Aguardando</TableHead>
-                    <TableHead className="w-32">Status SLA</TableHead>
+                    <TableHead className="w-32">Status</TableHead>
                     <TableHead className="w-24">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
