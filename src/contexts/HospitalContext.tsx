@@ -9,6 +9,7 @@ export interface Patient {
           'waiting-exam' | 'in-exam' | 'waiting-medication' | 'in-medication' | 'waiting-hospitalization' | 
           'in-hospitalization' | 'waiting-inter-consultation' | 'in-inter-consultation' | 'waiting-transfer' | 
           'transferred' | 'prescription-issued' | 'discharged' | 'deceased' | 'completed' | 'cancelled';
+  callCount: number;
   timestamps: {
     generated: Date;
     triageStarted?: Date;
@@ -91,6 +92,7 @@ interface HospitalContextType {
   getTimeElapsed: (patient: Patient, from: keyof Patient['timestamps'], to?: keyof Patient['timestamps']) => number;
   isOverSLA: (patient: Patient) => { triageSLA: boolean; totalSLA: boolean };
   getPatientFlowStats: () => any;
+  callPatient: (id: string) => void;
 }
 
 const HospitalContext = createContext<HospitalContextType | undefined>(undefined);
@@ -121,6 +123,7 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       specialty,
       phone,
       status: 'waiting-triage',
+      callCount: 0,
       timestamps: {
         generated: new Date()
       }
@@ -130,6 +133,14 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setCurrentPasswordNumber(prev => prev + 1);
     
     return password;
+  };
+
+  const callPatient = (id: string) => {
+    setPatients(prev => prev.map(patient => 
+      patient.id === id 
+        ? { ...patient, callCount: patient.callCount + 1 }
+        : patient
+    ));
   };
 
   const updatePatientStatus = (id: string, status: Patient['status'], additionalData?: any) => {
@@ -327,7 +338,8 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       getPatientById,
       getTimeElapsed,
       isOverSLA,
-      getPatientFlowStats
+      getPatientFlowStats,
+      callPatient
     }}>
       {children}
     </HospitalContext.Provider>
