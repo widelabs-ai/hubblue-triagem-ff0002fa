@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useHospital } from '@/contexts/HospitalContext';
 import {
@@ -21,7 +22,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import TriageForm from './TriageForm';
 import { useNavigate } from 'react-router-dom';
 
 const TriageScreen = () => {
