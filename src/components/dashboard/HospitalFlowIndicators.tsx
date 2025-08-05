@@ -227,7 +227,7 @@ const HospitalFlowIndicators: React.FC = () => {
           );
         })}
 
-        {/* Seção de Consultório Médico por Especialidades */}
+        {/* Seção de Consultório Médico por Especialidades - Layout em uma linha */}
         <Card className="bg-teal-50 border-teal-200 border-2">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
@@ -236,7 +236,7 @@ const HospitalFlowIndicators: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {medicalSpecialties.map((specialty) => {
                 const waitingStats = calculateSpecialtyStats('waiting-doctor', specialty.key);
                 const consultationStats = calculateSpecialtyStats('in-consultation', specialty.key);
@@ -251,41 +251,42 @@ const HospitalFlowIndicators: React.FC = () => {
                   <div key={specialty.key} className={`${specialty.color} rounded-lg border-2 p-4 ${specialtyHasAlert ? 'ring-2 ring-red-500 border-red-300 animate-pulse' : ''}`}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl">{specialty.icon}</span>
-                        <span className="font-medium text-lg">{specialty.name}</span>
-                        {specialtyHasAlert && <span className="text-xl animate-pulse">🚨</span>}
+                        <span className="text-xl">{specialty.icon}</span>
+                        <span className="font-medium text-sm">{specialty.name}</span>
+                        {specialtyHasAlert && <span className="text-lg animate-pulse">🚨</span>}
                       </div>
-                      <div className="text-sm text-gray-600">
-                        Total: {totalSpecialtyPatients} pacientes
-                      </div>
+                    </div>
+                    
+                    <div className="text-xs text-gray-600 mb-2">
+                      Total: {totalSpecialtyPatients} pacientes
                     </div>
                     
                     {specialtyHasAlert && (
                       <Alert className="bg-red-50 border-red-200 mb-3 animate-pulse">
-                        <AlertDescription className="text-red-700 text-sm">
-                          ⚠️ Atenção: {totalOutSLA} paciente{totalOutSLA > 1 ? 's' : ''} fora do prazo estabelecido
+                        <AlertDescription className="text-red-700 text-xs">
+                          ⚠️ {totalOutSLA} fora do prazo
                         </AlertDescription>
                       </Alert>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-2">
                       {/* Aguardando Médico */}
                       {waitingStats.total > 0 && (
                         <div 
-                          className={`bg-white/50 rounded-lg p-3 border cursor-pointer hover:bg-white/80 transition-colors ${waitingStats.outSLA > 0 ? 'border-red-300 bg-red-50/50 animate-pulse' : ''}`}
+                          className={`bg-white/50 rounded-lg p-2 border cursor-pointer hover:bg-white/80 transition-colors ${waitingStats.outSLA > 0 ? 'border-red-300 bg-red-50/50 animate-pulse' : ''}`}
                           onClick={() => handleIndicatorClick('waiting-doctor', `Aguardando Médico - ${specialty.name}`, specialty.key)}
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">⏳</span>
-                              <span className="font-medium text-sm">Aguardando Médico</span>
-                              {waitingStats.outSLA > 0 && <span className="text-sm animate-pulse">🚨</span>}
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm">⏳</span>
+                              <span className="font-medium text-xs">Aguardando</span>
+                              {waitingStats.outSLA > 0 && <span className="text-xs animate-pulse">🚨</span>}
                             </div>
-                            <span className="text-xl font-bold">{waitingStats.total}</span>
+                            <span className="text-lg font-bold">{waitingStats.total}</span>
                           </div>
                           <div className="text-xs text-gray-600">
-                            <div>Tempo médio: {waitingStats.avgTime} min</div>
-                            <div className="mt-1">
+                            <div>Tempo: {waitingStats.avgTime} min</div>
+                            <div>
                               <span className="text-green-600">{waitingStats.inSLA} dentro</span> | 
                               <span className="text-red-600 ml-1">{waitingStats.outSLA} fora</span>
                             </div>
@@ -296,20 +297,20 @@ const HospitalFlowIndicators: React.FC = () => {
                       {/* Em Atendimento */}
                       {consultationStats.total > 0 && (
                         <div 
-                          className={`bg-white/50 rounded-lg p-3 border cursor-pointer hover:bg-white/80 transition-colors ${consultationStats.outSLA > 0 ? 'border-red-300 bg-red-50/50 animate-pulse' : ''}`}
+                          className={`bg-white/50 rounded-lg p-2 border cursor-pointer hover:bg-white/80 transition-colors ${consultationStats.outSLA > 0 ? 'border-red-300 bg-red-50/50 animate-pulse' : ''}`}
                           onClick={() => handleIndicatorClick('in-consultation', `Em Atendimento - ${specialty.name}`, specialty.key)}
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">👨‍⚕️</span>
-                              <span className="font-medium text-sm">Em Atendimento</span>
-                              {consultationStats.outSLA > 0 && <span className="text-sm animate-pulse">🚨</span>}
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm">👨‍⚕️</span>
+                              <span className="font-medium text-xs">Atendimento</span>
+                              {consultationStats.outSLA > 0 && <span className="text-xs animate-pulse">🚨</span>}
                             </div>
-                            <span className="text-xl font-bold">{consultationStats.total}</span>
+                            <span className="text-lg font-bold">{consultationStats.total}</span>
                           </div>
                           <div className="text-xs text-gray-600">
-                            <div>Tempo médio: {consultationStats.avgTime} min</div>
-                            <div className="mt-1">
+                            <div>Tempo: {consultationStats.avgTime} min</div>
+                            <div>
                               <span className="text-green-600">{consultationStats.inSLA} dentro</span> | 
                               <span className="text-red-600 ml-1">{consultationStats.outSLA} fora</span>
                             </div>
