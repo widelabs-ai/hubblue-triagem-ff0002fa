@@ -5,29 +5,28 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { X } from 'lucide-react';
-import { useHospital } from '../contexts/HospitalContext';
 
 interface CancellationModalProps {
-  patientId: string;
+  isOpen: boolean;
   onClose: () => void;
+  onConfirm: (reason: string) => void;
+  patientPassword: string;
 }
 
 const CancellationModal: React.FC<CancellationModalProps> = ({
-  patientId,
-  onClose
+  isOpen,
+  onClose,
+  onConfirm,
+  patientPassword
 }) => {
   const [reason, setReason] = useState('');
-  const { getPatientById, cancelPatient } = useHospital();
-  
-  const patient = getPatientById(patientId);
 
   const handleConfirm = () => {
     if (!reason.trim()) {
       return;
     }
-    cancelPatient(patientId, reason);
+    onConfirm(reason);
     setReason('');
-    onClose();
   };
 
   const handleClose = () => {
@@ -36,7 +35,7 @@ const CancellationModal: React.FC<CancellationModalProps> = ({
   };
 
   return (
-    <Dialog open={true} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex justify-between items-center">
@@ -50,7 +49,7 @@ const CancellationModal: React.FC<CancellationModalProps> = ({
         <div className="space-y-4">
           <div className="bg-red-50 p-4 rounded-lg">
             <p className="text-sm text-red-800">
-              <strong>Paciente:</strong> {patient?.password || 'N/A'}
+              <strong>Paciente:</strong> {patientPassword}
             </p>
             <p className="text-sm text-red-600 mt-1">
               Esta ação cancelará permanentemente o atendimento do paciente.
