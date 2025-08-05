@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -599,7 +597,7 @@ const TriageScreen: React.FC = () => {
                               size="sm"
                               className="bg-green-600 hover:bg-green-700"
                             >
-                              Abrir Formulário
+                              Iniciar Triagem
                             </Button>
                           </div>
                         </TableCell>
