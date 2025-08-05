@@ -540,7 +540,7 @@ const TriageScreen: React.FC = () => {
                     <TableHead>Tipo de atendimento</TableHead>
                     <TableHead className="w-32">Tempo Aguardando</TableHead>
                     <TableHead className="w-32">Status</TableHead>
-                    <TableHead className="w-24">Ações</TableHead>
+                    <TableHead className="w-48">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -578,14 +578,30 @@ const TriageScreen: React.FC = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Button 
-                            onClick={() => handleCallPatient(patient.id)}
-                            disabled={!!currentPatient}
-                            size="sm"
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            Chamar
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={() => {
+                                // Função para chamar no painel
+                                toast({
+                                  title: "Paciente chamado no painel",
+                                  description: `Senha ${patient.password} foi chamada no painel.`,
+                                });
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              Chamar no Painel
+                            </Button>
+                            <Button 
+                              onClick={() => handleCallPatient(patient.id)}
+                              disabled={!!currentPatient}
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              Abrir Formulário
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
