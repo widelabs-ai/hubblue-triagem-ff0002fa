@@ -64,10 +64,20 @@ const DoctorScreen: React.FC = () => {
   };
 
   const handleCallPatient = (patientId: string) => {
+    console.log('Chamando paciente:', patientId);
+    updatePatientStatus(patientId, 'in-consultation');
+    toast({
+      title: "Paciente chamado",
+      description: "Paciente foi chamado no painel.",
+    });
+  };
+
+  const handleOpenConsultationForm = (patientId: string) => {
+    console.log('Abrindo formulário para paciente:', patientId);
     updatePatientStatus(patientId, 'in-consultation');
     setIsDialogOpen(true);
     toast({
-      title: "Paciente chamado",
+      title: "Formulário aberto",
       description: "Paciente está em consulta médica.",
     });
   };
@@ -174,12 +184,12 @@ const DoctorScreen: React.FC = () => {
                     <TableHead className="w-20">Senha</TableHead>
                     <TableHead>Paciente</TableHead>
                     <TableHead>Convênio</TableHead>
-                    <TableHead>Tipo</TableHead>
+                    <TableHead>Tipo de atendimento</TableHead>
                     <TableHead>Classificação</TableHead>
                     <TableHead className="w-32">Tempo Aguardando</TableHead>
                     <TableHead className="w-32">Tempo Total</TableHead>
-                    <TableHead className="w-32">Status SLA</TableHead>
-                    <TableHead className="w-24">Ações</TableHead>
+                    <TableHead className="w-32">Status</TableHead>
+                    <TableHead className="w-48">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -233,14 +243,23 @@ const DoctorScreen: React.FC = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Button 
-                            onClick={() => handleCallPatient(patient.id)}
-                            disabled={!!currentPatient}
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Chamar
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={() => handleCallPatient(patient.id)}
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              Chamar no Painel
+                            </Button>
+                            <Button 
+                              onClick={() => handleOpenConsultationForm(patient.id)}
+                              disabled={!!currentPatient}
+                              size="sm"
+                              variant="outline"
+                            >
+                              Abrir Consulta
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -260,7 +279,13 @@ const DoctorScreen: React.FC = () => {
       </div>
 
       {/* Dialog de Consulta */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        if (!open && currentPatient) {
+          updatePatientStatus(currentPatient.id, 'waiting-doctor');
+          resetConsultationData();
+          setIsDialogOpen(false);
+        }
+      }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex justify-between items-center">
