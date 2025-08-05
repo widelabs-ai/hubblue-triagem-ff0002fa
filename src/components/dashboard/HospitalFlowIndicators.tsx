@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useHospital } from '@/contexts/HospitalContext';
@@ -130,6 +129,20 @@ const HospitalFlowIndicators: React.FC = () => {
       ]
     }
   ];
+
+  // Nova seção de Desfechos
+  const outcomesGroup = {
+    title: "Desfechos",
+    icon: "📊",
+    color: "bg-emerald-100 border-emerald-200",
+    statuses: ['discharged', 'in-hospitalization', 'transferred', 'deceased'],
+    items: [
+      { status: 'discharged', label: 'Alta', icon: '🏠' },
+      { status: 'in-hospitalization', label: 'Internação', icon: '🛏️' },
+      { status: 'transferred', label: 'Transferência', icon: '🚑' },
+      { status: 'deceased', label: 'Óbito', icon: '💐' }
+    ]
+  };
 
   return (
     <>
@@ -415,6 +428,60 @@ const HospitalFlowIndicators: React.FC = () => {
             </Card>
           );
         })}
+
+        {/* Nova Seção de Desfechos */}
+        <Card className={`${outcomesGroup.color} border-2`}>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{outcomesGroup.icon}</span>
+                <span className="text-lg">{outcomesGroup.title}</span>
+              </div>
+              <div className="text-sm text-gray-600">
+                Desfechos do atendimento
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              {outcomesGroup.items.map((item) => {
+                const count = getPatientsByStatus(item.status as any).length;
+                const itemPatients = getPatientsByStatus(item.status as any);
+                
+                let itemAvgTime = 0;
+                
+                if (count > 0) {
+                  let totalTime = 0;
+                  itemPatients.forEach(patient => {
+                    totalTime += getTimeElapsed(patient, 'generated');
+                  });
+                  itemAvgTime = Math.round(totalTime / count);
+                }
+                
+                return (
+                  <div 
+                    key={item.status} 
+                    className="bg-white/50 rounded-lg p-3 border cursor-pointer hover:bg-white/80 transition-colors"
+                    onClick={() => handleIndicatorClick(item.status, item.label)}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{item.icon}</span>
+                        <span className="font-medium text-sm">{item.label}</span>
+                      </div>
+                      <span className="text-xl font-bold">{count}</span>
+                    </div>
+                    {count > 0 && (
+                      <div className="text-xs text-gray-600">
+                        <div>Tempo médio: {itemAvgTime} min</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Modal para exibir pacientes - mantendo o existente */}
