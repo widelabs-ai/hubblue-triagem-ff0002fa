@@ -285,7 +285,7 @@ const HospitalFlowIndicators: React.FC = () => {
                             <span className="text-lg font-bold">{waitingStats.total}</span>
                           </div>
                           <div className="text-xs text-gray-600">
-                            <div>Tempo: {waitingStats.avgTime} min</div>
+                            <div>Tempo médio: {waitingStats.avgTime} min</div>
                             <div>
                               <span className="text-green-600">{waitingStats.inSLA} dentro</span> | 
                               <span className="text-red-600 ml-1">{waitingStats.outSLA} fora</span>
@@ -309,7 +309,7 @@ const HospitalFlowIndicators: React.FC = () => {
                             <span className="text-lg font-bold">{consultationStats.total}</span>
                           </div>
                           <div className="text-xs text-gray-600">
-                            <div>Tempo: {consultationStats.avgTime} min</div>
+                            <div>Tempo médio: {consultationStats.avgTime} min</div>
                             <div>
                               <span className="text-green-600">{consultationStats.inSLA} dentro</span> | 
                               <span className="text-red-600 ml-1">{consultationStats.outSLA} fora</span>
