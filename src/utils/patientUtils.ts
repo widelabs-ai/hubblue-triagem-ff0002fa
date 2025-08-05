@@ -18,7 +18,36 @@ export const getPatientName = (patient: Patient): string => {
   return 'Nome não informado';
 };
 
+const calculateAgeFromBirthDate = (birthDate: string): number | null => {
+  if (!birthDate) return null;
+  
+  const today = new Date();
+  const birth = new Date(birthDate);
+  
+  // Verifica se a data é válida
+  if (isNaN(birth.getTime())) return null;
+  
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  
+  return age >= 0 ? age : null;
+};
+
 export const getPatientAge = (patient: Patient): number | string => {
+  // Primeira prioridade: calcular idade pela data de nascimento se disponível
+  const birthDate = patient.personalData?.dateOfBirth || patient.triageData?.personalData?.dateOfBirth;
+  if (birthDate) {
+    const calculatedAge = calculateAgeFromBirthDate(birthDate);
+    if (calculatedAge !== null) {
+      return calculatedAge;
+    }
+  }
+  
+  // Segunda prioridade: usar idade informada diretamente
   if (patient.personalData?.age) {
     return patient.personalData.age;
   }
