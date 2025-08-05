@@ -40,6 +40,7 @@ const TriageScreen: React.FC = () => {
   const [showCustomFlowInput, setShowCustomFlowInput] = useState(false);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>('');
   const [chatExpanded, setChatExpanded] = useState(false);
+  const [currentPatientId, setCurrentPatientId] = useState<string>(''); // Add state to track current patient
   const [triageData, setTriageData] = useState({
     priority: '',
     vitals: {
@@ -122,7 +123,9 @@ const TriageScreen: React.FC = () => {
     const timeB = getTimeElapsed(b, 'generated');
     return timeB - timeA;
   });
-  const currentPatient = getPatientsByStatus('in-triage')[0];
+  
+  // Get current patient using the stored ID
+  const currentPatient = currentPatientId ? getPatientsByStatus('in-triage').find(p => p.id === currentPatientId) : undefined;
 
   // Calcular idade a partir da data de nascimento
   const calculateAge = (dateOfBirth: string): number => {
@@ -328,6 +331,9 @@ const TriageScreen: React.FC = () => {
   const handleCallPatient = (patientId: string) => {
     console.log('Iniciando triagem para paciente:', patientId);
     
+    // Store the patient ID
+    setCurrentPatientId(patientId);
+    
     // Atualizar o status do paciente
     updatePatientStatus(patientId, 'in-triage');
     
@@ -338,16 +344,14 @@ const TriageScreen: React.FC = () => {
     setHasPerformedAnalysis(false);
     setChatExpanded(false);
     
-    // FORÇAR abertura do diálogo
+    // Open dialog immediately
+    setIsDialogOpen(true);
+    console.log('Diálogo de triagem aberto para paciente:', patientId);
+    
+    // Expandir chat após delay
     setTimeout(() => {
-      setIsDialogOpen(true);
-      console.log('Diálogo de triagem aberto');
-      
-      // Expandir chat após delay
-      setTimeout(() => {
-        setChatExpanded(true);
-      }, 500);
-    }, 100);
+      setChatExpanded(true);
+    }, 500);
     
     toast({
       title: "Paciente chamado",
@@ -356,8 +360,9 @@ const TriageScreen: React.FC = () => {
   };
 
   const handleReturnToQueue = () => {
-    if (currentPatient) {
-      updatePatientStatus(currentPatient.id, 'waiting-triage');
+    if (currentPatientId) {
+      updatePatientStatus(currentPatientId, 'waiting-triage');
+      setCurrentPatientId(''); // Clear current patient ID
       resetTriageData();
       setIsDialogOpen(false);
       toast({
@@ -368,8 +373,9 @@ const TriageScreen: React.FC = () => {
   };
 
   const handleCancelPatient = (reason: string) => {
-    if (currentPatient) {
-      cancelPatient(currentPatient.id, reason);
+    if (currentPatientId) {
+      cancelPatient(currentPatientId, reason);
+      setCurrentPatientId(''); // Clear current patient ID
       resetTriageData();
       setIsDialogOpen(false);
       setIsCancellationModalOpen(false);
@@ -426,7 +432,7 @@ const TriageScreen: React.FC = () => {
 
   // Função para revisar (agora faz análise completa no formato ficha clínica)
   const handleReview = () => {
-    if (!currentPatient || !triageData.priority || !triageData.complaints) {
+    if (!currentPatientId || !triageData.priority || !triageData.complaints) {
       toast({
         title: "Dados incompletos",
         description: "Por favor, preencha pelo menos a prioridade e as queixas principais.",
@@ -455,7 +461,7 @@ const TriageScreen: React.FC = () => {
 
   // Função para concluir triagem (separada da revisão)
   const handleCompleteTriagem = () => {
-    if (!currentPatient || !triageData.priority || !triageData.complaints) {
+    if (!currentPatientId || !triageData.priority || !triageData.complaints) {
       toast({
         title: "Dados incompletos",
         description: "Por favor, preencha pelo menos a prioridade e as queixas principais.",
@@ -483,7 +489,8 @@ const TriageScreen: React.FC = () => {
     }
 
     // Concluir triagem
-    updatePatientStatus(currentPatient.id, 'waiting-admin', { triageData });
+    updatePatientStatus(currentPatientId, 'waiting-admin', { triageData });
+    setCurrentPatientId(''); // Clear current patient ID
     resetTriageData();
     setIsDialogOpen(false);
     
@@ -494,8 +501,9 @@ const TriageScreen: React.FC = () => {
   };
 
   const handleCloseDialog = () => {
-    if (currentPatient) {
-      updatePatientStatus(currentPatient.id, 'waiting-triage');
+    if (currentPatientId) {
+      updatePatientStatus(currentPatientId, 'waiting-triage');
+      setCurrentPatientId(''); // Clear current patient ID
     }
     setIsDialogOpen(false);
     setChatExpanded(false); // Reset do estado do chat
@@ -606,7 +614,7 @@ const TriageScreen: React.FC = () => {
                             </Button>
                             <Button 
                               onClick={() => handleCallPatient(patient.id)}
-                              disabled={!!currentPatient}
+                              disabled={!!currentPatientId} // Disable if there's already a patient in triage
                               size="sm"
                               className="bg-green-600 hover:bg-green-700"
                             >
