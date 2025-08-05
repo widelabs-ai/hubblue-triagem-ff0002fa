@@ -54,6 +54,26 @@ const AdminScreen: React.FC = () => {
   });
   const currentPatient = getPatientsByStatus('in-admin')[0];
 
+  // Função para calcular idade a partir da data de nascimento
+  const calculateAgeFromBirthDate = (birthDate: string): string => {
+    if (!birthDate) return '';
+    
+    const today = new Date();
+    const birth = new Date(birthDate);
+    
+    // Verifica se a data é válida
+    if (isNaN(birth.getTime())) return '';
+    
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age >= 0 ? age.toString() : '';
+  };
+
   // Pre-populate form when currentPatient changes - com prioridade para dados existentes
   useEffect(() => {
     if (currentPatient && isDialogOpen) {
@@ -61,10 +81,17 @@ const AdminScreen: React.FC = () => {
       const existingPersonalData = currentPatient.personalData;
       const triagePersonalData = currentPatient.triageData?.personalData;
       
+      // Determina a data de nascimento prioritária
+      const dateOfBirth = existingPersonalData?.dateOfBirth || triagePersonalData?.dateOfBirth || '';
+      
+      // Calcula a idade automaticamente se há data de nascimento
+      const calculatedAge = dateOfBirth ? calculateAgeFromBirthDate(dateOfBirth) : 
+                           (existingPersonalData?.age?.toString() || triagePersonalData?.age?.toString() || '');
+      
       setPersonalData({
         fullName: existingPersonalData?.fullName || existingPersonalData?.name || triagePersonalData?.fullName || triagePersonalData?.name || '',
-        dateOfBirth: existingPersonalData?.dateOfBirth || triagePersonalData?.dateOfBirth || '',
-        age: existingPersonalData?.age?.toString() || triagePersonalData?.age?.toString() || '',
+        dateOfBirth: dateOfBirth,
+        age: calculatedAge,
         biologicalSex: existingPersonalData?.gender || triagePersonalData?.gender || '',
         motherName: existingPersonalData?.motherName || '',
         cpf: existingPersonalData?.cpf || '',
@@ -80,6 +107,19 @@ const AdminScreen: React.FC = () => {
       });
     }
   }, [currentPatient, isDialogOpen]);
+
+  // Atualiza a idade quando a data de nascimento é alterada
+  useEffect(() => {
+    if (personalData.dateOfBirth) {
+      const calculatedAge = calculateAgeFromBirthDate(personalData.dateOfBirth);
+      if (calculatedAge !== personalData.age) {
+        setPersonalData(prev => ({
+          ...prev,
+          age: calculatedAge
+        }));
+      }
+    }
+  }, [personalData.dateOfBirth]);
 
   const handleCallPanel = (patientPassword: string) => {
     toast({
@@ -429,9 +469,13 @@ const AdminScreen: React.FC = () => {
                         value={personalData.age}
                         onChange={(e) => setPersonalData({...personalData, age: e.target.value})}
                         className={personalData.age ? "border-green-300 bg-green-50" : ""}
+                        readOnly={!!personalData.dateOfBirth}
                       />
-                      {personalData.age && (
+                      {personalData.age && personalData.dateOfBirth && (
                         <div className="text-xs text-green-600 mt-1">✅ Calculado pela data de nascimento</div>
+                      )}
+                      {personalData.age && !personalData.dateOfBirth && (
+                        <div className="text-xs text-green-600 mt-1">✅ Preenchido na triagem</div>
                       )}
                     </div>
 
