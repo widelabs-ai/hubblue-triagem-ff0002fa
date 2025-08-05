@@ -1,563 +1,433 @@
-
 import React, { useState } from 'react';
-import { useHospital, Patient } from '@/contexts/HospitalContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { getPatientName, getPatientAge, getPatientGender } from '@/utils/patientUtils';
-
-interface ConsultationData {
-  diagnosis: string;
-  treatment: string;
-  nextStep: 'exam' | 'medication' | 'hospitalization' | 'inter-consultation' | 'discharge' | 'transfer';
-  observations: string;
-  examType?: string;
-  medicationType?: string;
-  hospitalizationType?: string;
-  interConsultationSpecialty?: string;
-  dischargeInstructions?: string;
-  transferDestination?: string;
-  prescription?: string;
-}
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useHospital } from '@/contexts/HospitalContext';
+import { toast } from '@/hooks/use-toast';
+import { ArrowLeft, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import CancellationModal from './CancellationModal';
 
 const DoctorScreen: React.FC = () => {
-  const { 
-    patients, 
-    updatePatientStatus, 
-    getPatientsByStatus, 
-    getPatientById, 
-    getTimeElapsed, 
-    isOverSLA 
-  } = useHospital();
-  
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [consultationData, setConsultationData] = useState<ConsultationData>({
+  const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
+  const [consultationData, setConsultationData] = useState({
     diagnosis: '',
     treatment: '',
-    nextStep: 'discharge',
-    observations: '',
-    examType: '',
-    medicationType: '',
-    hospitalizationType: '',
-    interConsultationSpecialty: '',
-    dischargeInstructions: '',
-    transferDestination: '',
-    prescription: ''
+    prescription: '',
+    recommendations: '',
+    followUp: ''
   });
 
-  const startConsultation = (patientId: string) => {
-    const patient = getPatientById(patientId);
-    if (patient) {
-      updatePatientStatus(patientId, 'in-consultation');
-      setSelectedPatient(patient);
-      setIsFormOpen(true);
-      
-      // Reset consultation data
-      setConsultationData({
-        diagnosis: '',
-        treatment: '',
-        nextStep: 'discharge',
-        observations: '',
-        examType: '',
-        medicationType: '',
-        hospitalizationType: '',
-        interConsultationSpecialty: '',
-        dischargeInstructions: '',
-        transferDestination: '',
-        prescription: ''
+  const navigate = useNavigate();
+  const waitingPatients = getPatientsByStatus('waiting-doctor').sort((a, b) => {
+    // Primeiro ordena por prioridade (vermelho > laranja > amarelo > verde > azul)
+    const priorityOrder = { 'vermelho': 5, 'laranja': 4, 'amarelo': 3, 'verde': 2, 'azul': 1 };
+    const priorityA = priorityOrder[a.triageData?.priority as keyof typeof priorityOrder] || 0;
+    const priorityB = priorityOrder[b.triageData?.priority as keyof typeof priorityOrder] || 0;
+    
+    if (priorityA !== priorityB) {
+      return priorityB - priorityA; // Maior prioridade primeiro
+    }
+    
+    // Se a prioridade for igual, ordena por tempo de espera (mais tempo primeiro)
+    const timeA = getTimeElapsed(a, 'adminCompleted');
+    const timeB = getTimeElapsed(b, 'adminCompleted');
+    return timeB - timeA;
+  });
+  const currentPatient = getPatientsByStatus('in-consultation')[0];
+
+  // Função para obter o nome do paciente (prioriza personalData, depois triageData)
+  const getPatientName = (patient: any) => {
+    if (patient.personalData?.name) {
+      return patient.personalData.name;
+    }
+    if (patient.triageData?.personalData?.name) {
+      return patient.triageData.personalData.name;
+    }
+    return 'Nome não coletado';
+  };
+
+  // Função para obter dados combinados do paciente
+  const getPatientAge = (patient: any) => {
+    if (patient.personalData?.age) {
+      return patient.personalData.age;
+    }
+    if (patient.triageData?.personalData?.age) {
+      return patient.triageData.personalData.age;
+    }
+    return 'N/A';
+  };
+
+  const handleCallPatient = (patientId: string) => {
+    updatePatientStatus(patientId, 'in-consultation');
+    setIsDialogOpen(true);
+    toast({
+      title: "Paciente chamado",
+      description: "Paciente está em consulta médica.",
+    });
+  };
+
+  const handleReturnToQueue = () => {
+    if (currentPatient) {
+      updatePatientStatus(currentPatient.id, 'waiting-doctor');
+      resetConsultationData();
+      setIsDialogOpen(false);
+      toast({
+        title: "Paciente retornado",
+        description: "Paciente foi retornado para a fila de consulta.",
       });
     }
   };
 
-  const callPatientToPanel = (password: string) => {
-    toast.success(`Senha ${password} chamada para o painel`);
+  const handleCancelPatient = (reason: string) => {
+    if (currentPatient) {
+      cancelPatient(currentPatient.id, reason);
+      resetConsultationData();
+      setIsDialogOpen(false);
+      setIsCancellationModalOpen(false);
+      toast({
+        title: "Paciente cancelado",
+        description: "Atendimento foi cancelado com sucesso.",
+      });
+    }
   };
 
-  const handleSubmit = () => {
-    if (!selectedPatient) return;
-
-    // Validation
-    if (!consultationData.diagnosis.trim() || !consultationData.treatment.trim()) {
-      toast.error('Por favor, preencha o diagnóstico e tratamento');
-      return;
-    }
-
-    // Additional validation based on next step
-    if (consultationData.nextStep === 'exam' && !consultationData.examType?.trim()) {
-      toast.error('Por favor, especifique o tipo de exame');
-      return;
-    }
-
-    if (consultationData.nextStep === 'medication' && !consultationData.medicationType?.trim()) {
-      toast.error('Por favor, especifique o tipo de medicação');
-      return;
-    }
-
-    if (consultationData.nextStep === 'hospitalization' && !consultationData.hospitalizationType?.trim()) {
-      toast.error('Por favor, especifique o tipo de internação');
-      return;
-    }
-
-    if (consultationData.nextStep === 'inter-consultation' && !consultationData.interConsultationSpecialty?.trim()) {
-      toast.error('Por favor, especifique a especialidade para interconsulta');
-      return;
-    }
-
-    if (consultationData.nextStep === 'discharge' && !consultationData.dischargeInstructions?.trim()) {
-      toast.error('Por favor, preencha as instruções de alta');
-      return;
-    }
-
-    if (consultationData.nextStep === 'transfer' && !consultationData.transferDestination?.trim()) {
-      toast.error('Por favor, especifique o destino da transferência');
-      return;
-    }
-
-    // Determine next status based on next step
-    const statusMap: { [key: string]: Patient['status'] } = {
-      'exam': 'waiting-exam',
-      'medication': 'waiting-medication',
-      'hospitalization': 'waiting-hospitalization',
-      'inter-consultation': 'waiting-inter-consultation',
-      'discharge': 'discharged',
-      'transfer': 'waiting-transfer'
-    };
-
-    const nextStatus = statusMap[consultationData.nextStep];
-    updatePatientStatus(selectedPatient.id, nextStatus, { consultationData });
-    
-    toast.success('Consulta médica finalizada com sucesso!');
-    
-    setIsFormOpen(false);
-    setSelectedPatient(null);
+  const resetConsultationData = () => {
+    setConsultationData({
+      diagnosis: '',
+      treatment: '',
+      prescription: '',
+      recommendations: '',
+      followUp: ''
+    });
   };
 
-  const handleBack = () => {
-    if (!selectedPatient) return;
+  const handleCompleteConsultation = () => {
+    if (!currentPatient) return;
+
+    if (!consultationData.diagnosis || !consultationData.treatment) {
+      toast({
+        title: "Dados incompletos",
+        description: "Por favor, preencha pelo menos o diagnóstico e tratamento.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    updatePatientStatus(currentPatient.id, 'completed', { consultationData });
+    resetConsultationData();
+    setIsDialogOpen(false);
     
-    updatePatientStatus(selectedPatient.id, 'waiting-doctor');
-    setIsFormOpen(false);
-    setSelectedPatient(null);
-    toast.info('Paciente retornado à fila médica');
+    toast({
+      title: "Consulta finalizada",
+      description: "Atendimento concluído com sucesso.",
+    });
   };
 
-  const waitingPatients = getPatientsByStatus('waiting-doctor');
+  const handleCloseDialog = () => {
+    if (currentPatient) {
+      updatePatientStatus(currentPatient.id, 'waiting-doctor');
+    }
+    setIsDialogOpen(false);
+    resetConsultationData();
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'azul': return 'text-blue-600';
+      case 'verde': return 'text-green-600';
+      case 'amarelo': return 'text-yellow-600';
+      case 'laranja': return 'text-orange-600';
+      case 'vermelho': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">👨‍⚕️ Consulta Médica</h1>
-        <p className="text-gray-600">Avaliação e conduta médica</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              ⏳ Aguardando Médico
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{waitingPatients.length}</div>
-            <p className="text-sm text-gray-600 mt-1">pacientes na fila</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              🩺 Em Consulta
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">{getPatientsByStatus('in-consultation').length}</div>
-            <p className="text-sm text-gray-600 mt-1">em atendimento</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              ✅ Consultados Hoje
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">
-              {patients.filter(p => 
-                p.timestamps.consultationCompleted && 
-                new Date(p.timestamps.consultationCompleted).toDateString() === new Date().toDateString()
-              ).length}
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-50 p-4">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <Card className="shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
+            <div className="flex justify-between items-center">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/')}
+                className="text-white hover:bg-white/20 p-2"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <CardTitle className="text-2xl">👨‍⚕️ Atendimento Médico</CardTitle>
+              <div className="w-10"></div>
             </div>
-            <p className="text-sm text-gray-600 mt-1">pacientes atendidos</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Patient Queue Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            👨‍⚕️ Fila Médica ({waitingPatients.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-20">Senha</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead className="w-16">Idade</TableHead>
-                  <TableHead className="w-20">Gênero</TableHead>
-                  <TableHead>Convênio</TableHead>
-                  <TableHead>Classificação</TableHead>
-                  <TableHead>Queixa</TableHead>
-                  <TableHead className="w-32">Tempo Aguardando</TableHead>
-                  <TableHead className="w-48">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {waitingPatients.map((patient) => {
-                  const waitingTime = getTimeElapsed(patient, 'adminCompleted');
-                  const sla = isOverSLA(patient);
-                  
-                  return (
-                    <TableRow key={patient.id} className={sla.totalSLA ? 'bg-red-50' : ''}>
-                      <TableCell className="font-bold">{patient.password}</TableCell>
-                      <TableCell className="max-w-[150px] truncate">
-                        {getPatientName(patient)}
-                      </TableCell>
-                      <TableCell>{getPatientAge(patient)}</TableCell>
-                      <TableCell>{getPatientGender(patient)}</TableCell>
-                      <TableCell className="max-w-[100px] truncate">
-                        {patient.personalData?.healthInsurance || 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={
-                          patient.triageData?.priority === 'vermelho' ? 'destructive' :
-                          patient.triageData?.priority === 'laranja' ? 'destructive' :
-                          patient.triageData?.priority === 'amarelo' ? 'default' :
-                          'secondary'
-                        }>
-                          {patient.triageData?.priority?.toUpperCase() || 'N/A'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {patient.triageData?.complaints || 'N/A'}
-                      </TableCell>
-                      <TableCell className={`font-medium ${sla.totalSLA ? 'text-red-600' : 'text-green-600'}`}>
-                        {waitingTime} min
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
+          </CardHeader>
+          <CardContent className="p-6">
+            <h3 className="text-xl font-semibold mb-4">Pacientes Aguardando Consulta</h3>
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-20">Senha</TableHead>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Convênio</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Classificação</TableHead>
+                    <TableHead className="w-32">Tempo Aguardando</TableHead>
+                    <TableHead className="w-32">Tempo Total</TableHead>
+                    <TableHead className="w-32">Status SLA</TableHead>
+                    <TableHead className="w-24">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {waitingPatients.map((patient) => {
+                    const timeWaiting = getTimeElapsed(patient, 'adminCompleted');
+                    const totalTime = getTimeElapsed(patient, 'generated');
+                    const slaStatus = isOverSLA(patient);
+                    
+                    return (
+                      <TableRow 
+                        key={patient.id}
+                        className={`${
+                          slaStatus.totalSLA ? 'bg-red-50 border-red-200' : 
+                          totalTime > 90 ? 'bg-yellow-50 border-yellow-200' : 
+                          'bg-green-50 border-green-200'
+                        }`}
+                      >
+                        <TableCell className="font-bold">{patient.password}</TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div className="font-medium">{getPatientName(patient)}</div>
+                            <div className="text-gray-600">{getPatientAge(patient)} anos</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {patient.personalData?.healthInsurance || 'Particular'}
+                        </TableCell>
+                        <TableCell className="capitalize">
+                          {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`font-medium ${getPriorityColor(patient.triageData?.priority || '')}`}>
+                            {patient.triageData?.priority?.toUpperCase() || 'N/A'}
+                          </span>
+                        </TableCell>
+                        <TableCell>{timeWaiting} min</TableCell>
+                        <TableCell className={`font-medium ${
+                          slaStatus.totalSLA ? 'text-red-600' : 
+                          totalTime > 90 ? 'text-yellow-600' : 
+                          'text-green-600'
+                        }`}>
+                          {totalTime} min
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            slaStatus.totalSLA ? 'bg-red-100 text-red-800' : 
+                            totalTime > 90 ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {slaStatus.totalSLA ? 'Atrasado' : totalTime > 90 ? 'Atenção' : 'No prazo'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
                           <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => callPatientToPanel(patient.password)}
+                            onClick={() => handleCallPatient(patient.id)}
+                            disabled={!!currentPatient}
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
                           >
-                            📢 Chamar
+                            Chamar
                           </Button>
-                          <Button 
-                            size="sm" 
-                            onClick={() => startConsultation(patient.id)}
-                          >
-                            🩺 Iniciar Consulta
-                          </Button>
-                        </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {waitingPatients.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                        Nenhum paciente aguardando consulta
                       </TableCell>
                     </TableRow>
-                  );
-                })}
-                {waitingPatients.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                      Nenhum paciente aguardando consulta médica
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Consultation Form Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={() => {}}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      {/* Dialog de Consulta */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              🩺 Consulta Médica - Senha {selectedPatient?.password}
-            </DialogTitle>
+            <div className="flex justify-between items-center">
+              <DialogTitle className="text-xl">Consulta em Andamento</DialogTitle>
+              <Button variant="ghost" onClick={handleCloseDialog}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </DialogHeader>
-
-          <Tabs defaultValue="patient-info" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="patient-info">Dados do Paciente</TabsTrigger>
-              <TabsTrigger value="consultation">Consulta</TabsTrigger>
-              <TabsTrigger value="conduct">Conduta</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="patient-info" className="space-y-4">
-              {selectedPatient && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">👤 Dados Pessoais</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2 text-sm">
-                      <p><strong>Nome:</strong> {getPatientName(selectedPatient)}</p>
-                      <p><strong>Idade:</strong> {getPatientAge(selectedPatient)} anos</p>
-                      <p><strong>Gênero:</strong> {getPatientGender(selectedPatient)}</p>
-                      <p><strong>CPF:</strong> {selectedPatient.personalData?.cpf || 'N/A'}</p>
-                      <p><strong>Convênio:</strong> {selectedPatient.personalData?.healthInsurance || 'N/A'}</p>
-                      <p><strong>Contato de Emergência:</strong> {selectedPatient.personalData?.emergencyContact || 'N/A'}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">🩺 Dados da Triagem</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2 text-sm">
-                      <p><strong>Classificação:</strong> 
-                        <Badge className="ml-2" variant={
-                          selectedPatient.triageData?.priority === 'vermelho' ? 'destructive' :
-                          selectedPatient.triageData?.priority === 'laranja' ? 'destructive' :
-                          selectedPatient.triageData?.priority === 'amarelo' ? 'default' :
-                          'secondary'
-                        }>
-                          {selectedPatient.triageData?.priority?.toUpperCase() || 'N/A'}
-                        </Badge>
-                      </p>
-                      <p><strong>Queixa Principal:</strong> {selectedPatient.triageData?.complaints || 'N/A'}</p>
-                      <p><strong>Sintomas:</strong> {selectedPatient.triageData?.symptoms || 'N/A'}</p>
-                      <p><strong>Escala de Dor:</strong> {selectedPatient.triageData?.painScale || 'N/A'}</p>
-                      <p><strong>Doenças Crônicas:</strong> {selectedPatient.triageData?.chronicDiseases || 'N/A'}</p>
-                      <p><strong>Alergias:</strong> {selectedPatient.triageData?.allergies || 'N/A'}</p>
-                      <p><strong>Medicações:</strong> {selectedPatient.triageData?.medications || 'N/A'}</p>
-                    </CardContent>
-                  </Card>
-
-                  {selectedPatient.triageData?.vitals && Object.keys(selectedPatient.triageData.vitals).length > 0 && (
-                    <Card className="md:col-span-2">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">📊 Sinais Vitais</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          {selectedPatient.triageData.vitals.bloodPressure && (
-                            <p><strong>PA:</strong> {selectedPatient.triageData.vitals.bloodPressure}</p>
-                          )}
-                          {selectedPatient.triageData.vitals.heartRate && (
-                            <p><strong>FC:</strong> {selectedPatient.triageData.vitals.heartRate} bpm</p>
-                          )}
-                          {selectedPatient.triageData.vitals.temperature && (
-                            <p><strong>Temp:</strong> {selectedPatient.triageData.vitals.temperature}°C</p>
-                          )}
-                          {selectedPatient.triageData.vitals.oxygenSaturation && (
-                            <p><strong>SpO2:</strong> {selectedPatient.triageData.vitals.oxygenSaturation}%</p>
-                          )}
-                          {selectedPatient.triageData.vitals.respiratoryRate && (
-                            <p><strong>FR:</strong> {selectedPatient.triageData.vitals.respiratoryRate} irpm</p>
-                          )}
-                          {selectedPatient.triageData.vitals.glasgow && (
-                            <p><strong>Glasgow:</strong> {selectedPatient.triageData.vitals.glasgow}</p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+          
+          {currentPatient && (
+            <div className="space-y-6">
+              {/* Dados do Paciente - agora com informações completas */}
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="font-bold text-xl">{currentPatient.password}</div>
+                <div className="text-lg font-semibold">
+                  {getPatientName(currentPatient)}
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
+                  <div><strong>Idade:</strong> {getPatientAge(currentPatient)} anos</div>
+                  <div><strong>Gênero:</strong> {currentPatient.personalData?.gender || currentPatient.triageData?.personalData?.gender || 'N/I'}</div>
+                  <div><strong>CPF:</strong> {currentPatient.personalData?.cpf || 'N/I'}</div>
+                  <div className="col-span-2">
+                    <strong>Tipo:</strong> 
+                    <span className="capitalize ml-1">
+                      {currentPatient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <strong>Convênio:</strong> {currentPatient.personalData?.healthInsurance || 'Particular'}
+                  </div>
+                  {currentPatient.personalData?.address && (
+                    <div className="col-span-2">
+                      <strong>Endereço:</strong> {currentPatient.personalData.address}
+                    </div>
+                  )}
+                  {currentPatient.personalData?.emergencyContact && (
+                    <div className="col-span-2">
+                      <strong>Contato emergência:</strong> {currentPatient.personalData.emergencyContact} 
+                      {currentPatient.personalData.emergencyPhone && ` - ${currentPatient.personalData.emergencyPhone}`}
+                    </div>
                   )}
                 </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="consultation" className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <Label htmlFor="diagnosis">Diagnóstico *</Label>
-                  <Textarea
-                    id="diagnosis"
-                    value={consultationData.diagnosis}
-                    onChange={(e) => setConsultationData({...consultationData, diagnosis: e.target.value})}
-                    placeholder="Descreva o diagnóstico médico"
-                    rows={4}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="treatment">Tratamento Realizado *</Label>
-                  <Textarea
-                    id="treatment"
-                    value={consultationData.treatment}
-                    onChange={(e) => setConsultationData({...consultationData, treatment: e.target.value})}
-                    placeholder="Descreva o tratamento realizado"
-                    rows={4}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="observations">Observações Médicas</Label>
-                  <Textarea
-                    id="observations"
-                    value={consultationData.observations}
-                    onChange={(e) => setConsultationData({...consultationData, observations: e.target.value})}
-                    placeholder="Observações adicionais"
-                    rows={3}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="conduct" className="space-y-4">
-              <div>
-                <Label htmlFor="nextStep">Conduta Médica *</Label>
-                <Select value={consultationData.nextStep} onValueChange={(value: any) => setConsultationData({...consultationData, nextStep: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a conduta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="discharge">🏠 Alta Médica</SelectItem>
-                    <SelectItem value="exam">🔬 Solicitar Exame</SelectItem>
-                    <SelectItem value="medication">💊 Medicação</SelectItem>
-                    <SelectItem value="hospitalization">🏥 Internação</SelectItem>
-                    <SelectItem value="inter-consultation">👨‍⚕️ Interconsulta</SelectItem>
-                    <SelectItem value="transfer">🚑 Transferência</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
-              {/* Conditional fields based on next step */}
-              {consultationData.nextStep === 'exam' && (
-                <div>
-                  <Label htmlFor="examType">Tipo de Exame *</Label>
-                  <Select value={consultationData.examType} onValueChange={(value) => setConsultationData({...consultationData, examType: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo de exame" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="laboratorio">Exames Laboratoriais</SelectItem>
-                      <SelectItem value="raio-x">Raio-X</SelectItem>
-                      <SelectItem value="tomografia">Tomografia</SelectItem>
-                      <SelectItem value="ultrassom">Ultrassom</SelectItem>
-                      <SelectItem value="ressonancia">Ressonância Magnética</SelectItem>
-                      <SelectItem value="eletrocardiograma">Eletrocardiograma</SelectItem>
-                      <SelectItem value="outros">Outros</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {/* Dados da Triagem */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">Dados da Triagem</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <strong>Classificação:</strong> 
+                    <span className={`ml-1 font-medium ${getPriorityColor(currentPatient.triageData?.priority || '')}`}>
+                      {currentPatient.triageData?.priority?.toUpperCase() || 'N/A'}
+                    </span>
+                  </div>
+                  <div><strong>Dor (0-10):</strong> {currentPatient.triageData?.painScale || 'N/A'}</div>
+                  <div><strong>PA:</strong> {currentPatient.triageData?.vitals?.bloodPressure || 'N/A'}</div>
+                  <div><strong>FC:</strong> {currentPatient.triageData?.vitals?.heartRate || 'N/A'}</div>
+                  <div><strong>Temp:</strong> {currentPatient.triageData?.vitals?.temperature || 'N/A'}</div>
+                  <div><strong>Sat O₂:</strong> {currentPatient.triageData?.vitals?.oxygenSaturation || 'N/A'}</div>
+                  <div className="col-span-2"><strong>Queixas:</strong> {currentPatient.triageData?.complaints}</div>
+                  <div className="col-span-2"><strong>Sintomas:</strong> {currentPatient.triageData?.symptoms || 'N/A'}</div>
+                  <div><strong>Alergias:</strong> {currentPatient.triageData?.allergies || 'Nenhuma informada'}</div>
+                  <div><strong>Medicamentos:</strong> {currentPatient.triageData?.medications || 'Nenhum informado'}</div>
+                  {currentPatient.triageData?.observations && (
+                    <div className="col-span-2"><strong>Observações:</strong> {currentPatient.triageData.observations}</div>
+                  )}
                 </div>
-              )}
+              </div>
 
-              {consultationData.nextStep === 'medication' && (
-                <div>
-                  <Label htmlFor="medicationType">Tipo de Medicação *</Label>
-                  <Textarea
-                    id="medicationType"
-                    value={consultationData.medicationType}
-                    onChange={(e) => setConsultationData({...consultationData, medicationType: e.target.value})}
-                    placeholder="Descreva a medicação prescrita"
-                    rows={3}
-                  />
+              {/* Formulário de Consulta */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label>Diagnóstico *</Label>
+                    <Textarea
+                      placeholder="Diagnóstico principal e secundários..."
+                      value={consultationData.diagnosis}
+                      onChange={(e) => setConsultationData({...consultationData, diagnosis: e.target.value})}
+                      rows={4}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Plano de Tratamento *</Label>
+                    <Textarea
+                      placeholder="Descrição do tratamento proposto..."
+                      value={consultationData.treatment}
+                      onChange={(e) => setConsultationData({...consultationData, treatment: e.target.value})}
+                      rows={4}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Recomendações</Label>
+                    <Textarea
+                      placeholder="Orientações gerais, repouso, atividades..."
+                      value={consultationData.recommendations}
+                      onChange={(e) => setConsultationData({...consultationData, recommendations: e.target.value})}
+                      rows={3}
+                    />
+                  </div>
                 </div>
-              )}
 
-              {consultationData.nextStep === 'hospitalization' && (
-                <div>
-                  <Label htmlFor="hospitalizationType">Tipo de Internação *</Label>
-                  <Select value={consultationData.hospitalizationType} onValueChange={(value) => setConsultationData({...consultationData, hospitalizationType: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo de internação" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="observacao">Observação</SelectItem>
-                      <SelectItem value="clinica">Clínica Médica</SelectItem>
-                      <SelectItem value="cirurgica">Cirúrgica</SelectItem>
-                      <SelectItem value="uti">UTI</SelectItem>
-                      <SelectItem value="semi-intensiva">Semi-Intensiva</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Prescrição Médica</Label>
+                    <Textarea
+                      placeholder="Medicamentos prescritos, dosagens e orientações..."
+                      value={consultationData.prescription}
+                      onChange={(e) => setConsultationData({...consultationData, prescription: e.target.value})}
+                      rows={6}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Acompanhamento</Label>
+                    <Textarea
+                      placeholder="Retorno, exames de controle, encaminhamentos..."
+                      value={consultationData.followUp}
+                      onChange={(e) => setConsultationData({...consultationData, followUp: e.target.value})}
+                      rows={4}
+                    />
+                  </div>
                 </div>
-              )}
+              </div>
 
-              {consultationData.nextStep === 'inter-consultation' && (
-                <div>
-                  <Label htmlFor="interConsultationSpecialty">Especialidade para Interconsulta *</Label>
-                  <Select value={consultationData.interConsultationSpecialty} onValueChange={(value) => setConsultationData({...consultationData, interConsultationSpecialty: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a especialidade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cardiologia">Cardiologia</SelectItem>
-                      <SelectItem value="neurologia">Neurologia</SelectItem>
-                      <SelectItem value="ortopedia">Ortopedia</SelectItem>
-                      <SelectItem value="cirurgia-geral">Cirurgia Geral</SelectItem>
-                      <SelectItem value="psiquiatria">Psiquiatria</SelectItem>
-                      <SelectItem value="ginecologia">Ginecologia</SelectItem>
-                      <SelectItem value="pediatria">Pediatria</SelectItem>
-                      <SelectItem value="outros">Outros</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="text-sm text-gray-600">
+                  <div>Tempo na consulta: {getTimeElapsed(currentPatient, 'consultationStarted')} min</div>
+                  <div>Tempo total: {getTimeElapsed(currentPatient, 'generated')} min</div>
                 </div>
-              )}
+              </div>
 
-              {consultationData.nextStep === 'discharge' && (
-                <div>
-                  <Label htmlFor="dischargeInstructions">Instruções de Alta *</Label>
-                  <Textarea
-                    id="dischargeInstructions"
-                    value={consultationData.dischargeInstructions}
-                    onChange={(e) => setConsultationData({...consultationData, dischargeInstructions: e.target.value})}
-                    placeholder="Instruções para alta médica, medicações, retorno, etc."
-                    rows={4}
-                  />
-                </div>
-              )}
-
-              {consultationData.nextStep === 'transfer' && (
-                <div>
-                  <Label htmlFor="transferDestination">Destino da Transferência *</Label>
-                  <Textarea
-                    id="transferDestination"
-                    value={consultationData.transferDestination}
-                    onChange={(e) => setConsultationData({...consultationData, transferDestination: e.target.value})}
-                    placeholder="Hospital ou serviço de destino e motivo da transferência"
-                    rows={3}
-                  />
-                </div>
-              )}
-
-              {(consultationData.nextStep === 'discharge' || consultationData.nextStep === 'medication') && (
-                <div>
-                  <Label htmlFor="prescription">Prescrição Médica</Label>
-                  <Textarea
-                    id="prescription"
-                    value={consultationData.prescription}
-                    onChange={(e) => setConsultationData({...consultationData, prescription: e.target.value})}
-                    placeholder="Medicamentos prescritos com posologia"
-                    rows={4}
-                  />
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-
-          <div className="flex justify-between pt-4 border-t">
-            <Button variant="outline" onClick={handleBack}>
-              ← Voltar à Fila
-            </Button>
-            <Button onClick={handleSubmit}>
-              ✅ Finalizar Consulta
-            </Button>
-          </div>
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <Button variant="outline" onClick={handleReturnToQueue}>
+                  Voltar à Fila
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCancellationModalOpen(true)}
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  Cancelar Paciente
+                </Button>
+                <Button variant="outline" onClick={handleCloseDialog}>
+                  Fechar
+                </Button>
+                <Button 
+                  onClick={handleCompleteConsultation}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Finalizar Consulta
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Cancelamento */}
+      <CancellationModal
+        isOpen={isCancellationModalOpen}
+        onClose={() => setIsCancellationModalOpen(false)}
+        onConfirm={handleCancelPatient}
+        patientPassword={currentPatient?.password || ''}
+      />
     </div>
   );
 };
