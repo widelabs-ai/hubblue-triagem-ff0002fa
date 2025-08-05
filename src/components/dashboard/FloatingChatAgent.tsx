@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -143,11 +144,12 @@ const FloatingChatAgent: React.FC = () => {
   };
 
   const suggestedQuestions = [
-    "Quantos pacientes estão aguardando atendimento?",
-    "Qual a performance do SLA hoje?",
-    "Como está a eficiência do hospital?",
-    "Quantos casos de alta prioridade temos?",
-    "Qual setor tem mais gargalos?"
+    "Qual setor apresenta maior gargalo?",
+    "Quando acionar plano de contingência?",
+    "Quais pacientes com maior tempo de espera exigem vigilância?",
+    "Como otimizar o fluxo de reavaliação?",
+    "Quais medidas reduzem tempos estourados?",
+    "Quantos pacientes estão na unidade há mais de 6h e onde se encontram?"
   ];
 
   const handleSuggestedQuestion = (question: string) => {
