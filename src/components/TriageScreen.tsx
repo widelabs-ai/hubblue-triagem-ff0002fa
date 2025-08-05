@@ -324,22 +324,43 @@ const TriageScreen: React.FC = () => {
     }
   };
 
+  // CORREÇÃO PRINCIPAL: Função handleCallPatient atualizada
   const handleCallPatient = (patientId: string) => {
-    console.log('Chamando paciente:', patientId);
-    updatePatientStatus(patientId, 'in-triage');
-    setIsDialogOpen(true);
-    setHasPerformedAnalysis(false); // Reset da análise
-    setChatExpanded(false); // Iniciar com chat minimizado
+    console.log('Iniciando triagem para paciente:', patientId);
     
-    // Expandir chat após um delay maior para criar efeito ainda mais lento
-    setTimeout(() => {
-      setChatExpanded(true);
-    }, 500);
+    // Primeiro atualizar o status do paciente
+    const success = updatePatientStatus(patientId, 'in-triage');
     
-    toast({
-      title: "Paciente chamado",
-      description: "Paciente está sendo atendido na triagem.",
-    });
+    if (success) {
+      // Reset dos dados da triagem
+      resetTriageData();
+      
+      // Configurar estados iniciais
+      setHasPerformedAnalysis(false);
+      setChatExpanded(false);
+      
+      // FORÇAR abertura do diálogo
+      setTimeout(() => {
+        setIsDialogOpen(true);
+        console.log('Diálogo de triagem aberto');
+        
+        // Expandir chat após delay
+        setTimeout(() => {
+          setChatExpanded(true);
+        }, 500);
+      }, 100);
+      
+      toast({
+        title: "Paciente chamado",
+        description: "Paciente está sendo atendido na triagem.",
+      });
+    } else {
+      toast({
+        title: "Erro",
+        description: "Não foi possível iniciar a triagem. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleReturnToQueue = () => {
