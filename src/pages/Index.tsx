@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
-import { Users, Stethoscope, FileText, Monitor, UserPlus, ClipboardList, BarChart3, AlertTriangle, Info, Clock, TestTube } from "lucide-react";
+import { Users, Stethoscope, FileText, Monitor, UserPlus, ClipboardList, BarChart3, AlertTriangle, Info, Clock } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -56,13 +56,6 @@ const Index = () => {
       icon: <Monitor className="h-8 w-8" />,
       path: "/painel",
       color: "bg-cyan-500"
-    },
-    {
-      title: "Status de Exames",
-      description: "Acompanhamento de exames em tempo real",
-      icon: <TestTube className="h-8 w-8" />,
-      path: "/exames",
-      color: "bg-teal-500"
     },
     {
       title: "Usuários",
