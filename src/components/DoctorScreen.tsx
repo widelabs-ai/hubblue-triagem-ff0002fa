@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, X } from 'lucide-react';
+import { ArrowLeft, X, Speaker, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CancellationModal from './CancellationModal';
 
@@ -15,6 +15,8 @@ const DoctorScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
+  const [isMVModalOpen, setIsMVModalOpen] = useState(false);
+  const [mvPatient, setMVPatient] = useState<any>(null);
   const [consultationData, setConsultationData] = useState({
     diagnosis: '',
     treatment: '',
@@ -61,6 +63,41 @@ const DoctorScreen: React.FC = () => {
       return patient.triageData.personalData.age;
     }
     return 'N/A';
+  };
+
+  const handleCallPanel = (patientPassword: string) => {
+    toast({
+      title: "Chamando no painel",
+      description: `Paciente ${patientPassword} foi chamado no painel de espera.`,
+    });
+  };
+
+  const handleMVConsultation = (patient: any) => {
+    setMVPatient(patient);
+    setIsMVModalOpen(true);
+  };
+
+  const handleConfirmMV = () => {
+    if (mvPatient) {
+      // Remove patient from queue by updating to completed status
+      updatePatientStatus(mvPatient.id, 'completed', { 
+        consultationData: { 
+          diagnosis: 'Encaminhado para sistema MV', 
+          treatment: 'Consulta realizada no MV',
+          prescription: '',
+          recommendations: '',
+          followUp: ''
+        }
+      });
+      
+      toast({
+        title: "Paciente encaminhado",
+        description: `Paciente ${mvPatient.password} foi direcionado para o sistema MV e removido da fila.`,
+      });
+      
+      setIsMVModalOpen(false);
+      setMVPatient(null);
+    }
   };
 
   const handleCallPatient = (patientId: string) => {
@@ -179,7 +216,7 @@ const DoctorScreen: React.FC = () => {
                     <TableHead className="w-32">Tempo Aguardando</TableHead>
                     <TableHead className="w-32">Tempo Total</TableHead>
                     <TableHead className="w-32">Status SLA</TableHead>
-                    <TableHead className="w-24">Ações</TableHead>
+                    <TableHead className="w-64">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -233,14 +270,34 @@ const DoctorScreen: React.FC = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Button 
-                            onClick={() => handleCallPatient(patient.id)}
-                            disabled={!!currentPatient}
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Chamar
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleCallPanel(patient.password)}
+                              size="sm"
+                              variant="outline"
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              <Speaker className="h-3 w-3 mr-1" />
+                              Chamar no painel
+                            </Button>
+                            <Button
+                              onClick={() => handleMVConsultation(patient)}
+                              size="sm"
+                              variant="outline"
+                              className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              Iniciar consulta no MV
+                            </Button>
+                            <Button 
+                              onClick={() => handleCallPatient(patient.id)}
+                              disabled={!!currentPatient}
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              Chamar
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -428,6 +485,50 @@ const DoctorScreen: React.FC = () => {
         onConfirm={handleCancelPatient}
         patientPassword={currentPatient?.password || ''}
       />
+
+      {/* Modal MV */}
+      <Dialog open={isMVModalOpen} onOpenChange={setIsMVModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <ExternalLink className="h-5 w-5 text-purple-600" />
+              Sistema MV
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="text-center">
+              <div className="bg-purple-50 p-6 rounded-lg mb-4">
+                <div className="text-4xl mb-2">🏥</div>
+                <h3 className="font-semibold text-lg">Direcionando para o MV</h3>
+                <p className="text-gray-600 mt-2">
+                  O paciente <strong>{mvPatient?.password}</strong> será encaminhado para consulta no sistema MV.
+                </p>
+              </div>
+              
+              <div className="text-sm text-gray-500 mb-4">
+                Esta ação irá remover o paciente da fila atual e registrar o encaminhamento.
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsMVModalOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleConfirmMV}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Confirmar Encaminhamento
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
