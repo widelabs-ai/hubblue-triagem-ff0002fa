@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,28 +12,22 @@ const attendanceTypes = [
     id: 'prioritario', 
     name: 'Prioritário', 
     icon: '🚨', 
-    description: 'Urgências e emergências',
+    description: '',
     legend: [
       'Idosos (60 anos ou mais)',
       'Gestantes',
       'Crianças até 12 anos',
       'Pessoas com deficiência',
-      'Urgências e emergências médicas',
-      'Casos que necessitam atendimento imediato'
+      'Urgências e emergências médicas'
     ]
   },
   { 
     id: 'nao-prioritario', 
     name: 'Não Prioritário', 
     icon: '🏥', 
-    description: 'Consultas e exames de rotina',
+    description: '',
     legend: [
-      'Consultas de rotina',
-      'Exames preventivos',
-      'Retornos médicos',
-      'Procedimentos eletivos',
-      'Atendimentos não urgentes',
-      'Renovação de receitas'
+      'Todos os demais'
     ]
   }
 ];
@@ -111,7 +104,6 @@ const TotemScreen: React.FC = () => {
                         <div className="text-4xl mr-3">{type.icon}</div>
                         <div>
                           <div className="font-bold text-lg">{type.name}</div>
-                          <div className="text-sm opacity-80">{type.description}</div>
                         </div>
                       </div>
                       
