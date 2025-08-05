@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, X } from 'lucide-react';
+import { ArrowLeft, X, Speaker, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CancellationModal from './CancellationModal';
 import { getPatientName, getPatientAge, getPatientGender, getPatientGenderFull } from '@/utils/patientUtils';
@@ -70,6 +70,13 @@ const AdminScreen: React.FC = () => {
       });
     }
   }, [currentPatient, isDialogOpen]);
+
+  const handleCallPanel = (patientPassword: string) => {
+    toast({
+      title: "Chamando no painel",
+      description: `Paciente ${patientPassword} foi chamado no painel de espera.`,
+    });
+  };
 
   const handleCallPatient = (patientId: string) => {
     updatePatientStatus(patientId, 'in-admin');
@@ -201,7 +208,7 @@ const AdminScreen: React.FC = () => {
                     <TableHead className="w-32">Tempo Aguardando</TableHead>
                     <TableHead className="w-32">Tempo Total</TableHead>
                     <TableHead className="w-32">Status SLA</TableHead>
-                    <TableHead className="w-24">Ações</TableHead>
+                    <TableHead className="w-48">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -255,14 +262,26 @@ const AdminScreen: React.FC = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Button 
-                            onClick={() => handleCallPatient(patient.id)}
-                            disabled={!!currentPatient}
-                            size="sm"
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            Chamar
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleCallPanel(patient.password)}
+                              size="sm"
+                              variant="outline"
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              <Speaker className="h-3 w-3 mr-1" />
+                              Chamar no painel
+                            </Button>
+                            <Button 
+                              onClick={() => handleCallPatient(patient.id)}
+                              disabled={!!currentPatient}
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <UserPlus className="h-3 w-3 mr-1" />
+                              Iniciar Cadastro
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
