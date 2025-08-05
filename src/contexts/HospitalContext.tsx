@@ -9,6 +9,7 @@ export interface Patient {
           'waiting-exam' | 'in-exam' | 'waiting-medication' | 'in-medication' | 'waiting-hospitalization' | 
           'in-hospitalization' | 'waiting-inter-consultation' | 'in-inter-consultation' | 'waiting-transfer' | 
           'transferred' | 'prescription-issued' | 'discharged' | 'deceased' | 'completed' | 'cancelled';
+  medicalSpecialty?: 'clinica-medica' | 'cirurgia-geral' | 'ortopedia' | 'pediatria';
   timestamps: {
     generated: Date;
     triageStarted?: Date;
@@ -97,6 +98,7 @@ interface HospitalContextType {
   updatePatientStatus: (id: string, status: Patient['status'], additionalData?: any) => void;
   cancelPatient: (id: string, reason: string) => void;
   getPatientsByStatus: (status: Patient['status']) => Patient[];
+  getPatientsByStatusAndSpecialty: (status: Patient['status'], medicalSpecialty: Patient['medicalSpecialty']) => Patient[];
   getPatientById: (id: string) => Patient | undefined;
   getTimeElapsed: (patient: Patient, from: keyof Patient['timestamps'], to?: keyof Patient['timestamps']) => number;
   isOverSLA: (patient: Patient) => { triageSLA: boolean; totalSLA: boolean };
@@ -121,7 +123,7 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     const now = new Date();
     const mockPatients: Patient[] = [
-      // Aguardando Triagem (2 pacientes - 1 fora do SLA)
+      // Aguardando Triagem (2 pacientes - 1 fora do prazo)
       {
         id: 'mock-1',
         password: 'NP001',
@@ -129,7 +131,7 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         phone: '11999999001',
         status: 'waiting-triage',
         timestamps: {
-          generated: new Date(now.getTime() - 15 * 60 * 1000) // 15 min ago (fora do SLA)
+          generated: new Date(now.getTime() - 15 * 60 * 1000) // 15 min ago (fora do prazo)
         }
       },
       {
@@ -139,10 +141,10 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         phone: '11999999002',
         status: 'waiting-triage',
         timestamps: {
-          generated: new Date(now.getTime() - 5 * 60 * 1000) // 5 min ago (dentro do SLA)
+          generated: new Date(now.getTime() - 5 * 60 * 1000) // 5 min ago (dentro do prazo)
         }
       },
-      // Em Triagem (1 paciente - dentro do SLA)
+      // Em Triagem (1 paciente - dentro do prazo)
       {
         id: 'mock-3',
         password: 'NP003',
@@ -154,7 +156,7 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           triageStarted: new Date(now.getTime() - 3 * 60 * 1000) // 3 min ago
         }
       },
-      // Aguardando Recepção (3 pacientes - 1 fora do SLA)
+      // Aguardando Recepção (2 pacientes - dentro do prazo)
       {
         id: 'mock-4',
         password: 'NP004',
@@ -162,8 +164,8 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         phone: '11999999004',
         status: 'waiting-admin',
         timestamps: {
-          generated: new Date(now.getTime() - 180 * 60 * 1000), // 3h ago
-          triageCompleted: new Date(now.getTime() - 170 * 60 * 1000)
+          generated: new Date(now.getTime() - 45 * 60 * 1000), // 45 min ago
+          triageCompleted: new Date(now.getTime() - 35 * 60 * 1000)
         }
       },
       {
@@ -173,27 +175,16 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         phone: '11999999005',
         status: 'waiting-admin',
         timestamps: {
-          generated: new Date(now.getTime() - 45 * 60 * 1000), // 45 min ago
-          triageCompleted: new Date(now.getTime() - 35 * 60 * 1000)
+          generated: new Date(now.getTime() - 25 * 60 * 1000), // 25 min ago
+          triageCompleted: new Date(now.getTime() - 20 * 60 * 1000)
         }
       },
+      // Atendimento Recepção (1 paciente - dentro do prazo)
       {
         id: 'mock-6',
         password: 'NP006',
         specialty: 'nao-prioritario',
         phone: '11999999006',
-        status: 'waiting-admin',
-        timestamps: {
-          generated: new Date(now.getTime() - 25 * 60 * 1000), // 25 min ago
-          triageCompleted: new Date(now.getTime() - 20 * 60 * 1000)
-        }
-      },
-      // Atendimento Recepção (1 paciente - dentro do SLA)
-      {
-        id: 'mock-7',
-        password: 'NP007',
-        specialty: 'nao-prioritario',
-        phone: '11999999007',
         status: 'in-admin',
         timestamps: {
           generated: new Date(now.getTime() - 30 * 60 * 1000), // 30 min ago
@@ -201,17 +192,33 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           adminStarted: new Date(now.getTime() - 5 * 60 * 1000)
         }
       },
-      // Aguardando Médico (5 pacientes - 1 fora do SLA)
+      
+      // CLÍNICA MÉDICA
+      // Aguardando Médico - Clínica Médica (3 pacientes - 1 fora do prazo)
+      {
+        id: 'mock-7',
+        password: 'NP007',
+        specialty: 'nao-prioritario',
+        phone: '11999999007',
+        status: 'waiting-doctor',
+        medicalSpecialty: 'clinica-medica',
+        timestamps: {
+          generated: new Date(now.getTime() - 260 * 60 * 1000), // 4h20 ago (fora do prazo total)
+          triageCompleted: new Date(now.getTime() - 250 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 240 * 60 * 1000)
+        }
+      },
       {
         id: 'mock-8',
         password: 'PR008',
         specialty: 'prioritario',
         phone: '11999999008',
         status: 'waiting-doctor',
+        medicalSpecialty: 'clinica-medica',
         timestamps: {
-          generated: new Date(now.getTime() - 260 * 60 * 1000), // 4h20 ago (fora do SLA total)
-          triageCompleted: new Date(now.getTime() - 250 * 60 * 1000),
-          adminCompleted: new Date(now.getTime() - 240 * 60 * 1000)
+          generated: new Date(now.getTime() - 90 * 60 * 1000), // 1h30 ago
+          triageCompleted: new Date(now.getTime() - 85 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 75 * 60 * 1000)
         }
       },
       {
@@ -220,34 +227,42 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         specialty: 'nao-prioritario',
         phone: '11999999009',
         status: 'waiting-doctor',
+        medicalSpecialty: 'clinica-medica',
         timestamps: {
-          generated: new Date(now.getTime() - 90 * 60 * 1000), // 1h30 ago
-          triageCompleted: new Date(now.getTime() - 85 * 60 * 1000),
-          adminCompleted: new Date(now.getTime() - 75 * 60 * 1000)
+          generated: new Date(now.getTime() - 40 * 60 * 1000), // 40 min ago
+          triageCompleted: new Date(now.getTime() - 35 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 30 * 60 * 1000)
         }
       },
+      // Em Atendimento - Clínica Médica (1 paciente - dentro do prazo)
       {
         id: 'mock-10',
         password: 'NP010',
         specialty: 'nao-prioritario',
         phone: '11999999010',
-        status: 'waiting-doctor',
+        status: 'in-consultation',
+        medicalSpecialty: 'clinica-medica',
         timestamps: {
-          generated: new Date(now.getTime() - 60 * 60 * 1000), // 1h ago
-          triageCompleted: new Date(now.getTime() - 55 * 60 * 1000),
-          adminCompleted: new Date(now.getTime() - 50 * 60 * 1000)
+          generated: new Date(now.getTime() - 120 * 60 * 1000), // 2h ago
+          triageCompleted: new Date(now.getTime() - 115 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 110 * 60 * 1000),
+          consultationStarted: new Date(now.getTime() - 15 * 60 * 1000)
         }
       },
+
+      // CIRURGIA GERAL
+      // Aguardando Médico - Cirurgia Geral (2 pacientes - dentro do prazo)
       {
         id: 'mock-11',
         password: 'PR011',
         specialty: 'prioritario',
         phone: '11999999011',
         status: 'waiting-doctor',
+        medicalSpecialty: 'cirurgia-geral',
         timestamps: {
-          generated: new Date(now.getTime() - 40 * 60 * 1000), // 40 min ago
-          triageCompleted: new Date(now.getTime() - 35 * 60 * 1000),
-          adminCompleted: new Date(now.getTime() - 30 * 60 * 1000)
+          generated: new Date(now.getTime() - 60 * 60 * 1000), // 1h ago
+          triageCompleted: new Date(now.getTime() - 55 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 50 * 60 * 1000)
         }
       },
       {
@@ -256,32 +271,21 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         specialty: 'nao-prioritario',
         phone: '11999999012',
         status: 'waiting-doctor',
+        medicalSpecialty: 'cirurgia-geral',
         timestamps: {
           generated: new Date(now.getTime() - 20 * 60 * 1000), // 20 min ago
           triageCompleted: new Date(now.getTime() - 18 * 60 * 1000),
           adminCompleted: new Date(now.getTime() - 15 * 60 * 1000)
         }
       },
-      // Em Atendimento (2 pacientes - dentro do SLA)
+      // Em Atendimento - Cirurgia Geral (1 paciente - dentro do prazo)
       {
         id: 'mock-13',
         password: 'NP013',
         specialty: 'nao-prioritario',
         phone: '11999999013',
         status: 'in-consultation',
-        timestamps: {
-          generated: new Date(now.getTime() - 120 * 60 * 1000), // 2h ago
-          triageCompleted: new Date(now.getTime() - 115 * 60 * 1000),
-          adminCompleted: new Date(now.getTime() - 110 * 60 * 1000),
-          consultationStarted: new Date(now.getTime() - 15 * 60 * 1000)
-        }
-      },
-      {
-        id: 'mock-14',
-        password: 'PR014',
-        specialty: 'prioritario',
-        phone: '11999999014',
-        status: 'in-consultation',
+        medicalSpecialty: 'cirurgia-geral',
         timestamps: {
           generated: new Date(now.getTime() - 80 * 60 * 1000), // 1h20 ago
           triageCompleted: new Date(now.getTime() - 75 * 60 * 1000),
@@ -289,12 +293,88 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           consultationStarted: new Date(now.getTime() - 10 * 60 * 1000)
         }
       },
-      // Aguardando Exame (1 paciente - dentro do SLA)
+
+      // ORTOPEDIA
+      // Aguardando Médico - Ortopedia (2 pacientes - 1 fora do prazo)
+      {
+        id: 'mock-14',
+        password: 'PR014',
+        specialty: 'prioritario',
+        phone: '11999999014',
+        status: 'waiting-doctor',
+        medicalSpecialty: 'ortopedia',
+        timestamps: {
+          generated: new Date(now.getTime() - 300 * 60 * 1000), // 5h ago (fora do prazo total)
+          triageCompleted: new Date(now.getTime() - 290 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 280 * 60 * 1000)
+        }
+      },
       {
         id: 'mock-15',
         password: 'NP015',
         specialty: 'nao-prioritario',
         phone: '11999999015',
+        status: 'waiting-doctor',
+        medicalSpecialty: 'ortopedia',
+        timestamps: {
+          generated: new Date(now.getTime() - 35 * 60 * 1000), // 35 min ago
+          triageCompleted: new Date(now.getTime() - 30 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 25 * 60 * 1000)
+        }
+      },
+      // Em Atendimento - Ortopedia (1 paciente - dentro do prazo)
+      {
+        id: 'mock-16',
+        password: 'NP016',
+        specialty: 'nao-prioritario',
+        phone: '11999999016',
+        status: 'in-consultation',
+        medicalSpecialty: 'ortopedia',
+        timestamps: {
+          generated: new Date(now.getTime() - 100 * 60 * 1000), // 1h40 ago
+          triageCompleted: new Date(now.getTime() - 95 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 90 * 60 * 1000),
+          consultationStarted: new Date(now.getTime() - 20 * 60 * 1000)
+        }
+      },
+
+      // PEDIATRIA
+      // Aguardando Médico - Pediatria (1 paciente - dentro do prazo)
+      {
+        id: 'mock-17',
+        password: 'NP017',
+        specialty: 'nao-prioritario',
+        phone: '11999999017',
+        status: 'waiting-doctor',
+        medicalSpecialty: 'pediatria',
+        timestamps: {
+          generated: new Date(now.getTime() - 50 * 60 * 1000), // 50 min ago
+          triageCompleted: new Date(now.getTime() - 45 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 40 * 60 * 1000)
+        }
+      },
+      // Em Atendimento - Pediatria (1 paciente - dentro do prazo)
+      {
+        id: 'mock-18',
+        password: 'PR018',
+        specialty: 'prioritario',
+        phone: '11999999018',
+        status: 'in-consultation',
+        medicalSpecialty: 'pediatria',
+        timestamps: {
+          generated: new Date(now.getTime() - 70 * 60 * 1000), // 1h10 ago
+          triageCompleted: new Date(now.getTime() - 65 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 60 * 60 * 1000),
+          consultationStarted: new Date(now.getTime() - 12 * 60 * 1000)
+        }
+      },
+
+      // Aguardando Exame (1 paciente - dentro do prazo)
+      {
+        id: 'mock-19',
+        password: 'NP019',
+        specialty: 'nao-prioritario',
+        phone: '11999999019',
         status: 'waiting-exam',
         timestamps: {
           generated: new Date(now.getTime() - 150 * 60 * 1000), // 2h30 ago
@@ -303,12 +383,12 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           consultationCompleted: new Date(now.getTime() - 30 * 60 * 1000)
         }
       },
-      // Em Exame (1 paciente - dentro do SLA)
+      // Em Exame (1 paciente - dentro do prazo)
       {
-        id: 'mock-16',
-        password: 'NP016',
+        id: 'mock-20',
+        password: 'NP020',
         specialty: 'nao-prioritario',
-        phone: '11999999016',
+        phone: '11999999020',
         status: 'in-exam',
         timestamps: {
           generated: new Date(now.getTime() - 100 * 60 * 1000), // 1h40 ago
@@ -318,26 +398,12 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           examStarted: new Date(now.getTime() - 10 * 60 * 1000)
         }
       },
-      // Aguardando Medicação (2 pacientes - dentro do SLA)
+      // Aguardando Medicação (1 paciente - dentro do prazo)
       {
-        id: 'mock-17',
-        password: 'PR017',
+        id: 'mock-21',
+        password: 'PR021',
         specialty: 'prioritario',
-        phone: '11999999017',
-        status: 'waiting-medication',
-        timestamps: {
-          generated: new Date(now.getTime() - 180 * 60 * 1000), // 3h ago
-          triageCompleted: new Date(now.getTime() - 175 * 60 * 1000),
-          adminCompleted: new Date(now.getTime() - 170 * 60 * 1000),
-          consultationCompleted: new Date(now.getTime() - 120 * 60 * 1000),
-          examCompleted: new Date(now.getTime() - 60 * 60 * 1000)
-        }
-      },
-      {
-        id: 'mock-18',
-        password: 'NP018',
-        specialty: 'nao-prioritario',
-        phone: '11999999018',
+        phone: '11999999021',
         status: 'waiting-medication',
         timestamps: {
           generated: new Date(now.getTime() - 90 * 60 * 1000), // 1h30 ago
@@ -347,12 +413,12 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           examCompleted: new Date(now.getTime() - 15 * 60 * 1000)
         }
       },
-      // Em Medicação (1 paciente - dentro do SLA)
+      // Em Medicação (1 paciente - dentro do prazo)
       {
-        id: 'mock-19',
-        password: 'NP019',
+        id: 'mock-22',
+        password: 'NP022',
         specialty: 'nao-prioritario',
-        phone: '11999999019',
+        phone: '11999999022',
         status: 'in-medication',
         timestamps: {
           generated: new Date(now.getTime() - 120 * 60 * 1000), // 2h ago
@@ -362,44 +428,11 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           examCompleted: new Date(now.getTime() - 30 * 60 * 1000),
           medicationStarted: new Date(now.getTime() - 5 * 60 * 1000)
         }
-      },
-      // Aguardando Repouso no Leito (1 paciente - dentro do SLA)
-      {
-        id: 'mock-20',
-        password: 'PR020',
-        specialty: 'prioritario',
-        phone: '11999999020',
-        status: 'waiting-hospitalization',
-        timestamps: {
-          generated: new Date(now.getTime() - 200 * 60 * 1000), // 3h20 ago
-          triageCompleted: new Date(now.getTime() - 195 * 60 * 1000),
-          adminCompleted: new Date(now.getTime() - 190 * 60 * 1000),
-          consultationCompleted: new Date(now.getTime() - 150 * 60 * 1000),
-          examCompleted: new Date(now.getTime() - 100 * 60 * 1000),
-          medicationCompleted: new Date(now.getTime() - 60 * 60 * 1000)
-        }
-      },
-      // Internado (1 paciente - dentro do SLA)
-      {
-        id: 'mock-21',
-        password: 'NP021',
-        specialty: 'nao-prioritario',
-        phone: '11999999021',
-        status: 'in-hospitalization',
-        timestamps: {
-          generated: new Date(now.getTime() - 300 * 60 * 1000), // 5h ago
-          triageCompleted: new Date(now.getTime() - 295 * 60 * 1000),
-          adminCompleted: new Date(now.getTime() - 290 * 60 * 1000),
-          consultationCompleted: new Date(now.getTime() - 250 * 60 * 1000),
-          examCompleted: new Date(now.getTime() - 200 * 60 * 1000),
-          medicationCompleted: new Date(now.getTime() - 150 * 60 * 1000),
-          hospitalizationStarted: new Date(now.getTime() - 120 * 60 * 1000)
-        }
       }
     ];
 
     setPatients(mockPatients);
-    setCurrentPasswordNumber(22);
+    setCurrentPasswordNumber(23);
   }, []);
 
   const generatePassword = (specialty: Patient['specialty'], phone: string): string => {
@@ -551,6 +584,10 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return patients.filter(patient => patient.status === status);
   };
 
+  const getPatientsByStatusAndSpecialty = (status: Patient['status'], medicalSpecialty: Patient['medicalSpecialty']): Patient[] => {
+    return patients.filter(patient => patient.status === status && patient.medicalSpecialty === medicalSpecialty);
+  };
+
   const getPatientById = (id: string): Patient | undefined => {
     return patients.find(patient => patient.id === id);
   };
@@ -620,6 +657,7 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       updatePatientStatus,
       cancelPatient,
       getPatientsByStatus,
+      getPatientsByStatusAndSpecialty,
       getPatientById,
       getTimeElapsed,
       isOverSLA,
