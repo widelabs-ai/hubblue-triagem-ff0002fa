@@ -40,3 +40,10 @@ const API_BASE_URL = import.meta.env.VITE_HUBBLUE_API || 'localhost:3000/api';
         credentials: 'include',
       });
     }
+
+   export const getAllUsers = async () => {
+      return fetchApi('/usuarios', {
+        method: 'GET',
+        credentials: 'include',
+      });
+    }

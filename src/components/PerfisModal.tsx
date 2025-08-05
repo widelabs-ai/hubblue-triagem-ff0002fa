@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Shield, Edit, Trash2, Plus, X } from "lucide-react";
 import { listaPermissoes } from "@/services/permissions";
-import { atualizaPerfil, buscaPerfil, criaPerfil, listaPerfis } from "@/services/profiles";
+import { atualizaPerfil, buscaPerfil, criaPerfil, deletaPerfil, listaPerfis } from "@/services/profiles";
 
 interface Profile {
   id: string;
@@ -93,20 +93,33 @@ export const ProfileModal = ({
     setSelectedPermissions([]);
     setIsCreating(false);
     setPerfilEdicao(null);
-    fetchPerfis();
   };
 
   const onEditProfile = async (id: string, nome: string, permissoes: string[]) => {
-    const perfil = await atualizaPerfil(id, nome, permissoes);
+    try { 
+      await atualizaPerfil(id, nome, permissoes);
+      fetchPerfis();
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   const onCreateProfile = async (nome: string, permissoes: string[]) => {
-    const perfil = await criaPerfil(nome, permissoes);
-    
+    try {
+      await criaPerfil(nome, permissoes);
+      fetchPerfis();
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   const onDeleteProfile = async (id: string) => {
-    const perfil = await deletaPerfil(id);
+    try {
+      await deletaPerfil(id);
+      fetchPerfis();
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   const handleCancel = () => {

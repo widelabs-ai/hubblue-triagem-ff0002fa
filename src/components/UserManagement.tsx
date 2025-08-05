@@ -13,32 +13,25 @@ import { useUser } from '@/contexts/UserContext';
 import { UserRole } from '@/types/user';
 import { Users, UserPlus, Edit, Trash2, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { listaPermissoes } from '@/services/permissions';
 import { ProfileModal } from './PerfisModal';
 import { listaPerfis } from '@/services/profiles';
+import { getAllUsers } from '@/services/user';
 
 const UserManagement = () => {
-  const { users, createUser, updateUser, deleteUser, currentUser } = useUser();
+  const { createUser, updateUser, deleteUser, currentUser } = useUser();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreatePerfilDialogOpen, setIsCreatePerfilDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [profiles, setProfiles] = useState([]);
+  const [users, setUsers] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: '',
-    role: 'enfermeiro' as UserRole,
+    role: '',
     isActive: true
   });
-
-  const roleLabels = {
-    enfermeiro: 'Enfermeiro',
-    administrativo: 'Administrativo',
-    medico: 'Médico',
-    administrador: 'Administrador'
-  };
 
   const roleColors = {
     enfermeiro: 'bg-green-100 text-green-800',
@@ -47,13 +40,11 @@ const UserManagement = () => {
     administrador: 'bg-red-100 text-red-800'
   };
 
-
   const resetForm = () => {
     setFormData({
       name: '',
       email: '',
-      password: '',
-      role: 'enfermeiro',
+      role:  '',
       isActive: true
     });
     setEditingUser(null);
@@ -85,13 +76,29 @@ const UserManagement = () => {
     setIsCreateDialogOpen(false);
   };
 
+  const fetchProfiles = async () => {
+    const data = await listaPerfis();
+    setProfiles(data.perfis);
+  }
+
+  const fetchUsers = async () => {
+    const data = await getAllUsers();
+    console.log(data);
+    
+    setUsers(data.usuarios);
+  }
+
+  useEffect(() => {
+    fetchProfiles();
+    fetchUsers();
+  }, []);
+
   const handleEdit = (user: any) => {
     setFormData({
-      name: user.name,
+      name: user.nome,
       email: user.email,
-      password: '',
-      role: user.role,
-      isActive: user.isActive
+      role: user.perfil.nome,
+      isActive: user.status === 1
     });
     setEditingUser(user.id);
     setIsCreateDialogOpen(true);
@@ -212,9 +219,9 @@ const UserManagement = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(roleLabels).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
+                      {profiles.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.id}>
+                          {profile.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -270,27 +277,22 @@ const UserManagement = () => {
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell className="font-medium">{user.nome}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Badge className={roleColors[user.role]}>
-                        {roleLabels[user.role]}
+                      <Badge className={roleColors[user.perfil.nome]}>
+                        {user.perfil.nome}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={user.isActive}
-                          onCheckedChange={(checked) => handleToggleActive(user.id, checked)}
-                          disabled={user.id === currentUser?.id}
-                        />
-                        <span className={user.isActive ? 'text-green-600' : 'text-red-600'}>
-                          {user.isActive ? 'Ativo' : 'Inativo'}
+                        <span className={user.status === 1 ? 'text-green-600' : 'text-red-600'}>
+                          {user.status === 1 ? 'Ativo' : 'Inativo'}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {new Date(user.createdAt).toLocaleDateString('pt-BR')}
+                      {new Date(user.criadoEm).toLocaleDateString('pt-BR')}
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
