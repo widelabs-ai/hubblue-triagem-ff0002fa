@@ -112,7 +112,6 @@ const TotemScreen: React.FC = () => {
                           ? 'bg-white/20' 
                           : 'bg-gray-50'
                       }`}>
-                        <div className="font-semibold mb-2">Perfis atendidos:</div>
                         <ul className="space-y-1">
                           {type.legend.map((item, index) => (
                             <li key={index} className="flex items-start">
