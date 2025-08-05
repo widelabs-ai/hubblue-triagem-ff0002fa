@@ -461,103 +461,119 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updatePatientStatus = (id: string, status: Patient['status'], additionalData?: any) => {
-    setPatients(prev => prev.map(patient => {
-      if (patient.id === id) {
-        const updatedPatient = { ...patient, status };
-        
-        // Update timestamps based on status
-        switch (status) {
-          case 'in-triage':
-            updatedPatient.timestamps.triageStarted = new Date();
-            break;
-          case 'waiting-admin':
-            updatedPatient.timestamps.triageCompleted = new Date();
-            if (additionalData?.triageData) {
-              updatedPatient.triageData = additionalData.triageData;
-              
-              // CRITICAL: Merge triage personal data into main personalData
-              if (additionalData.triageData.personalData) {
+    console.log('🔄 updatePatientStatus called:', { id, status, additionalData });
+    
+    setPatients(prev => {
+      const patientIndex = prev.findIndex(p => p.id === id);
+      if (patientIndex === -1) {
+        console.error('❌ Patient not found:', id);
+        return prev;
+      }
+
+      const patient = prev[patientIndex];
+      console.log('👤 Patient before update:', { id: patient.id, password: patient.password, currentStatus: patient.status });
+
+      return prev.map(patient => {
+        if (patient.id === id) {
+          const updatedPatient = { ...patient, status };
+          
+          // Update timestamps based on status
+          switch (status) {
+            case 'in-triage':
+              console.log('🏥 Starting triage for patient:', patient.password);
+              updatedPatient.timestamps.triageStarted = new Date();
+              break;
+            case 'waiting-admin':
+              console.log('📋 Completing triage for patient:', patient.password);
+              updatedPatient.timestamps.triageCompleted = new Date();
+              if (additionalData?.triageData) {
+                updatedPatient.triageData = additionalData.triageData;
+                
+                // CRITICAL: Merge triage personal data into main personalData
+                if (additionalData.triageData.personalData) {
+                  updatedPatient.personalData = {
+                    ...updatedPatient.personalData,
+                    fullName: additionalData.triageData.personalData.fullName || additionalData.triageData.personalData.name,
+                    name: additionalData.triageData.personalData.name,
+                    age: additionalData.triageData.personalData.age,
+                    biologicalSex: additionalData.triageData.personalData.biologicalSex || additionalData.triageData.personalData.gender,
+                    gender: additionalData.triageData.personalData.gender,
+                    dateOfBirth: additionalData.triageData.personalData.dateOfBirth,
+                    cpf: updatedPatient.personalData?.cpf || '',
+                    canBeAttended: updatedPatient.personalData?.canBeAttended ?? true
+                  };
+                }
+              }
+              break;
+            case 'in-admin':
+              updatedPatient.timestamps.adminStarted = new Date();
+              break;
+            case 'waiting-doctor':
+              updatedPatient.timestamps.adminCompleted = new Date();
+              if (additionalData?.personalData) {
+                // Merge administrative data with existing data
                 updatedPatient.personalData = {
                   ...updatedPatient.personalData,
-                  fullName: additionalData.triageData.personalData.fullName || additionalData.triageData.personalData.name,
-                  name: additionalData.triageData.personalData.name,
-                  age: additionalData.triageData.personalData.age,
-                  biologicalSex: additionalData.triageData.personalData.biologicalSex || additionalData.triageData.personalData.gender,
-                  gender: additionalData.triageData.personalData.gender,
-                  dateOfBirth: additionalData.triageData.personalData.dateOfBirth,
-                  cpf: updatedPatient.personalData?.cpf || '',
-                  canBeAttended: updatedPatient.personalData?.canBeAttended ?? true
+                  ...additionalData.personalData,
+                  // Preserve name from triage if not provided in admin
+                  fullName: additionalData.personalData.fullName || updatedPatient.personalData?.fullName || additionalData.personalData.name || updatedPatient.personalData?.name || '',
+                  name: additionalData.personalData.name || additionalData.personalData.fullName || updatedPatient.personalData?.name || updatedPatient.personalData?.fullName || ''
                 };
               }
-            }
-            break;
-          case 'in-admin':
-            updatedPatient.timestamps.adminStarted = new Date();
-            break;
-          case 'waiting-doctor':
-            updatedPatient.timestamps.adminCompleted = new Date();
-            if (additionalData?.personalData) {
-              // Merge administrative data with existing data
-              updatedPatient.personalData = {
-                ...updatedPatient.personalData,
-                ...additionalData.personalData,
-                // Preserve name from triage if not provided in admin
-                fullName: additionalData.personalData.fullName || updatedPatient.personalData?.fullName || additionalData.personalData.name || updatedPatient.personalData?.name || '',
-                name: additionalData.personalData.name || additionalData.personalData.fullName || updatedPatient.personalData?.name || updatedPatient.personalData?.fullName || ''
-              };
-            }
-            break;
-          case 'in-consultation':
-            updatedPatient.timestamps.consultationStarted = new Date();
-            break;
-          case 'waiting-exam':
-            updatedPatient.timestamps.consultationCompleted = new Date();
-            break;
-          case 'in-exam':
-            updatedPatient.timestamps.examStarted = new Date();
-            break;
-          case 'waiting-medication':
-            updatedPatient.timestamps.examCompleted = new Date();
-            break;
-          case 'in-medication':
-            updatedPatient.timestamps.medicationStarted = new Date();
-            break;
-          case 'waiting-hospitalization':
-            updatedPatient.timestamps.medicationCompleted = new Date();
-            break;
-          case 'in-hospitalization':
-            updatedPatient.timestamps.hospitalizationStarted = new Date();
-            break;
-          case 'waiting-inter-consultation':
-            updatedPatient.timestamps.hospitalizationCompleted = new Date();
-            break;
-          case 'in-inter-consultation':
-            updatedPatient.timestamps.interConsultationStarted = new Date();
-            break;
-          case 'waiting-transfer':
-            updatedPatient.timestamps.interConsultationCompleted = new Date();
-            break;
-          case 'transferred':
-            updatedPatient.timestamps.transferCompleted = new Date();
-            break;
-          case 'prescription-issued':
-            updatedPatient.timestamps.prescriptionIssued = new Date();
-            break;
-          case 'discharged':
-            updatedPatient.timestamps.discharged = new Date();
-            break;
-          case 'deceased':
-            updatedPatient.timestamps.deceased = new Date();
-            break;
-          case 'completed':
-            updatedPatient.timestamps.discharged = new Date();
-            break;
+              break;
+            case 'in-consultation':
+              updatedPatient.timestamps.consultationStarted = new Date();
+              break;
+            case 'waiting-exam':
+              updatedPatient.timestamps.consultationCompleted = new Date();
+              break;
+            case 'in-exam':
+              updatedPatient.timestamps.examStarted = new Date();
+              break;
+            case 'waiting-medication':
+              updatedPatient.timestamps.examCompleted = new Date();
+              break;
+            case 'in-medication':
+              updatedPatient.timestamps.medicationStarted = new Date();
+              break;
+            case 'waiting-hospitalization':
+              updatedPatient.timestamps.medicationCompleted = new Date();
+              break;
+            case 'in-hospitalization':
+              updatedPatient.timestamps.hospitalizationStarted = new Date();
+              break;
+            case 'waiting-inter-consultation':
+              updatedPatient.timestamps.hospitalizationCompleted = new Date();
+              break;
+            case 'in-inter-consultation':
+              updatedPatient.timestamps.interConsultationStarted = new Date();
+              break;
+            case 'waiting-transfer':
+              updatedPatient.timestamps.interConsultationCompleted = new Date();
+              break;
+            case 'transferred':
+              updatedPatient.timestamps.transferCompleted = new Date();
+              break;
+            case 'prescription-issued':
+              updatedPatient.timestamps.prescriptionIssued = new Date();
+              break;
+            case 'discharged':
+              updatedPatient.timestamps.discharged = new Date();
+              break;
+            case 'deceased':
+              updatedPatient.timestamps.deceased = new Date();
+              break;
+            case 'completed':
+              updatedPatient.timestamps.discharged = new Date();
+              break;
+          }
+          
+          console.log('✅ Patient after update:', { id: updatedPatient.id, password: updatedPatient.password, newStatus: updatedPatient.status });
+          return updatedPatient;
         }
-        
-        return updatedPatient;
-      }
-      return patient;
-    }));
+        return patient;
+      });
+    });
   };
 
   const cancelPatient = (id: string, reason: string) => {
@@ -581,7 +597,9 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const getPatientsByStatus = (status: Patient['status']): Patient[] => {
-    return patients.filter(patient => patient.status === status);
+    const filtered = patients.filter(patient => patient.status === status);
+    console.log(`📊 getPatientsByStatus(${status}):`, filtered.length, 'patients');
+    return filtered;
   };
 
   const getPatientsByStatusAndSpecialty = (status: Patient['status'], medicalSpecialty: Patient['medicalSpecialty']): Patient[] => {
@@ -589,7 +607,13 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const getPatientById = (id: string): Patient | undefined => {
-    return patients.find(patient => patient.id === id);
+    const patient = patients.find(patient => patient.id === id);
+    if (patient) {
+      console.log('🔍 getPatientById found:', { id: patient.id, password: patient.password, status: patient.status });
+    } else {
+      console.log('❌ getPatientById not found:', id);
+    }
+    return patient;
   };
 
   const getTimeElapsed = (patient: Patient, from: keyof Patient['timestamps'], to?: keyof Patient['timestamps']): number => {
