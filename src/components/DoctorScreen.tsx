@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,9 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, X, Speaker, ExternalLink } from 'lucide-react';
+import { ArrowLeft, X, Speaker, ExternalLink, Stethoscope } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CancellationModal from './CancellationModal';
 
@@ -26,24 +28,35 @@ const DoctorScreen: React.FC = () => {
   });
 
   const navigate = useNavigate();
+  
+  // Pacientes aguardando consulta
   const waitingPatients = getPatientsByStatus('waiting-doctor').sort((a, b) => {
-    // Primeiro ordena por prioridade (vermelho > laranja > amarelo > verde > azul)
     const priorityOrder = { 'vermelho': 5, 'laranja': 4, 'amarelo': 3, 'verde': 2, 'azul': 1 };
     const priorityA = priorityOrder[a.triageData?.priority as keyof typeof priorityOrder] || 0;
     const priorityB = priorityOrder[b.triageData?.priority as keyof typeof priorityOrder] || 0;
     
     if (priorityA !== priorityB) {
-      return priorityB - priorityA; // Maior prioridade primeiro
+      return priorityB - priorityA;
     }
     
-    // Se a prioridade for igual, ordena por tempo de espera (mais tempo primeiro)
     const timeA = getTimeElapsed(a, 'adminCompleted');
     const timeB = getTimeElapsed(b, 'adminCompleted');
     return timeB - timeA;
   });
+
+  // Pacientes em processos (exames/medicamentos)
+  const waitingExamPatients = getPatientsByStatus('waiting-exam');
+  const inExamPatients = getPatientsByStatus('in-exam');
+  const waitingMedicationPatients = getPatientsByStatus('waiting-medication');
+  const inMedicationPatients = getPatientsByStatus('in-medication');
+  
+  // Categorizar pacientes de processo
+  const waitingProcessPatients = [...waitingExamPatients, ...waitingMedicationPatients];
+  const partiallyReadyPatients = [...inExamPatients, ...inMedicationPatients];
+  const readyForReassessmentPatients = getPatientsByStatus('waiting-inter-consultation');
+
   const currentPatient = getPatientsByStatus('in-consultation')[0];
 
-  // Função para obter o nome do paciente (prioriza personalData, depois triageData)
   const getPatientName = (patient: any) => {
     if (patient.personalData?.name) {
       return patient.personalData.name;
@@ -54,7 +67,6 @@ const DoctorScreen: React.FC = () => {
     return 'Nome não coletado';
   };
 
-  // Função para obter dados combinados do paciente
   const getPatientAge = (patient: any) => {
     if (patient.personalData?.age) {
       return patient.personalData.age;
@@ -79,7 +91,6 @@ const DoctorScreen: React.FC = () => {
 
   const handleConfirmMV = () => {
     if (mvPatient) {
-      // Remove patient from queue by updating to completed status
       updatePatientStatus(mvPatient.id, 'completed', { 
         consultationData: { 
           diagnosis: 'Encaminhado para sistema MV', 
@@ -185,6 +196,116 @@ const DoctorScreen: React.FC = () => {
     }
   };
 
+  const getProcessStatus = (patient: any) => {
+    if (patient.status === 'waiting-exam') return 'Aguardando Exame';
+    if (patient.status === 'in-exam') return 'Em Exame';
+    if (patient.status === 'waiting-medication') return 'Aguardando Medicação';
+    if (patient.status === 'in-medication') return 'Em Medicação';
+    if (patient.status === 'waiting-inter-consultation') return 'Aguardando Reavaliação';
+    return 'Processo';
+  };
+
+  const renderProcessTable = (patients: any[], title: string, showActions: boolean = true) => (
+    <div className="space-y-4">
+      <h4 className="text-lg font-semibold">{title}</h4>
+      <div className="border rounded-lg">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-20">Senha</TableHead>
+              <TableHead>Paciente</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Classificação</TableHead>
+              <TableHead className="w-32">Tempo no Status</TableHead>
+              <TableHead className="w-32">Tempo Total</TableHead>
+              {showActions && <TableHead className="w-64">Ações</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {patients.map((patient) => {
+              const timeInStatus = patient.status === 'waiting-exam' ? getTimeElapsed(patient, 'consultationCompleted') :
+                                   patient.status === 'in-exam' ? getTimeElapsed(patient, 'examStarted') :
+                                   patient.status === 'waiting-medication' ? getTimeElapsed(patient, 'examCompleted') :
+                                   patient.status === 'in-medication' ? getTimeElapsed(patient, 'medicationStarted') :
+                                   patient.status === 'waiting-inter-consultation' ? getTimeElapsed(patient, 'medicationCompleted') : 0;
+              
+              const totalTime = getTimeElapsed(patient, 'generated');
+              const slaStatus = isOverSLA(patient);
+              
+              return (
+                <TableRow 
+                  key={patient.id}
+                  className={`${
+                    slaStatus.totalSLA ? 'bg-red-50 border-red-200' : 
+                    totalTime > 90 ? 'bg-yellow-50 border-yellow-200' : 
+                    'bg-green-50 border-green-200'
+                  }`}
+                >
+                  <TableCell className="font-bold">{patient.password}</TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      <div className="font-medium">{getPatientName(patient)}</div>
+                      <div className="text-gray-600">{getPatientAge(patient)} anos</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      {getProcessStatus(patient)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`font-medium ${getPriorityColor(patient.triageData?.priority || '')}`}>
+                      {patient.triageData?.priority?.toUpperCase() || 'N/A'}
+                    </span>
+                  </TableCell>
+                  <TableCell>{timeInStatus} min</TableCell>
+                  <TableCell className={`font-medium ${
+                    slaStatus.totalSLA ? 'text-red-600' : 
+                    totalTime > 90 ? 'text-yellow-600' : 
+                    'text-green-600'
+                  }`}>
+                    {totalTime} min
+                  </TableCell>
+                  {showActions && (
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleCallPanel(patient.password)}
+                          size="sm"
+                          variant="outline"
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                        >
+                          <Speaker className="h-3 w-3 mr-1" />
+                          Chamar no painel
+                        </Button>
+                        <Button
+                          onClick={() => handleMVConsultation(patient)}
+                          size="sm"
+                          variant="outline"
+                          className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Iniciar consulta no MV
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })}
+            {patients.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={showActions ? 7 : 6} className="text-center py-8 text-gray-500">
+                  Nenhum paciente nesta categoria
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-50 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -203,107 +324,128 @@ const DoctorScreen: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <h3 className="text-xl font-semibold mb-4">Pacientes Aguardando Consulta</h3>
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-20">Senha</TableHead>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Convênio</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Classificação</TableHead>
-                    <TableHead className="w-32">Tempo Aguardando</TableHead>
-                    <TableHead className="w-32">Tempo Total</TableHead>
-                    <TableHead className="w-32">Status SLA</TableHead>
-                    <TableHead className="w-64">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {waitingPatients.map((patient) => {
-                    const timeWaiting = getTimeElapsed(patient, 'adminCompleted');
-                    const totalTime = getTimeElapsed(patient, 'generated');
-                    const slaStatus = isOverSLA(patient);
-                    
-                    return (
-                      <TableRow 
-                        key={patient.id}
-                        className={`${
-                          slaStatus.totalSLA ? 'bg-red-50 border-red-200' : 
-                          totalTime > 90 ? 'bg-yellow-50 border-yellow-200' : 
-                          'bg-green-50 border-green-200'
-                        }`}
-                      >
-                        <TableCell className="font-bold">{patient.password}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div className="font-medium">{getPatientName(patient)}</div>
-                            <div className="text-gray-600">{getPatientAge(patient)} anos</div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {patient.personalData?.healthInsurance || 'Particular'}
-                        </TableCell>
-                        <TableCell className="capitalize">
-                          {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
-                        </TableCell>
-                        <TableCell>
-                          <span className={`font-medium ${getPriorityColor(patient.triageData?.priority || '')}`}>
-                            {patient.triageData?.priority?.toUpperCase() || 'N/A'}
-                          </span>
-                        </TableCell>
-                        <TableCell>{timeWaiting} min</TableCell>
-                        <TableCell className={`font-medium ${
-                          slaStatus.totalSLA ? 'text-red-600' : 
-                          totalTime > 90 ? 'text-yellow-600' : 
-                          'text-green-600'
-                        }`}>
-                          {totalTime} min
-                        </TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            slaStatus.totalSLA ? 'bg-red-100 text-red-800' : 
-                            totalTime > 90 ? 'bg-yellow-100 text-yellow-800' : 
-                            'bg-green-100 text-green-800'
-                          }`}>
-                            {slaStatus.totalSLA ? 'Atrasado' : totalTime > 90 ? 'Atenção' : 'No prazo'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => handleCallPanel(patient.password)}
-                              size="sm"
-                              variant="outline"
-                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                            >
-                              <Speaker className="h-3 w-3 mr-1" />
-                              Chamar no painel
-                            </Button>
-                            <Button
-                              onClick={() => handleMVConsultation(patient)}
-                              size="sm"
-                              variant="outline"
-                              className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                            >
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              Iniciar consulta no MV
-                            </Button>
-                          </div>
-                        </TableCell>
+            <Tabs defaultValue="consultas" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="consultas" className="flex items-center gap-2">
+                  <Stethoscope className="h-4 w-4" />
+                  Consultas
+                </TabsTrigger>
+                <TabsTrigger value="processos" className="flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4" />
+                  Exames e Medicamentos
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="consultas" className="space-y-6">
+                <h3 className="text-xl font-semibold">Pacientes Aguardando Consulta</h3>
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-20">Senha</TableHead>
+                        <TableHead>Paciente</TableHead>
+                        <TableHead>Convênio</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Classificação</TableHead>
+                        <TableHead className="w-32">Tempo Aguardando</TableHead>
+                        <TableHead className="w-32">Tempo Total</TableHead>
+                        <TableHead className="w-32">Status SLA</TableHead>
+                        <TableHead className="w-64">Ações</TableHead>
                       </TableRow>
-                    );
-                  })}
-                  {waitingPatients.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                        Nenhum paciente aguardando consulta
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    </TableHeader>
+                    <TableBody>
+                      {waitingPatients.map((patient) => {
+                        const timeWaiting = getTimeElapsed(patient, 'adminCompleted');
+                        const totalTime = getTimeElapsed(patient, 'generated');
+                        const slaStatus = isOverSLA(patient);
+                        
+                        return (
+                          <TableRow 
+                            key={patient.id}
+                            className={`${
+                              slaStatus.totalSLA ? 'bg-red-50 border-red-200' : 
+                              totalTime > 90 ? 'bg-yellow-50 border-yellow-200' : 
+                              'bg-green-50 border-green-200'
+                            }`}
+                          >
+                            <TableCell className="font-bold">{patient.password}</TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div className="font-medium">{getPatientName(patient)}</div>
+                                <div className="text-gray-600">{getPatientAge(patient)} anos</div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {patient.personalData?.healthInsurance || 'Particular'}
+                            </TableCell>
+                            <TableCell className="capitalize">
+                              {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
+                            </TableCell>
+                            <TableCell>
+                              <span className={`font-medium ${getPriorityColor(patient.triageData?.priority || '')}`}>
+                                {patient.triageData?.priority?.toUpperCase() || 'N/A'}
+                              </span>
+                            </TableCell>
+                            <TableCell>{timeWaiting} min</TableCell>
+                            <TableCell className={`font-medium ${
+                              slaStatus.totalSLA ? 'text-red-600' : 
+                              totalTime > 90 ? 'text-yellow-600' : 
+                              'text-green-600'
+                            }`}>
+                              {totalTime} min
+                            </TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                slaStatus.totalSLA ? 'bg-red-100 text-red-800' : 
+                                totalTime > 90 ? 'bg-yellow-100 text-yellow-800' : 
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {slaStatus.totalSLA ? 'Atrasado' : totalTime > 90 ? 'Atenção' : 'No prazo'}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() => handleCallPanel(patient.password)}
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                >
+                                  <Speaker className="h-3 w-3 mr-1" />
+                                  Chamar no painel
+                                </Button>
+                                <Button
+                                  onClick={() => handleMVConsultation(patient)}
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                                >
+                                  <ExternalLink className="h-3 w-3 mr-1" />
+                                  Iniciar consulta no MV
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      {waitingPatients.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                            Nenhum paciente aguardando consulta
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="processos" className="space-y-6">
+                {renderProcessTable(waitingProcessPatients, "🕒 Aguardando Processo (Exames/Medicamentos)", false)}
+                {renderProcessTable(partiallyReadyPatients, "🔄 Processos em Andamento", false)}
+                {renderProcessTable(readyForReassessmentPatients, "✅ Prontos para Reavaliação", true)}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
@@ -355,7 +497,6 @@ const DoctorScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* Dados da Triagem */}
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-semibold mb-2">Dados da Triagem</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -380,7 +521,6 @@ const DoctorScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* Formulário de Consulta */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
