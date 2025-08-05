@@ -117,6 +117,291 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [patients, setPatients] = useState<Patient[]>([]);
   const [currentPasswordNumber, setCurrentPasswordNumber] = useState(1);
 
+  // Mock data initialization
+  useEffect(() => {
+    const now = new Date();
+    const mockPatients: Patient[] = [
+      // Aguardando Triagem (2 pacientes - 1 fora do SLA)
+      {
+        id: 'mock-1',
+        password: 'NP001',
+        specialty: 'nao-prioritario',
+        phone: '11999999001',
+        status: 'waiting-triage',
+        timestamps: {
+          generated: new Date(now.getTime() - 15 * 60 * 1000) // 15 min ago (fora do SLA)
+        }
+      },
+      {
+        id: 'mock-2',
+        password: 'PR002',
+        specialty: 'prioritario',
+        phone: '11999999002',
+        status: 'waiting-triage',
+        timestamps: {
+          generated: new Date(now.getTime() - 5 * 60 * 1000) // 5 min ago (dentro do SLA)
+        }
+      },
+      // Em Triagem (1 paciente - dentro do SLA)
+      {
+        id: 'mock-3',
+        password: 'NP003',
+        specialty: 'nao-prioritario',
+        phone: '11999999003',
+        status: 'in-triage',
+        timestamps: {
+          generated: new Date(now.getTime() - 8 * 60 * 1000), // 8 min ago
+          triageStarted: new Date(now.getTime() - 3 * 60 * 1000) // 3 min ago
+        }
+      },
+      // Aguardando Recepção (3 pacientes - 1 fora do SLA)
+      {
+        id: 'mock-4',
+        password: 'NP004',
+        specialty: 'nao-prioritario',
+        phone: '11999999004',
+        status: 'waiting-admin',
+        timestamps: {
+          generated: new Date(now.getTime() - 180 * 60 * 1000), // 3h ago
+          triageCompleted: new Date(now.getTime() - 170 * 60 * 1000)
+        }
+      },
+      {
+        id: 'mock-5',
+        password: 'PR005',
+        specialty: 'prioritario',
+        phone: '11999999005',
+        status: 'waiting-admin',
+        timestamps: {
+          generated: new Date(now.getTime() - 45 * 60 * 1000), // 45 min ago
+          triageCompleted: new Date(now.getTime() - 35 * 60 * 1000)
+        }
+      },
+      {
+        id: 'mock-6',
+        password: 'NP006',
+        specialty: 'nao-prioritario',
+        phone: '11999999006',
+        status: 'waiting-admin',
+        timestamps: {
+          generated: new Date(now.getTime() - 25 * 60 * 1000), // 25 min ago
+          triageCompleted: new Date(now.getTime() - 20 * 60 * 1000)
+        }
+      },
+      // Atendimento Recepção (1 paciente - dentro do SLA)
+      {
+        id: 'mock-7',
+        password: 'NP007',
+        specialty: 'nao-prioritario',
+        phone: '11999999007',
+        status: 'in-admin',
+        timestamps: {
+          generated: new Date(now.getTime() - 30 * 60 * 1000), // 30 min ago
+          triageCompleted: new Date(now.getTime() - 25 * 60 * 1000),
+          adminStarted: new Date(now.getTime() - 5 * 60 * 1000)
+        }
+      },
+      // Aguardando Médico (5 pacientes - 1 fora do SLA)
+      {
+        id: 'mock-8',
+        password: 'PR008',
+        specialty: 'prioritario',
+        phone: '11999999008',
+        status: 'waiting-doctor',
+        timestamps: {
+          generated: new Date(now.getTime() - 260 * 60 * 1000), // 4h20 ago (fora do SLA total)
+          triageCompleted: new Date(now.getTime() - 250 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 240 * 60 * 1000)
+        }
+      },
+      {
+        id: 'mock-9',
+        password: 'NP009',
+        specialty: 'nao-prioritario',
+        phone: '11999999009',
+        status: 'waiting-doctor',
+        timestamps: {
+          generated: new Date(now.getTime() - 90 * 60 * 1000), // 1h30 ago
+          triageCompleted: new Date(now.getTime() - 85 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 75 * 60 * 1000)
+        }
+      },
+      {
+        id: 'mock-10',
+        password: 'NP010',
+        specialty: 'nao-prioritario',
+        phone: '11999999010',
+        status: 'waiting-doctor',
+        timestamps: {
+          generated: new Date(now.getTime() - 60 * 60 * 1000), // 1h ago
+          triageCompleted: new Date(now.getTime() - 55 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 50 * 60 * 1000)
+        }
+      },
+      {
+        id: 'mock-11',
+        password: 'PR011',
+        specialty: 'prioritario',
+        phone: '11999999011',
+        status: 'waiting-doctor',
+        timestamps: {
+          generated: new Date(now.getTime() - 40 * 60 * 1000), // 40 min ago
+          triageCompleted: new Date(now.getTime() - 35 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 30 * 60 * 1000)
+        }
+      },
+      {
+        id: 'mock-12',
+        password: 'NP012',
+        specialty: 'nao-prioritario',
+        phone: '11999999012',
+        status: 'waiting-doctor',
+        timestamps: {
+          generated: new Date(now.getTime() - 20 * 60 * 1000), // 20 min ago
+          triageCompleted: new Date(now.getTime() - 18 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 15 * 60 * 1000)
+        }
+      },
+      // Em Atendimento (2 pacientes - dentro do SLA)
+      {
+        id: 'mock-13',
+        password: 'NP013',
+        specialty: 'nao-prioritario',
+        phone: '11999999013',
+        status: 'in-consultation',
+        timestamps: {
+          generated: new Date(now.getTime() - 120 * 60 * 1000), // 2h ago
+          triageCompleted: new Date(now.getTime() - 115 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 110 * 60 * 1000),
+          consultationStarted: new Date(now.getTime() - 15 * 60 * 1000)
+        }
+      },
+      {
+        id: 'mock-14',
+        password: 'PR014',
+        specialty: 'prioritario',
+        phone: '11999999014',
+        status: 'in-consultation',
+        timestamps: {
+          generated: new Date(now.getTime() - 80 * 60 * 1000), // 1h20 ago
+          triageCompleted: new Date(now.getTime() - 75 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 70 * 60 * 1000),
+          consultationStarted: new Date(now.getTime() - 10 * 60 * 1000)
+        }
+      },
+      // Aguardando Exame (1 paciente - dentro do SLA)
+      {
+        id: 'mock-15',
+        password: 'NP015',
+        specialty: 'nao-prioritario',
+        phone: '11999999015',
+        status: 'waiting-exam',
+        timestamps: {
+          generated: new Date(now.getTime() - 150 * 60 * 1000), // 2h30 ago
+          triageCompleted: new Date(now.getTime() - 145 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 140 * 60 * 1000),
+          consultationCompleted: new Date(now.getTime() - 30 * 60 * 1000)
+        }
+      },
+      // Em Exame (1 paciente - dentro do SLA)
+      {
+        id: 'mock-16',
+        password: 'NP016',
+        specialty: 'nao-prioritario',
+        phone: '11999999016',
+        status: 'in-exam',
+        timestamps: {
+          generated: new Date(now.getTime() - 100 * 60 * 1000), // 1h40 ago
+          triageCompleted: new Date(now.getTime() - 95 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 90 * 60 * 1000),
+          consultationCompleted: new Date(now.getTime() - 45 * 60 * 1000),
+          examStarted: new Date(now.getTime() - 10 * 60 * 1000)
+        }
+      },
+      // Aguardando Medicação (2 pacientes - dentro do SLA)
+      {
+        id: 'mock-17',
+        password: 'PR017',
+        specialty: 'prioritario',
+        phone: '11999999017',
+        status: 'waiting-medication',
+        timestamps: {
+          generated: new Date(now.getTime() - 180 * 60 * 1000), // 3h ago
+          triageCompleted: new Date(now.getTime() - 175 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 170 * 60 * 1000),
+          consultationCompleted: new Date(now.getTime() - 120 * 60 * 1000),
+          examCompleted: new Date(now.getTime() - 60 * 60 * 1000)
+        }
+      },
+      {
+        id: 'mock-18',
+        password: 'NP018',
+        specialty: 'nao-prioritario',
+        phone: '11999999018',
+        status: 'waiting-medication',
+        timestamps: {
+          generated: new Date(now.getTime() - 90 * 60 * 1000), // 1h30 ago
+          triageCompleted: new Date(now.getTime() - 85 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 80 * 60 * 1000),
+          consultationCompleted: new Date(now.getTime() - 40 * 60 * 1000),
+          examCompleted: new Date(now.getTime() - 15 * 60 * 1000)
+        }
+      },
+      // Em Medicação (1 paciente - dentro do SLA)
+      {
+        id: 'mock-19',
+        password: 'NP019',
+        specialty: 'nao-prioritario',
+        phone: '11999999019',
+        status: 'in-medication',
+        timestamps: {
+          generated: new Date(now.getTime() - 120 * 60 * 1000), // 2h ago
+          triageCompleted: new Date(now.getTime() - 115 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 110 * 60 * 1000),
+          consultationCompleted: new Date(now.getTime() - 70 * 60 * 1000),
+          examCompleted: new Date(now.getTime() - 30 * 60 * 1000),
+          medicationStarted: new Date(now.getTime() - 5 * 60 * 1000)
+        }
+      },
+      // Aguardando Repouso no Leito (1 paciente - dentro do SLA)
+      {
+        id: 'mock-20',
+        password: 'PR020',
+        specialty: 'prioritario',
+        phone: '11999999020',
+        status: 'waiting-hospitalization',
+        timestamps: {
+          generated: new Date(now.getTime() - 200 * 60 * 1000), // 3h20 ago
+          triageCompleted: new Date(now.getTime() - 195 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 190 * 60 * 1000),
+          consultationCompleted: new Date(now.getTime() - 150 * 60 * 1000),
+          examCompleted: new Date(now.getTime() - 100 * 60 * 1000),
+          medicationCompleted: new Date(now.getTime() - 60 * 60 * 1000)
+        }
+      },
+      // Internado (1 paciente - dentro do SLA)
+      {
+        id: 'mock-21',
+        password: 'NP021',
+        specialty: 'nao-prioritario',
+        phone: '11999999021',
+        status: 'in-hospitalization',
+        timestamps: {
+          generated: new Date(now.getTime() - 300 * 60 * 1000), // 5h ago
+          triageCompleted: new Date(now.getTime() - 295 * 60 * 1000),
+          adminCompleted: new Date(now.getTime() - 290 * 60 * 1000),
+          consultationCompleted: new Date(now.getTime() - 250 * 60 * 1000),
+          examCompleted: new Date(now.getTime() - 200 * 60 * 1000),
+          medicationCompleted: new Date(now.getTime() - 150 * 60 * 1000),
+          hospitalizationStarted: new Date(now.getTime() - 120 * 60 * 1000)
+        }
+      }
+    ];
+
+    setPatients(mockPatients);
+    setCurrentPasswordNumber(22);
+  }, []);
+
   const generatePassword = (specialty: Patient['specialty'], phone: string): string => {
     const prefixes = {
       'prioritario': 'PR',
