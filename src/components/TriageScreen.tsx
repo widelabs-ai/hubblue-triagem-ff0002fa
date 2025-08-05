@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import VitalSignInput from '@/components/VitalSignInput';
+import VitalSignsForm from '@/components/VitalSignsForm';
 import { toast } from 'sonner';
 import { validateVitals } from '@/utils/vitalsValidation';
 import { manchesterFlows } from '@/utils/manchesterFlows';
@@ -325,7 +325,7 @@ const TriageScreen: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="vitals" className="space-y-4">
-              <VitalSignInput
+              <VitalSignsForm
                 vitals={triageData.vitals}
                 onChange={(vitals) => setTriageData({...triageData, vitals})}
               />
@@ -425,7 +425,7 @@ const TriageScreen: React.FC = () => {
                   // Auto-suggest priority based on flow
                   const flow = manchesterFlows.find(f => f.id === value);
                   if (flow) {
-                    setTriageData(prev => ({...prev, priority: flow.priority}));
+                    setTriageData(prev => ({...prev, priority: flow.defaultPriority}));
                   }
                 }}>
                   <SelectTrigger>
@@ -434,7 +434,7 @@ const TriageScreen: React.FC = () => {
                   <SelectContent>
                     {manchesterFlows.map((flow) => (
                       <SelectItem key={flow.id} value={flow.id}>
-                        {flow.name} - {flow.priority.toUpperCase()}
+                        {flow.name} - {flow.defaultPriority.toUpperCase()}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -1,4 +1,3 @@
-
 export interface VitalRange {
   min: number;
   max: number;
@@ -252,4 +251,67 @@ export const calculatePAM = (bloodPressure: string): number | null => {
   if (isNaN(systolic) || isNaN(diastolic)) return null;
   
   return Math.round((systolic + 2 * diastolic) / 3);
+};
+
+export const validateVitals = (vitals: any): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  let isValid = true;
+
+  if (vitals.heartRate) {
+    const result = validateHeartRate(vitals.heartRate);
+    if (!result.isValid) {
+      errors.push(`Frequência cardíaca: ${result.message}`);
+      isValid = false;
+    }
+  }
+
+  if (vitals.temperature) {
+    const result = validateTemperature(vitals.temperature);
+    if (!result.isValid) {
+      errors.push(`Temperatura: ${result.message}`);
+      isValid = false;
+    }
+  }
+
+  if (vitals.oxygenSaturation) {
+    const result = validateOxygenSaturation(vitals.oxygenSaturation);
+    if (!result.isValid) {
+      errors.push(`Saturação: ${result.message}`);
+      isValid = false;
+    }
+  }
+
+  if (vitals.bloodPressure) {
+    const result = validateBloodPressure(vitals.bloodPressure);
+    if (!result.isValid) {
+      errors.push(`Pressão arterial: ${result.message}`);
+      isValid = false;
+    }
+  }
+
+  if (vitals.respiratoryRate) {
+    const result = validateRespiratoryRate(vitals.respiratoryRate);
+    if (!result.isValid) {
+      errors.push(`Frequência respiratória: ${result.message}`);
+      isValid = false;
+    }
+  }
+
+  if (vitals.glasgow) {
+    const result = validateGlasgow(vitals.glasgow);
+    if (!result.isValid) {
+      errors.push(`Glasgow: ${result.message}`);
+      isValid = false;
+    }
+  }
+
+  if (vitals.glucose) {
+    const result = validateGlucose(vitals.glucose);
+    if (!result.isValid) {
+      errors.push(`Glicemia: ${result.message}`);
+      isValid = false;
+    }
+  }
+
+  return { isValid, errors };
 };
