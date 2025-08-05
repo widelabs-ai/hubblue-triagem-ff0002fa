@@ -19,7 +19,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'waiting-triage' as const, 
       specialty: 'prioritario' as const, 
       phone: '(11) 99999-9999', 
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 5 * 60000),
         triageStarted: undefined,
@@ -52,7 +51,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'waiting-triage' as const, 
       specialty: 'nao-prioritario' as const, 
       phone: '(11) 88888-8888',
-      callCount: 1,
       timestamps: { 
         generated: new Date(Date.now() - 12 * 60000),
         triageStarted: undefined,
@@ -85,7 +83,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'waiting-triage' as const, 
       specialty: 'prioritario' as const, 
       phone: '(11) 77777-7777',
-      callCount: 2,
       timestamps: { 
         generated: new Date(Date.now() - 8 * 60000),
         triageStarted: undefined,
@@ -120,7 +117,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'in-triage' as const, 
       specialty: 'prioritario' as const, 
       phone: '(11) 66666-6666',
-      callCount: 1,
       timestamps: { 
         generated: new Date(Date.now() - 18 * 60000),
         triageStarted: new Date(Date.now() - 5 * 60000),
@@ -153,7 +149,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'in-triage' as const, 
       specialty: 'nao-prioritario' as const, 
       phone: '(11) 55555-5555',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 22 * 60000),
         triageStarted: new Date(Date.now() - 8 * 60000),
@@ -188,7 +183,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'waiting-admin' as const, 
       specialty: 'prioritario' as const, 
       phone: '(11) 44444-4444',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 35 * 60000),
         triageStarted: new Date(Date.now() - 25 * 60000),
@@ -221,7 +215,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'waiting-admin' as const, 
       specialty: 'nao-prioritario' as const, 
       phone: '(11) 33333-3333',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 28 * 60000),
         triageStarted: new Date(Date.now() - 18 * 60000),
@@ -256,7 +249,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'in-admin' as const, 
       specialty: 'prioritario' as const, 
       phone: '(11) 22222-2222',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 50 * 60000),
         triageStarted: new Date(Date.now() - 40 * 60000),
@@ -291,7 +283,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'waiting-doctor' as const, 
       specialty: 'prioritario' as const, 
       phone: '(11) 11111-1111',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 65 * 60000),
         triageStarted: new Date(Date.now() - 55 * 60000),
@@ -324,7 +315,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'waiting-doctor' as const, 
       specialty: 'nao-prioritario' as const, 
       phone: '(11) 99999-0000',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 45 * 60000),
         triageStarted: new Date(Date.now() - 35 * 60000),
@@ -359,7 +349,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'in-consultation' as const, 
       specialty: 'prioritario' as const, 
       phone: '(11) 88888-0000',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 85 * 60000),
         triageStarted: new Date(Date.now() - 75 * 60000),
@@ -392,7 +381,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'in-consultation' as const, 
       specialty: 'nao-prioritario' as const, 
       phone: '(11) 77777-0000',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 70 * 60000),
         triageStarted: new Date(Date.now() - 60 * 60000),
@@ -427,7 +415,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'waiting-exam' as const, 
       specialty: 'prioritario' as const, 
       phone: '(11) 66666-0000',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 110 * 60000),
         triageStarted: new Date(Date.now() - 100 * 60000),
@@ -462,7 +449,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'in-exam' as const, 
       specialty: 'nao-prioritario' as const, 
       phone: '(11) 55555-0000',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 95 * 60000),
         triageStarted: new Date(Date.now() - 85 * 60000),
@@ -497,7 +483,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'waiting-medication' as const, 
       specialty: 'prioritario' as const, 
       phone: '(11) 44444-0000',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 125 * 60000),
         triageStarted: new Date(Date.now() - 115 * 60000),
@@ -532,7 +517,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'in-medication' as const, 
       specialty: 'nao-prioritario' as const, 
       phone: '(11) 33333-0000',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 90 * 60000),
         triageStarted: new Date(Date.now() - 80 * 60000),
@@ -567,7 +551,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'prescription-issued' as const, 
       specialty: 'prioritario' as const, 
       phone: '(11) 22222-0000',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 140 * 60000),
         triageStarted: new Date(Date.now() - 130 * 60000),
@@ -602,7 +585,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'discharged' as const, 
       specialty: 'prioritario' as const, 
       phone: '(11) 11111-0000',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 180 * 60000),
         triageStarted: new Date(Date.now() - 170 * 60000),
@@ -635,7 +617,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'discharged' as const, 
       specialty: 'nao-prioritario' as const, 
       phone: '(11) 99999-1111',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 200 * 60000),
         triageStarted: new Date(Date.now() - 190 * 60000),
@@ -670,7 +651,6 @@ const HospitalFlowIndicators: React.FC = () => {
       status: 'transferred' as const, 
       specialty: 'prioritario' as const, 
       phone: '(11) 88888-1111',
-      callCount: 0,
       timestamps: { 
         generated: new Date(Date.now() - 300 * 60000),
         triageStarted: new Date(Date.now() - 290 * 60000),

@@ -9,7 +9,6 @@ export interface Patient {
           'waiting-exam' | 'in-exam' | 'waiting-medication' | 'in-medication' | 'waiting-hospitalization' | 
           'in-hospitalization' | 'waiting-inter-consultation' | 'in-inter-consultation' | 'waiting-transfer' | 
           'transferred' | 'prescription-issued' | 'discharged' | 'deceased' | 'completed' | 'cancelled';
-  callCount: number; // Contador de quantas vezes foi chamado
   timestamps: {
     generated: Date;
     triageStarted?: Date;
@@ -32,7 +31,6 @@ export interface Patient {
     discharged?: Date;
     deceased?: Date;
     cancelled?: Date;
-    lastCalled?: Date; // Quando foi chamado pela última vez
   };
   personalData?: {
     fullName?: string;
@@ -88,7 +86,6 @@ interface HospitalContextType {
   generatePassword: (specialty: Patient['specialty'], phone: string) => string;
   updatePatientStatus: (id: string, status: Patient['status'], additionalData?: any) => void;
   cancelPatient: (id: string, reason: string) => void;
-  callPatient: (id: string) => void;
   getPatientsByStatus: (status: Patient['status']) => Patient[];
   getPatientById: (id: string) => Patient | undefined;
   getTimeElapsed: (patient: Patient, from: keyof Patient['timestamps'], to?: keyof Patient['timestamps']) => number;
@@ -124,7 +121,6 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       specialty,
       phone,
       status: 'waiting-triage',
-      callCount: 0, // Inicializar contador
       timestamps: {
         generated: new Date()
       }
@@ -134,22 +130,6 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setCurrentPasswordNumber(prev => prev + 1);
     
     return password;
-  };
-
-  const callPatient = (id: string) => {
-    setPatients(prev => prev.map(patient => {
-      if (patient.id === id) {
-        return {
-          ...patient,
-          callCount: patient.callCount + 1,
-          timestamps: {
-            ...patient.timestamps,
-            lastCalled: new Date()
-          }
-        };
-      }
-      return patient;
-    }));
   };
 
   const updatePatientStatus = (id: string, status: Patient['status'], additionalData?: any) => {
@@ -343,7 +323,6 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       generatePassword,
       updatePatientStatus,
       cancelPatient,
-      callPatient,
       getPatientsByStatus,
       getPatientById,
       getTimeElapsed,
