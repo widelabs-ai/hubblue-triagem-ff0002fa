@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useHospital } from '@/contexts/HospitalContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const HospitalFlowIndicators: React.FC = () => {
   const { patients, getPatientsByStatus, getTimeElapsed, isOverSLA } = useHospital();
@@ -87,14 +88,16 @@ const HospitalFlowIndicators: React.FC = () => {
       
       {groups.map((group, index) => {
         const groupStats = calculateGroupStats(group.statuses);
+        const hasAlert = groupStats.outSLA > 0;
         
         return (
-          <Card key={index} className={`${group.color} border-2`}>
+          <Card key={index} className={`${group.color} border-2 ${hasAlert ? 'ring-2 ring-red-500 border-red-300' : ''}`}>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{group.icon}</span>
                   <span className="text-lg">{group.title}</span>
+                  {hasAlert && <span className="text-xl">🚨</span>}
                 </div>
                 <div className="text-sm text-gray-600">
                   Tempo médio: {groupStats.avgTime} min
@@ -103,9 +106,16 @@ const HospitalFlowIndicators: React.FC = () => {
               {groupStats.total > 0 && (
                 <div className="text-sm font-medium text-gray-700">
                   Total: {groupStats.total} pacientes - 
-                  <span className="text-green-600 ml-1">{groupStats.inSLA} dentro do SLA</span> | 
-                  <span className="text-red-600 ml-1">{groupStats.outSLA} fora do SLA</span>
+                  <span className="text-green-600 ml-1">{groupStats.inSLA} dentro</span> | 
+                  <span className="text-red-600 ml-1">{groupStats.outSLA} fora</span>
                 </div>
+              )}
+              {hasAlert && (
+                <Alert className="bg-red-50 border-red-200 mt-2">
+                  <AlertDescription className="text-red-700 text-sm">
+                    ⚠️ Atenção: {groupStats.outSLA} paciente{groupStats.outSLA > 1 ? 's' : ''} fora do prazo estabelecido
+                  </AlertDescription>
+                </Alert>
               )}
             </CardHeader>
             <CardContent>
@@ -131,13 +141,16 @@ const HospitalFlowIndicators: React.FC = () => {
                     });
                     itemAvgTime = Math.round(totalTime / count);
                   }
+
+                  const itemHasAlert = itemOutSLA > 0;
                   
                   return (
-                    <div key={item.status} className="bg-white/50 rounded-lg p-3 border">
+                    <div key={item.status} className={`bg-white/50 rounded-lg p-3 border ${itemHasAlert ? 'border-red-300 bg-red-50/50' : ''}`}>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{item.icon}</span>
                           <span className="font-medium text-sm">{item.label}</span>
+                          {itemHasAlert && <span className="text-sm">🚨</span>}
                         </div>
                         <span className="text-xl font-bold">{count}</span>
                       </div>
