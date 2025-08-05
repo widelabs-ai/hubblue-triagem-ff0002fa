@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useHospital } from '../contexts/HospitalContext';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -6,7 +5,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Search, Clock, Phone, User, AlertCircle } from 'lucide-react';
-import { CancellationModal } from './CancellationModal';
+import CancellationModal from './CancellationModal';
 
 const TriageScreen = () => {
   const { patients, getPatientsByStatus, getTimeElapsed, isOverSLA, callPatient } = useHospital();
