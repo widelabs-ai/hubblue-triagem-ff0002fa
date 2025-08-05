@@ -289,14 +289,6 @@ const DoctorScreen: React.FC = () => {
                               <ExternalLink className="h-3 w-3 mr-1" />
                               Iniciar consulta no MV
                             </Button>
-                            <Button 
-                              onClick={() => handleCallPatient(patient.id)}
-                              disabled={!!currentPatient}
-                              size="sm"
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              Chamar
-                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
