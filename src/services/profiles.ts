@@ -34,9 +34,40 @@ const API_BASE_URL = import.meta.env.VITE_HUBBLUE_API || 'localhost:3000/api';
     return response.json();
   };
   
-    export const listaPermissoes = async () => {
-      return fetchApi('/permissoes', {
+    export const listaPerfis = async () => {
+      return fetchApi('/perfis', {
         method: 'GET',
         credentials: 'include',
       });
     }
+
+    export const buscaPerfil = async (id: string) => {
+      return fetchApi(`/perfis/${id}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+    }
+
+    export const atualizaPerfil = async (id: string, nome: string, permissoes: string[]) => {
+      return fetchApi(`/perfis/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        body: JSON.stringify({nome, permissoes}),
+      });
+    }
+
+    export const deletaPerfil = async (id: string) => {
+        return fetchApi(`/perfis/${id}`, {
+            method: 'DELETE',
+            credentials: 'include',
+        });
+    }
+
+    export const criaPerfil = async (nome: string, permissoes: string[]) => {
+        return fetchApi('/perfis', {
+            method: 'POST',
+            credentials: 'include',
+            body: JSON.stringify({nome, permissoes}),
+        });
+    }
+    

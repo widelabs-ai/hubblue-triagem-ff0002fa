@@ -13,7 +13,9 @@ import { useUser } from '@/contexts/UserContext';
 import { UserRole } from '@/types/user';
 import { Users, UserPlus, Edit, Trash2, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { listaPerfis } from '@/services/permissions';
+import { listaPermissoes } from '@/services/permissions';
+import { ProfileModal } from './PerfisModal';
+import { listaPerfis } from '@/services/profiles';
 
 const UserManagement = () => {
   const { users, createUser, updateUser, deleteUser, currentUser } = useUser();
@@ -21,8 +23,7 @@ const UserManagement = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreatePerfilDialogOpen, setIsCreatePerfilDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<string | null>(null);
-  const [editingPerfil, setEditingPerfil] = useState<string | null>(null);
-  const [perfis, setPerfis] = useState([]);
+  const [profiles, setProfiles] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -30,11 +31,6 @@ const UserManagement = () => {
     password: '',
     role: 'enfermeiro' as UserRole,
     isActive: true
-  });
-
-  const [perfilData, setPerfilData] = useState({
-    name: '',
-    permissions: [],
   });
 
   const roleLabels = {
@@ -50,6 +46,7 @@ const UserManagement = () => {
     medico: 'bg-purple-100 text-purple-800',
     administrador: 'bg-red-100 text-red-800'
   };
+
 
   const resetForm = () => {
     setFormData({
@@ -134,17 +131,6 @@ const UserManagement = () => {
     });
   };
 
-  useEffect(() => {
-    const fetchPerfis = async () => {
-      const data = await listaPerfis();
-     const perfis = data.perfis.map((perfil: any) => ({
-       [perfil.nome]: perfil.id,
-     }));
-     setPerfis(perfis);
-    };
-    fetchPerfis();
-  }, []);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -157,67 +143,14 @@ const UserManagement = () => {
             </div>
           </div>
           <div className='flex items-center space-x-2'>
-          <Dialog open={isCreatePerfilDialogOpen} onOpenChange={setIsCreatePerfilDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-blue-600 hover:bg-blue-700"
-                onClick={resetForm}
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Gerenciar Perfis
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingPerfil ? 'Editar Perfil' : 'Criar Perfil'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="role">Perfis</Label>
-                  <Select 
-                    value={formData.role} 
-                    onValueChange={(value: UserRole) => setFormData({ ...formData, role: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(roleLabels).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex space-x-2 pt-4">
-                  <Button type="submit" className="flex-1">
-                    {editingPerfil ? 'Atualizar' : 'Criar'}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsCreateDialogOpen(false)}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-          
+            <Button onClick={() => setIsCreatePerfilDialogOpen(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Gerenciar Perfis
+            </Button>
+          <ProfileModal 
+            isOpen={isCreatePerfilDialogOpen}
+            onClose={() => setIsCreatePerfilDialogOpen(false)}
+          />
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button 
