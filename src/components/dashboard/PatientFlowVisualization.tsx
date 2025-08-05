@@ -10,10 +10,10 @@ const PatientFlowVisualization: React.FC = () => {
   const flowStages = [
     { status: 'waiting-triage', label: 'Aguardando Triagem', color: 'bg-yellow-100', icon: '🏥' },
     { status: 'in-triage', label: 'Em Triagem', color: 'bg-orange-100', icon: '🩺' },
-    { status: 'waiting-admin', label: 'Aguardando Admin', color: 'bg-purple-100', icon: '📋' },
-    { status: 'in-admin', label: 'Em Admin', color: 'bg-indigo-100', icon: '📝' },
+    { status: 'waiting-admin', label: 'Aguard. Recepção', color: 'bg-purple-100', icon: '📋' },
+    { status: 'in-admin', label: 'Atend. Recepção', color: 'bg-indigo-100', icon: '📝' },
     { status: 'waiting-doctor', label: 'Aguardando Médico', color: 'bg-blue-100', icon: '⏳' },
-    { status: 'in-consultation', label: 'Em Consulta', color: 'bg-teal-100', icon: '👨‍⚕️' },
+    { status: 'in-consultation', label: 'Em Atendimento', color: 'bg-teal-100', icon: '👨‍⚕️' },
   ] as const;
 
   const additionalStages = [
@@ -21,10 +21,8 @@ const PatientFlowVisualization: React.FC = () => {
     { status: 'in-exam', label: 'Em Exame', color: 'bg-sky-100', icon: '🧪' },
     { status: 'waiting-medication', label: 'Aguardando Medicação', color: 'bg-pink-100', icon: '💊' },
     { status: 'in-medication', label: 'Em Medicação', color: 'bg-rose-100', icon: '💉' },
-    { status: 'waiting-hospitalization', label: 'Aguardando Internação', color: 'bg-red-100', icon: '🏥' },
-    { status: 'in-hospitalization', label: 'Internado', color: 'bg-amber-100', icon: '🛏️' },
-    { status: 'waiting-inter-consultation', label: 'Aguardando Inter-consulta', color: 'bg-lime-100', icon: '🔄' },
-    { status: 'in-inter-consultation', label: 'Em Inter-consulta', color: 'bg-emerald-100', icon: '🤝' },
+    { status: 'waiting-hospitalization', label: 'Aguard. Repouso no Leito', color: 'bg-red-100', icon: '🛏️' },
+    { status: 'in-hospitalization', label: 'Internado', color: 'bg-amber-100', icon: '🏥' },
   ] as const;
 
   const finalStages = [
