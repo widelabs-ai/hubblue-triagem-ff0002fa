@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,6 +69,7 @@ const TriageScreen: React.FC = () => {
     suggestedSpecialty: ''
   });
 
+  // Lista de medicamentos comuns com dosagens
   const commonMedications = [
     'Dipirona 500mg',
     'Paracetamol 750mg',
@@ -90,6 +93,7 @@ const TriageScreen: React.FC = () => {
     'Prednisona 20mg'
   ];
 
+  // Lista de alergias comuns
   const commonAllergies = [
     'Penicilina',
     'Dipirona',
@@ -115,12 +119,14 @@ const TriageScreen: React.FC = () => {
 
   const navigate = useNavigate();
   const waitingPatients = getPatientsByStatus('waiting-triage').sort((a, b) => {
+    // Primeiro ordena por tempo de espera (mais tempo primeiro)
     const timeA = getTimeElapsed(a, 'generated');
     const timeB = getTimeElapsed(b, 'generated');
     return timeB - timeA;
   });
   const currentPatient = getPatientsByStatus('in-triage')[0];
 
+  // Calcular idade a partir da data de nascimento
   const calculateAge = (dateOfBirth: string): number => {
     if (!dateOfBirth) return 0;
     const birth = new Date(dateOfBirth);
@@ -135,9 +141,11 @@ const TriageScreen: React.FC = () => {
     return age;
   };
 
+  // Calcular PAM automaticamente
   const calculatedPAM = calculatePAM(triageData.vitals.bloodPressure);
   const calculatedAge = calculateAge(triageData.personalData.dateOfBirth);
 
+  // Função para verificar se os campos obrigatórios estão preenchidos
   const isFormComplete = () => {
     const { personalData, vitals } = triageData;
     return (
@@ -147,8 +155,8 @@ const TriageScreen: React.FC = () => {
       triageData.complaints.trim() !== '' &&
       triageData.symptoms.trim() !== '' &&
       triageData.painScale !== '' &&
-      triageData.manchesterFlow.trim() !== '' &&
-      triageData.suggestedSpecialty !== '' &&
+      triageData.manchesterFlow.trim() !== '' && // Agora obrigatório
+      triageData.suggestedSpecialty !== '' && // Agora obrigatório
       vitals.bloodPressure.trim() !== '' &&
       vitals.heartRate.trim() !== '' &&
       vitals.temperature.trim() !== '' &&
@@ -159,11 +167,13 @@ const TriageScreen: React.FC = () => {
     );
   };
 
+  // Função para sugerir fluxos Manchester e especialidade baseado nas queixas e sintomas
   useEffect(() => {
     if (triageData.complaints || triageData.symptoms) {
       const flows = suggestManchesterFlow(triageData.complaints, triageData.symptoms);
       setSuggestedFlows(flows);
       
+      // Se há uma sugestão clara (primeiro resultado), definir automaticamente
       if (flows.length > 0 && !selectedFlow) {
         const suggestedFlow = flows[0];
         setSelectedFlow(suggestedFlow.id);
@@ -186,6 +196,7 @@ const TriageScreen: React.FC = () => {
     }
   }, [triageData.complaints, triageData.symptoms]);
 
+  // Função para calcular classificação automática baseada no protocolo Manchester
   const calculateAutomaticPriority = (data: typeof triageData) => {
     const { complaints, symptoms, vitals, painScale } = data;
     
@@ -198,6 +209,7 @@ const TriageScreen: React.FC = () => {
     const complaintsLower = complaints.toLowerCase();
     const symptomsLower = symptoms.toLowerCase();
 
+    // Critérios para VERMELHO (Emergência)
     if (saturation < 85 || heartRate > 150 || heartRate < 40) {
       return 'vermelho';
     }
@@ -208,6 +220,7 @@ const TriageScreen: React.FC = () => {
       }
     }
 
+    // Critérios para LARANJA (Muito urgente)
     if (temp > 39.5 || (temp > 38.5 && (heartRate > 120 || saturation < 92))) {
       return 'laranja';
     }
@@ -222,6 +235,7 @@ const TriageScreen: React.FC = () => {
       return 'laranja';
     }
 
+    // Critérios para AMARELO (Urgente)
     if (complaintsLower.includes('dor no peito') || complaintsLower.includes('precordial')) {
       return 'amarelo';
     }
@@ -230,13 +244,16 @@ const TriageScreen: React.FC = () => {
       return 'amarelo';
     }
 
+    // Critérios para VERDE (Pouco urgente)
     if (pain >= 2 || temp > 37.2) {
       return 'verde';
     }
 
+    // Padrão AZUL (Não urgente)
     return 'azul';
   };
 
+  // Atualizar classificação automaticamente quando os campos mudarem
   useEffect(() => {
     const automaticPriority = calculateAutomaticPriority(triageData);
     if (automaticPriority && automaticPriority !== triageData.priority) {
@@ -244,6 +261,7 @@ const TriageScreen: React.FC = () => {
     }
   }, [triageData.complaints, triageData.symptoms, triageData.vitals, triageData.painScale]);
 
+  // Validação dos sinais vitais
   const vitalsValidation = {
     heartRate: validateHeartRate(triageData.vitals.heartRate),
     temperature: validateTemperature(triageData.vitals.temperature),
@@ -254,8 +272,10 @@ const TriageScreen: React.FC = () => {
     glucose: validateGlucose(triageData.vitals.glucose)
   };
 
+  // Verificar se há erros de validação
   const hasValidationErrors = Object.values(vitalsValidation).some(v => !v.isValid);
 
+  // Funções para adicionar/remover alergias e medicamentos
   const addAllergy = (allergy: string) => {
     if (allergy && !triageData.allergies.includes(allergy)) {
       setTriageData(prev => ({
@@ -288,6 +308,7 @@ const TriageScreen: React.FC = () => {
     }));
   };
 
+  // Função para adicionar fluxo customizado - agora substitui o sugerido
   const handleAddCustomFlow = () => {
     if (customFlowName.trim()) {
       const customFlowId = `custom_${Date.now()}`;
@@ -308,25 +329,17 @@ const TriageScreen: React.FC = () => {
   const handleCallPatient = (patientId: string) => {
     console.log('Chamando paciente:', patientId);
     updatePatientStatus(patientId, 'in-triage');
-    toast({
-      title: "Paciente chamado",
-      description: "Paciente foi chamado no painel.",
-    });
-  };
-
-  const handleOpenTriageForm = (patientId: string) => {
-    console.log('Abrindo formulário para paciente:', patientId);
-    updatePatientStatus(patientId, 'in-triage');
     setIsDialogOpen(true);
-    setHasPerformedAnalysis(false);
-    setChatExpanded(false);
+    setHasPerformedAnalysis(false); // Reset da análise
+    setChatExpanded(false); // Iniciar com chat minimizado
     
+    // Expandir chat após um delay maior para criar efeito ainda mais lento
     setTimeout(() => {
       setChatExpanded(true);
     }, 500);
     
     toast({
-      title: "Formulário aberto",
+      title: "Paciente chamado",
       description: "Paciente está sendo atendido na triagem.",
     });
   };
@@ -400,6 +413,7 @@ const TriageScreen: React.FC = () => {
     });
   };
 
+  // Função para revisar (agora faz análise completa no formato ficha clínica)
   const handleReview = () => {
     if (!currentPatient || !triageData.priority || !triageData.complaints) {
       toast({
@@ -419,6 +433,7 @@ const TriageScreen: React.FC = () => {
       return;
     }
 
+    // Trigger análise completa da LIA em formato de ficha clínica
     setHasPerformedAnalysis(true);
     toast({
       title: "Revisão completa iniciada",
@@ -427,6 +442,7 @@ const TriageScreen: React.FC = () => {
     });
   };
 
+  // Função para concluir triagem (separada da revisão)
   const handleCompleteTriagem = () => {
     if (!currentPatient || !triageData.priority || !triageData.complaints) {
       toast({
@@ -455,6 +471,7 @@ const TriageScreen: React.FC = () => {
       return;
     }
 
+    // Concluir triagem
     updatePatientStatus(currentPatient.id, 'waiting-admin', { triageData });
     resetTriageData();
     setIsDialogOpen(false);
@@ -470,7 +487,7 @@ const TriageScreen: React.FC = () => {
       updatePatientStatus(currentPatient.id, 'waiting-triage');
     }
     setIsDialogOpen(false);
-    setChatExpanded(false);
+    setChatExpanded(false); // Reset do estado do chat
     resetTriageData();
   };
 
@@ -523,7 +540,7 @@ const TriageScreen: React.FC = () => {
                     <TableHead>Tipo de atendimento</TableHead>
                     <TableHead className="w-32">Tempo Aguardando</TableHead>
                     <TableHead className="w-32">Status</TableHead>
-                    <TableHead className="w-48">Ações</TableHead>
+                    <TableHead className="w-24">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -561,23 +578,14 @@ const TriageScreen: React.FC = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
-                            <Button 
-                              onClick={() => handleCallPatient(patient.id)}
-                              size="sm"
-                              className="bg-blue-600 hover:bg-blue-700"
-                            >
-                              Chamar no Painel
-                            </Button>
-                            <Button 
-                              onClick={() => handleOpenTriageForm(patient.id)}
-                              disabled={!!currentPatient}
-                              size="sm"
-                              variant="outline"
-                            >
-                              Iniciar Triagem
-                            </Button>
-                          </div>
+                          <Button 
+                            onClick={() => handleCallPatient(patient.id)}
+                            disabled={!!currentPatient}
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Chamar
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
@@ -596,6 +604,7 @@ const TriageScreen: React.FC = () => {
         </Card>
       </div>
 
+      {/* Dialog de Triagem */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => {
         if (!open) {
           handleCloseDialog();
@@ -613,6 +622,7 @@ const TriageScreen: React.FC = () => {
           
           {currentPatient && (
             <div className="flex h-[calc(98vh-120px)]">
+              {/* Formulário de Triagem - layout melhorado */}
               <div className="w-2/3 overflow-y-auto p-6 pt-0">
                 <div className="space-y-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
@@ -625,6 +635,7 @@ const TriageScreen: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Dados Pessoais */}
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-semibold mb-3">Dados Pessoais</h4>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -687,8 +698,10 @@ const TriageScreen: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Layout em duas colunas para melhor aproveitamento */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     
+                    {/* Coluna esquerda */}
                     <div className="space-y-4">
                       <div>
                         <Label className="text-sm font-medium">Queixas Principais *</Label>
@@ -714,6 +727,7 @@ const TriageScreen: React.FC = () => {
                         />
                       </div>
 
+                      {/* Fluxo do Protocolo Manchester - SEMPRE VISÍVEL */}
                       <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                         <div className="flex items-center gap-2 mb-3">
                           <Lightbulb className="h-4 w-4 text-amber-600" />
@@ -760,6 +774,7 @@ const TriageScreen: React.FC = () => {
                           </div>
                         )}
                         
+                        {/* Campo de fluxo selecionado - apenas visível quando adicionando novo fluxo */}
                         {showCustomFlowInput && (
                           <div className="mb-3">
                             <Label className="text-xs text-amber-700 mb-2 block">Fluxo Selecionado:</Label>
@@ -818,6 +833,7 @@ const TriageScreen: React.FC = () => {
                         </div>
                       </div>
 
+                      {/* Especialidade Sugerida */}
                       <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                         <Label className="text-sm font-medium text-blue-800 mb-2 block">Especialidade Sugerida *</Label>
                         <Select 
@@ -860,6 +876,7 @@ const TriageScreen: React.FC = () => {
                       </div>
 
                       <div className="grid grid-cols-1 gap-3">
+                        {/* Alergias com lista suspensa */}
                         <SearchableSelect
                           label="Alergias Conhecidas"
                           options={commonAllergies}
@@ -875,6 +892,7 @@ const TriageScreen: React.FC = () => {
                           placeholder="Digite para buscar ou adicionar alergia... (opcional)"
                         />
 
+                        {/* Medicamentos com lista suspensa */}
                         <SearchableSelect
                           label="Medicamentos em Uso"
                           options={commonMedications}
@@ -892,7 +910,9 @@ const TriageScreen: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Coluna direita - sinais vitais e classificação */}
                     <div className="space-y-4">
+                      {/* Sinais Vitais */}
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h4 className="font-semibold mb-3 text-sm">Sinais Vitais *</h4>
                         <div className="grid grid-cols-2 gap-2">
@@ -973,6 +993,7 @@ const TriageScreen: React.FC = () => {
                         </div>
                       </div>
 
+                      {/* Tríade Clínica */}
                       <div className="bg-yellow-50 p-4 rounded-lg">
                         <h4 className="font-semibold mb-3 text-sm">Tríade de Avaliação Clínica *</h4>
                         <div className="space-y-3">
@@ -1037,6 +1058,7 @@ const TriageScreen: React.FC = () => {
                         />
                       </div>
 
+                      {/* Campo de classificação */}
                       <div className="border-t pt-4">
                         <Label className="text-sm font-medium">Classificação de Risco (Manchester) *</Label>
                         <Select 
@@ -1099,6 +1121,7 @@ const TriageScreen: React.FC = () => {
                 </div>
               </div>
 
+              {/* Chat da LIA com efeito de abertura ainda mais lento */}
               <div className={`border-l border-gray-200 overflow-hidden transition-all duration-1000 ease-out ${
                 chatExpanded ? 'w-1/3 opacity-100' : 'w-0 opacity-0'
               }`}>
@@ -1109,6 +1132,7 @@ const TriageScreen: React.FC = () => {
                     triageData={triageData} 
                     onSuggestPriority={handleSuggestPriority}
                     onCompleteTriagem={() => {
+                      // This callback is not used anymore since we have separate buttons
                       console.log("Complete triage callback - not used");
                     }}
                     isDialogOpen={isDialogOpen}
@@ -1123,6 +1147,7 @@ const TriageScreen: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Modal de Cancelamento */}
       <CancellationModal
         isOpen={isCancellationModalOpen}
         onClose={() => setIsCancellationModalOpen(false)}

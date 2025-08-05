@@ -270,12 +270,10 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const isOverSLA = (patient: Patient) => {
     const triageTime = getTimeElapsed(patient, 'generated', patient.timestamps.triageCompleted ? 'triageCompleted' : undefined);
-    const adminTime = getTimeElapsed(patient, 'triageCompleted', patient.timestamps.adminCompleted ? 'adminCompleted' : undefined);
     const totalTime = getTimeElapsed(patient, 'generated', patient.timestamps.discharged ? 'discharged' : undefined);
     
     return {
       triageSLA: triageTime > 10, // 10 minutes SLA for triage
-      adminSLA: adminTime > 30, // 30 minutes SLA for administrative processing
       totalSLA: totalTime > 240 // 4 hours total SLA
     };
   };
