@@ -28,8 +28,6 @@ const MonitoringDashboard: React.FC = () => {
     inMedication: getPatientsByStatus('in-medication').length,
     waitingHospitalization: getPatientsByStatus('waiting-hospitalization').length,
     inHospitalization: getPatientsByStatus('in-hospitalization').length,
-    waitingInterConsultation: getPatientsByStatus('waiting-inter-consultation').length,
-    inInterConsultation: getPatientsByStatus('in-inter-consultation').length,
     waitingTransfer: getPatientsByStatus('waiting-transfer').length,
     prescriptionIssued: getPatientsByStatus('prescription-issued').length,
     discharged: getPatientsByStatus('discharged').length,
