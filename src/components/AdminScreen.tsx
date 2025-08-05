@@ -12,22 +12,27 @@ import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, X, Speaker, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CancellationModal from './CancellationModal';
-import { getPatientName, getPatientAge, getPatientGender, getPatientGenderFull } from '@/utils/patientUtils';
+import { getPatientName, getPatientAge, getPatientGender, getPatientGenderFull, getPatientDateOfBirth } from '@/utils/patientUtils';
 
 const AdminScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
   const [personalData, setPersonalData] = useState({
-    name: '',
-    cpf: '',
+    fullName: '',
+    dateOfBirth: '',
     age: '',
-    gender: '',
-    address: '',
-    emergencyContact: '',
-    emergencyPhone: '',
-    healthInsurance: '',
+    biologicalSex: '',
+    motherName: '',
+    cpf: '',
+    rg: '',
+    linkType: '', // SUS / Convênio / Particular
+    susCard: '',
     insuranceNumber: '',
+    fullAddress: '',
+    phone: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
     canBeAttended: true
   });
 
@@ -57,15 +62,20 @@ const AdminScreen: React.FC = () => {
       const triagePersonalData = currentPatient.triageData?.personalData;
       
       setPersonalData({
-        name: existingPersonalData?.name || triagePersonalData?.name || '',
-        cpf: existingPersonalData?.cpf || '',
+        fullName: existingPersonalData?.fullName || existingPersonalData?.name || triagePersonalData?.fullName || triagePersonalData?.name || '',
+        dateOfBirth: existingPersonalData?.dateOfBirth || triagePersonalData?.dateOfBirth || '',
         age: existingPersonalData?.age?.toString() || triagePersonalData?.age?.toString() || '',
-        gender: existingPersonalData?.gender || triagePersonalData?.gender || '',
-        address: existingPersonalData?.address || '',
-        emergencyContact: existingPersonalData?.emergencyContact || '',
-        emergencyPhone: existingPersonalData?.emergencyPhone || '',
-        healthInsurance: existingPersonalData?.healthInsurance || '',
+        biologicalSex: existingPersonalData?.gender || triagePersonalData?.gender || '',
+        motherName: existingPersonalData?.motherName || '',
+        cpf: existingPersonalData?.cpf || '',
+        rg: existingPersonalData?.rg || '',
+        linkType: existingPersonalData?.linkType || '',
+        susCard: existingPersonalData?.susCard || '',
         insuranceNumber: existingPersonalData?.insuranceNumber || '',
+        fullAddress: existingPersonalData?.address || existingPersonalData?.fullAddress || '',
+        phone: existingPersonalData?.phone || currentPatient.phone || '',
+        emergencyContactName: existingPersonalData?.emergencyContact || existingPersonalData?.emergencyContactName || '',
+        emergencyContactPhone: existingPersonalData?.emergencyPhone || existingPersonalData?.emergencyContactPhone || '',
         canBeAttended: existingPersonalData?.canBeAttended ?? true
       });
     }
@@ -114,24 +124,48 @@ const AdminScreen: React.FC = () => {
 
   const resetPersonalData = () => {
     setPersonalData({
-      name: '',
-      cpf: '',
+      fullName: '',
+      dateOfBirth: '',
       age: '',
-      gender: '',
-      address: '',
-      emergencyContact: '',
-      emergencyPhone: '',
-      healthInsurance: '',
+      biologicalSex: '',
+      motherName: '',
+      cpf: '',
+      rg: '',
+      linkType: '',
+      susCard: '',
       insuranceNumber: '',
+      fullAddress: '',
+      phone: '',
+      emergencyContactName: '',
+      emergencyContactPhone: '',
       canBeAttended: true
     });
   };
 
   const handleCompleteAdmin = () => {
-    if (!currentPatient || !personalData.name || !personalData.cpf || !personalData.age) {
+    if (!currentPatient || !personalData.fullName || !personalData.cpf || (!personalData.age && !personalData.dateOfBirth)) {
       toast({
         title: "Dados incompletos",
-        description: "Por favor, preencha todos os campos obrigatórios (nome, CPF e idade).",
+        description: "Por favor, preencha todos os campos obrigatórios (nome completo, CPF e idade/data de nascimento).",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validação específica por tipo de vínculo
+    if (personalData.linkType === 'SUS' && !personalData.susCard) {
+      toast({
+        title: "Dados incompletos",
+        description: "Cartão SUS é obrigatório para pacientes do SUS.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if ((personalData.linkType === 'Convênio' || personalData.linkType === 'Particular') && !personalData.insuranceNumber) {
+      toast({
+        title: "Dados incompletos",
+        description: "Número do convênio/carteirinha é obrigatório para pacientes com plano.",
         variant: "destructive"
       });
       return;
@@ -139,8 +173,12 @@ const AdminScreen: React.FC = () => {
 
     const dataToSave = {
       ...personalData,
-      age: parseInt(personalData.age),
-      fullName: personalData.name // Garante que fullName seja definido
+      age: personalData.age ? parseInt(personalData.age) : undefined,
+      name: personalData.fullName, // Para compatibilidade
+      address: personalData.fullAddress, // Para compatibilidade
+      emergencyContact: personalData.emergencyContactName, // Para compatibilidade
+      emergencyPhone: personalData.emergencyContactPhone, // Para compatibilidade
+      healthInsurance: personalData.linkType, // Para compatibilidade
     };
 
     const nextStatus = personalData.canBeAttended ? 'waiting-doctor' : 'completed';
@@ -302,7 +340,7 @@ const AdminScreen: React.FC = () => {
 
       {/* Dialog de Coleta de Dados */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex justify-between items-center">
               <DialogTitle className="text-xl">Complemento de Dados Pessoais</DialogTitle>
@@ -341,6 +379,9 @@ const AdminScreen: React.FC = () => {
                       {getPatientAge(currentPatient) !== 'N/A' && (
                         <div>• Idade: {getPatientAge(currentPatient)} anos</div>
                       )}
+                      {getPatientDateOfBirth(currentPatient) !== 'Não informado' && (
+                        <div>• Data de nascimento: {getPatientDateOfBirth(currentPatient)}</div>
+                      )}
                       {getPatientGenderFull(currentPatient) !== 'Não informado' && (
                         <div>• Gênero: {getPatientGenderFull(currentPatient)}</div>
                       )}
@@ -349,31 +390,37 @@ const AdminScreen: React.FC = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label>Nome Completo *</Label>
-                    <Input
-                      placeholder="Nome completo do paciente"
-                      value={personalData.name}
-                      onChange={(e) => setPersonalData({...personalData, name: e.target.value})}
-                      className={personalData.name ? "border-green-300 bg-green-50" : ""}
-                    />
-                    {personalData.name && (
-                      <div className="text-xs text-green-600 mt-1">✅ Preenchido</div>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <Label>CPF *</Label>
-                    <Input
-                      placeholder="000.000.000-00"
-                      value={personalData.cpf}
-                      onChange={(e) => setPersonalData({...personalData, cpf: e.target.value})}
-                    />
-                  </div>
+              <div className="space-y-8">
+                {/* Dados Pessoais */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-blue-700">Dados Pessoais</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                      <Label>Nome Completo *</Label>
+                      <Input
+                        placeholder="Nome completo do paciente"
+                        value={personalData.fullName}
+                        onChange={(e) => setPersonalData({...personalData, fullName: e.target.value})}
+                        className={personalData.fullName ? "border-green-300 bg-green-50" : ""}
+                      />
+                      {personalData.fullName && (
+                        <div className="text-xs text-green-600 mt-1">✅ Preenchido na triagem</div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <Label>Data de Nascimento *</Label>
+                      <Input
+                        type="date"
+                        value={personalData.dateOfBirth}
+                        onChange={(e) => setPersonalData({...personalData, dateOfBirth: e.target.value})}
+                        className={personalData.dateOfBirth ? "border-green-300 bg-green-50" : ""}
+                      />
+                      {personalData.dateOfBirth && (
+                        <div className="text-xs text-green-600 mt-1">✅ Preenchido na triagem</div>
+                      )}
+                    </div>
 
-                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label>Idade *</Label>
                       <Input
@@ -384,87 +431,147 @@ const AdminScreen: React.FC = () => {
                         className={personalData.age ? "border-green-300 bg-green-50" : ""}
                       />
                       {personalData.age && (
-                        <div className="text-xs text-green-600 mt-1">✅ Preenchido</div>
+                        <div className="text-xs text-green-600 mt-1">✅ Calculado pela data de nascimento</div>
                       )}
                     </div>
+
                     <div>
-                      <Label>Gênero</Label>
+                      <Label>Sexo Biológico *</Label>
                       <Select 
-                        value={personalData.gender}
-                        onValueChange={(value) => setPersonalData({...personalData, gender: value})}
+                        value={personalData.biologicalSex}
+                        onValueChange={(value) => setPersonalData({...personalData, biologicalSex: value})}
                       >
-                        <SelectTrigger className={personalData.gender ? "border-green-300 bg-green-50" : ""}>
+                        <SelectTrigger className={personalData.biologicalSex ? "border-green-300 bg-green-50" : ""}>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="masculino">Masculino</SelectItem>
                           <SelectItem value="feminino">Feminino</SelectItem>
-                          <SelectItem value="outro">Outro</SelectItem>
+                          <SelectItem value="intersexo">Intersexo</SelectItem>
                           <SelectItem value="nao-informar">Prefiro não informar</SelectItem>
                         </SelectContent>
                       </Select>
-                      {personalData.gender && (
-                        <div className="text-xs text-green-600 mt-1">✅ Preenchido</div>
+                      {personalData.biologicalSex && (
+                        <div className="text-xs text-green-600 mt-1">✅ Preenchido na triagem</div>
                       )}
                     </div>
-                  </div>
 
-                  <div>
-                    <Label>Endereço</Label>
-                    <Input
-                      placeholder="Rua, número, bairro, cidade"
-                      value={personalData.address}
-                      onChange={(e) => setPersonalData({...personalData, address: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label>Contato de Emergência</Label>
+                      <Label>Nome da Mãe</Label>
                       <Input
-                        placeholder="Nome do contato"
-                        value={personalData.emergencyContact}
-                        onChange={(e) => setPersonalData({...personalData, emergencyContact: e.target.value})}
+                        placeholder="Nome completo da mãe"
+                        value={personalData.motherName}
+                        onChange={(e) => setPersonalData({...personalData, motherName: e.target.value})}
                       />
                     </div>
+
                     <div>
-                      <Label>Telefone de Emergência</Label>
+                      <Label>CPF *</Label>
+                      <Input
+                        placeholder="000.000.000-00"
+                        value={personalData.cpf}
+                        onChange={(e) => setPersonalData({...personalData, cpf: e.target.value})}
+                      />
+                    </div>
+
+                    <div>
+                      <Label>RG</Label>
+                      <Input
+                        placeholder="00.000.000-0"
+                        value={personalData.rg}
+                        onChange={(e) => setPersonalData({...personalData, rg: e.target.value})}
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Tipo de Vínculo *</Label>
+                      <Select 
+                        value={personalData.linkType}
+                        onValueChange={(value) => setPersonalData({...personalData, linkType: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SUS">SUS</SelectItem>
+                          <SelectItem value="Convênio">Convênio</SelectItem>
+                          <SelectItem value="Particular">Particular</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {personalData.linkType === 'SUS' && (
+                      <div>
+                        <Label>Cartão SUS *</Label>
+                        <Input
+                          placeholder="000 0000 0000 0000"
+                          value={personalData.susCard}
+                          onChange={(e) => setPersonalData({...personalData, susCard: e.target.value})}
+                        />
+                      </div>
+                    )}
+
+                    {(personalData.linkType === 'Convênio' || personalData.linkType === 'Particular') && (
+                      <div>
+                        <Label>{personalData.linkType === 'Convênio' ? 'Nº do Convênio' : 'Nº da Carteirinha'} *</Label>
+                        <Input
+                          placeholder="Número do convênio/carteirinha"
+                          value={personalData.insuranceNumber}
+                          onChange={(e) => setPersonalData({...personalData, insuranceNumber: e.target.value})}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Dados de Contato e Localização */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-blue-700">Dados de Contato e Localização</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Label>Endereço Completo *</Label>
+                      <Input
+                        placeholder="Rua, número, complemento, bairro, cidade, CEP"
+                        value={personalData.fullAddress}
+                        onChange={(e) => setPersonalData({...personalData, fullAddress: e.target.value})}
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Telefone de Contato *</Label>
                       <Input
                         placeholder="(11) 99999-9999"
-                        value={personalData.emergencyPhone}
-                        onChange={(e) => setPersonalData({...personalData, emergencyPhone: e.target.value})}
+                        value={personalData.phone}
+                        onChange={(e) => setPersonalData({...personalData, phone: e.target.value})}
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Nome do Responsável/Contato de Emergência</Label>
+                      <Input
+                        placeholder="Nome do contato de emergência"
+                        value={personalData.emergencyContactName}
+                        onChange={(e) => setPersonalData({...personalData, emergencyContactName: e.target.value})}
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Telefone do Responsável/Contato de Emergência</Label>
+                      <Input
+                        placeholder="(11) 99999-9999"
+                        value={personalData.emergencyContactPhone}
+                        onChange={(e) => setPersonalData({...personalData, emergencyContactPhone: e.target.value})}
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>Convênio Médico</Label>
-                      <Input
-                        placeholder="Nome do convênio"
-                        value={personalData.healthInsurance}
-                        onChange={(e) => setPersonalData({...personalData, healthInsurance: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label>Número da Carteirinha</Label>
-                      <Input
-                        placeholder="Número do convênio"
-                        value={personalData.insuranceNumber}
-                        onChange={(e) => setPersonalData({...personalData, insuranceNumber: e.target.value})}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2 p-4 bg-yellow-50 rounded-lg">
-                    <Switch
-                      checked={personalData.canBeAttended}
-                      onCheckedChange={(checked) => setPersonalData({...personalData, canBeAttended: checked})}
-                    />
-                    <Label>Paciente pode ser atendido (convênio ativo, documentos OK)</Label>
-                  </div>
+                <div className="flex items-center space-x-2 p-4 bg-yellow-50 rounded-lg">
+                  <Switch
+                    checked={personalData.canBeAttended}
+                    onCheckedChange={(checked) => setPersonalData({...personalData, canBeAttended: checked})}
+                  />
+                  <Label>Paciente pode ser atendido (documentos OK, convênio ativo)</Label>
                 </div>
               </div>
 

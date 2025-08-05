@@ -34,17 +34,26 @@ export interface Patient {
   };
   personalData?: {
     fullName?: string;
-    name: string;
-    cpf: string;
-    age: number;
+    name?: string; // Para compatibilidade
     dateOfBirth?: string;
-    gender?: string;
-    address?: string;
-    emergencyContact?: string;
-    emergencyPhone?: string;
-    healthInsurance?: string;
+    age?: number;
+    biologicalSex?: string;
+    gender?: string; // Para compatibilidade
+    motherName?: string;
+    cpf?: string;
+    rg?: string;
+    linkType?: 'SUS' | 'Convênio' | 'Particular';
+    susCard?: string;
     insuranceNumber?: string;
-    canBeAttended: boolean;
+    healthInsurance?: string; // Para compatibilidade
+    fullAddress?: string;
+    address?: string; // Para compatibilidade
+    phone?: string;
+    emergencyContactName?: string;
+    emergencyContact?: string; // Para compatibilidade
+    emergencyContactPhone?: string;
+    emergencyPhone?: string; // Para compatibilidade
+    canBeAttended?: boolean;
   };
   triageData?: {
     priority: 'azul' | 'verde' | 'amarelo' | 'laranja' | 'vermelho';
@@ -68,9 +77,10 @@ export interface Patient {
     suggestedSpecialty?: string;
     personalData?: {
       fullName?: string;
-      name: string;
-      age: number;
+      name?: string;
+      age?: number;
       gender?: string;
+      biologicalSex?: string;
       dateOfBirth?: string;
     };
   };
@@ -151,12 +161,13 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               if (additionalData.triageData.personalData) {
                 updatedPatient.personalData = {
                   ...updatedPatient.personalData,
-                  name: additionalData.triageData.personalData.name,
                   fullName: additionalData.triageData.personalData.fullName || additionalData.triageData.personalData.name,
+                  name: additionalData.triageData.personalData.name,
                   age: additionalData.triageData.personalData.age,
+                  biologicalSex: additionalData.triageData.personalData.biologicalSex || additionalData.triageData.personalData.gender,
                   gender: additionalData.triageData.personalData.gender,
                   dateOfBirth: additionalData.triageData.personalData.dateOfBirth,
-                  cpf: updatedPatient.personalData?.cpf || '', // Manter CPF se já existir
+                  cpf: updatedPatient.personalData?.cpf || '',
                   canBeAttended: updatedPatient.personalData?.canBeAttended ?? true
                 };
               }
@@ -173,8 +184,8 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 ...updatedPatient.personalData,
                 ...additionalData.personalData,
                 // Preserve name from triage if not provided in admin
-                name: additionalData.personalData.name || updatedPatient.personalData?.name || '',
-                fullName: additionalData.personalData.fullName || updatedPatient.personalData?.fullName || additionalData.personalData.name || updatedPatient.personalData?.name || ''
+                fullName: additionalData.personalData.fullName || updatedPatient.personalData?.fullName || additionalData.personalData.name || updatedPatient.personalData?.name || '',
+                name: additionalData.personalData.name || additionalData.personalData.fullName || updatedPatient.personalData?.name || updatedPatient.personalData?.fullName || ''
               };
             }
             break;

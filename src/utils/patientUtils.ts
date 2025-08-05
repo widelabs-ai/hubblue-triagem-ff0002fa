@@ -58,12 +58,14 @@ export const getPatientAge = (patient: Patient): number | string => {
 };
 
 export const getPatientGender = (patient: Patient): string => {
-  const gender = patient.personalData?.gender || patient.triageData?.personalData?.gender;
+  const gender = patient.personalData?.biologicalSex || patient.personalData?.gender || 
+                 patient.triageData?.personalData?.biologicalSex || patient.triageData?.personalData?.gender;
   if (!gender) return 'N/A';
   
   switch (gender.toLowerCase()) {
     case 'masculino': return 'M';
     case 'feminino': return 'F';
+    case 'intersexo': return 'I';
     case 'outro': return 'O';
     case 'nao-informar': return 'N/I';
     default: return gender.charAt(0).toUpperCase();
@@ -71,12 +73,20 @@ export const getPatientGender = (patient: Patient): string => {
 };
 
 export const getPatientGenderFull = (patient: Patient): string => {
-  const gender = patient.personalData?.gender || patient.triageData?.personalData?.gender;
+  const gender = patient.personalData?.biologicalSex || patient.personalData?.gender || 
+                 patient.triageData?.personalData?.biologicalSex || patient.triageData?.personalData?.gender;
   return gender || 'Não informado';
 };
 
 export const getPatientDateOfBirth = (patient: Patient): string => {
-  return patient.personalData?.dateOfBirth || patient.triageData?.personalData?.dateOfBirth || 'Não informado';
+  const dateOfBirth = patient.personalData?.dateOfBirth || patient.triageData?.personalData?.dateOfBirth;
+  if (!dateOfBirth) return 'Não informado';
+  
+  // Formatar a data para o padrão brasileiro
+  const date = new Date(dateOfBirth);
+  if (isNaN(date.getTime())) return 'Data inválida';
+  
+  return date.toLocaleDateString('pt-BR');
 };
 
 export const getPatientCPF = (patient: Patient): string => {
@@ -84,5 +94,18 @@ export const getPatientCPF = (patient: Patient): string => {
 };
 
 export const hasPersonalData = (patient: Patient): boolean => {
-  return !!(patient.personalData?.name || patient.triageData?.personalData?.name);
+  return !!(patient.personalData?.fullName || patient.personalData?.name || 
+           patient.triageData?.personalData?.fullName || patient.triageData?.personalData?.name);
+};
+
+export const getPatientLinkType = (patient: Patient): string => {
+  return patient.personalData?.linkType || 'Não informado';
+};
+
+export const getPatientPhone = (patient: Patient): string => {
+  return patient.personalData?.phone || patient.phone || 'Não informado';
+};
+
+export const getPatientAddress = (patient: Patient): string => {
+  return patient.personalData?.fullAddress || patient.personalData?.address || 'Não informado';
 };
