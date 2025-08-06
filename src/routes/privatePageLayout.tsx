@@ -4,6 +4,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { Loader } from 'lucide-react';
 import useUsuarioStore from '@/stores/usuario';
 import Header from '@/components/Header';
+import TotemScreen from '@/components/TotemScreen';
 
 export function PrivatePageLayout() {
   const [isReady, setIsReady] = useState(false);
@@ -26,8 +27,12 @@ export function PrivatePageLayout() {
     );
   }
 
-  if (!usuario) {
+  if (!usuario && location.pathname !== '/totem') {
     return <Navigate to="/" replace />;
+  }
+
+  if(!usuario && location.pathname === '/totem') {
+    return <TotemScreen/>;
   }
 
   return (
