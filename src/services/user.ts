@@ -41,8 +41,8 @@ const API_BASE_URL = import.meta.env.VITE_HUBBLUE_API || 'localhost:3000/api';
       });
     }
 
-   export const getAllUsers = async () => {
-      return fetchApi('/usuarios', {
+   export const getAllUsers = async (page: number = 1) => {
+      return fetchApi(`/usuarios?page=${page}&limit=${7}`, {
         method: 'GET',
         credentials: 'include',
       });

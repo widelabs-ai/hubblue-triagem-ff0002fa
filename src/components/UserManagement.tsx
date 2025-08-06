@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { useUser } from '@/contexts/UserContext';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { UserRole } from '@/types/user';
 import { Users, UserPlus, Edit, Trash2, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -17,7 +17,7 @@ import { ProfileModal } from './PerfisModal';
 import { listaPerfis } from '@/services/profiles';
 import { createUser, deleteUser, getAllUsers, updateUser } from '@/services/user';
 import useUsuarioStore from '@/stores/usuario';
-import { User, CadastroRequest, UpdateUserRequest } from '@/shared/contracts/authentication';
+import { UpdateUserRequest, AddUserRequest } from '@/shared/contracts/authentication';
 
 const UserManagement = () => {
   const { usuario:currentUser } = useUsuarioStore();
@@ -27,8 +27,11 @@ const UserManagement = () => {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [profiles, setProfiles] = useState([]);
   const [users, setUsers] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const [formData, setFormData] = useState<CadastroRequest | UpdateUserRequest>({
+  const [formData, setFormData] = useState<AddUserRequest | UpdateUserRequest>({
     nome: '',
     email: '',
     perfilId: 1,
@@ -54,13 +57,12 @@ const UserManagement = () => {
     e.preventDefault();
     
     if (editingUser) {
-     updateRequest(formData as UpdateUserRequest);
+      updateRequest(formData as UpdateUserRequest);
     } else {
-      addNewUser(formData);
+      createRequest(formData as AddUserRequest);
     }
     
     resetForm();
-    fetchUsers();
     setIsCreateDialogOpen(false);
   };
 
@@ -76,6 +78,7 @@ const UserManagement = () => {
       title: "Usuário atualizado",
       description: "As informações do usuário foram atualizadas com sucesso."
     });
+    fetchUsers();
    } catch (error) {
     console.error(error);
     toast({
@@ -86,13 +89,14 @@ const UserManagement = () => {
    }
   }
 
-  const addNewUser = async (user: CadastroRequest) => {
+  const createRequest = async (user: AddUserRequest ) => {
     try{
-      await createUser(formData as CadastroRequest);
+      const data = await createUser(user);
       toast({
         title: "Usuário criado",
         description: "Novo usuário foi criado com sucesso."
       });
+      fetchUsers();
     } catch (error) {
       console.error(error);
       toast({
@@ -108,24 +112,45 @@ const UserManagement = () => {
     setProfiles(data.perfis);
   }
 
-  const fetchUsers = async () => {
-    const data = await getAllUsers();
+  const fetchUsers = async (currentPage:number = 1) => {
+    const data = await getAllUsers(currentPage);
     console.log(data);
-    
+    setTotalPages(data.pagination.totalPages);
     setUsers(data.usuarios);
   }
 
   useEffect(() => {
     fetchProfiles();
-    fetchUsers();
-  }, []);
+    fetchUsers(currentPage);
+  }, [currentPage]);
 
-  const handleEdit = (user: Partial<User>) => {
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const goToPrevious = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToNext = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handleEdit = (user: any) => {
+    
     setFormData({
       nome: user.nome,
       email: user.email,
-      perfil: user.perfil,
-      status: user.status
+      perfilId: user.perfilId,
+      status: user.status,
+      perfil: user.perfil
     });
     setEditingUser(user.id);
     setIsCreateDialogOpen(true);
@@ -219,7 +244,7 @@ const UserManagement = () => {
                 <div className="space-y-2">
                   <Label htmlFor="perfilId">Perfil</Label>
                   <Select 
-                    value={formData.perfilId?.toString() || ''} 
+                    value={formData.perfilId.toString() || ''} 
                     onValueChange={(value: UserRole) => setFormData({ ...formData, perfilId: parseInt(value) })}
                   >
                     <SelectTrigger>
@@ -330,6 +355,45 @@ const UserManagement = () => {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Componente de Paginação */}
+        {totalPages > 1 && (
+          <div className="mt-6">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={goToPrevious}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => goToPage(page)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={goToNext}
+                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+            
+            <div className="text-center mt-4 text-sm text-gray-600">
+              Mostrando {startIndex + 1} a {Math.min(endIndex, users.length)} de {users.length} usuários
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

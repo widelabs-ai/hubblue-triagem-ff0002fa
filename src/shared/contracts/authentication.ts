@@ -28,7 +28,7 @@ export interface User {
     senha: string;
   }
 
-  export interface CadastroRequest {
+  export interface AddUserRequest {
     nome: string;
     email: string;
     perfilId: number
