@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState, startTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { setUsuario, setToken, usuario } = useUsuarioStore();
+  const { setUsuario, setToken, usuario, primeiroAcesso } = useUsuarioStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,11 +29,12 @@ const LoginScreen = () => {
       if (!success) {
         setError('Email ou senha incorretos');
       } else {
-        setToken(success.access_token);
+        setToken(success.access_token, success.refresh_token);
         const user = await getUser({id: success.usuario.id});
+       
         if (!user) {
           setError('Erro ao buscar usuário');
-        } else {
+         } else {
           setUsuario(user);
         }
       }
@@ -45,6 +46,18 @@ const LoginScreen = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (usuario && primeiroAcesso) {
+      startTransition(() => {
+        navigate('/primeiro-acesso');
+      });
+    } else if (usuario && !primeiroAcesso) {
+      startTransition(() => {
+        navigate('/home');
+      });
+    }
+  }, [primeiroAcesso, usuario, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
@@ -82,7 +95,7 @@ const LoginScreen = () => {
               />
             </div>
             <div>
-            <span onClick={() => navigate('/recuperar-senha')} className="cursor-pointer text-sm text-blue-500">Esqueci minha senha</span>
+                            <span onClick={() => startTransition(() => navigate('/recuperar-senha'))} className="cursor-pointer text-sm text-blue-500">Esqueci minha senha</span>
             </div>
             {error && (
               <Alert variant="destructive">

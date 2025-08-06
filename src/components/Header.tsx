@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { startTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -9,12 +9,12 @@ import { logout } from '@/stores/usuario';
 import useUsuarioStore from '@/stores/usuario';
 
 const Header = () => {
-  const {usuario} = useUsuarioStore();
+  const {usuario, token, refreshToken} = useUsuarioStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout();
-    navigate('/');
+    logout(token, refreshToken);
+    // Não precisa navegar aqui pois o logout já faz isso
   };
 
   const roleLabels = {

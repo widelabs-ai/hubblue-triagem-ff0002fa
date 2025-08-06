@@ -28,6 +28,16 @@ export interface User {
     senha: string;
   }
 
+  export interface LogoutRequest {
+    token: string;
+    refreshToken: string;
+  }
+
+  export interface LogoutRequest {
+    token: string;
+    refreshToken: string;
+  }
+
   export interface AddUserRequest {
     nome: string;
     email: string;
@@ -41,7 +51,6 @@ export interface User {
     status: number;
     id: string;
   }
-
 
   export interface AlterarSenhaRequest {
    token: string;

@@ -1,20 +1,22 @@
 
-import React, { useState } from 'react';
+import React, { useState, startTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { User } from 'lucide-react';
+import { ArrowLeft, User } from 'lucide-react';
 import { doAlterarSenha } from '@/services/auth';
 import { useNavigate, useParams } from 'react-router-dom';
+import useUsuarioStore, { logout } from '@/stores/usuario';
 
 const UpdatePasswordScreen = () => {
   const [passwordCopy, setPasswordCopy] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { token } = useParams();
+  const { token: tokenParam } = useParams();
+  const { token, usuario, setUsuario, refreshToken } = useUsuarioStore()
   const navigate = useNavigate();
 
 
@@ -24,11 +26,20 @@ const UpdatePasswordScreen = () => {
     setIsLoading(true);
 
     try {
-      const success = await doAlterarSenha({token, novaSenha: password});
+      const currentToken = tokenParam || token;
+      const success = await doAlterarSenha({token: currentToken, novaSenha: password});
       if (!success) {
         setError('Erro ao alterar senha');
       } else {
-        navigate('/');
+        if (usuario) {
+        setUsuario({
+          ...usuario,
+          atualizadoEm: new Date().toISOString()
+        });
+        }
+        startTransition(() => {
+          navigate('/home');
+        });
       }
     } catch (err) {
       setError('Erro ao alterar senha');
@@ -37,10 +48,21 @@ const UpdatePasswordScreen = () => {
     }
   };
 
+  const handleBack = () => {
+    if (token) {
+      logout(token, refreshToken);
+    } else {
+      startTransition(() => {
+        navigate('/');
+      });
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-t-lg">
+          <ArrowLeft onClick={() => handleBack()} className="h-5 w-5 cursor-pointer" />
           <div className="flex justify-center mb-2">
             <User className="h-12 w-12" />
           </div>
@@ -84,7 +106,7 @@ const UpdatePasswordScreen = () => {
               className="w-full h-12 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
               disabled={isLoading || password !== passwordCopy}
             >
-              {isLoading ? 'Entrando...' : 'Cadastrar'}
+              {isLoading ? 'Alterando...' : 'Cadastrar'}
             </Button>
           </form>
         </CardContent>

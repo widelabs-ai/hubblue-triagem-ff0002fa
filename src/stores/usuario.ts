@@ -6,10 +6,11 @@ import { doLogout } from '@/services/auth';
 type UsuarioStore = {
   usuario: User | null;
   token: string | null;
-  setUsuario: (usuario: User) => void;
-  setToken: (token: string) => void;
-  logout: () => Promise<void>;
+  refreshToken: string | null;
   primeiroAcesso: boolean;
+  setUsuario: (usuario: User) => void;
+  setToken: (token: string, refreshToken: string) => void;
+  logout: () => Promise<void>;
 };
 
 const useUsuarioStore = create<UsuarioStore>()(
@@ -18,31 +19,35 @@ const useUsuarioStore = create<UsuarioStore>()(
     usuario: null,
     token: null,
     primeiroAcesso: false,
-    
+    refreshToken: null,
     setUsuario: (usuario) => {
       set({ usuario })
-      if(usuario.criadoEm === usuario.atualizadoEm) {
+      if (usuario && usuario.criadoEm === usuario.atualizadoEm) {
         set({ primeiroAcesso: true })
+      } else {
+        set({ primeiroAcesso: false })
       }
       return { ...usuario }
     },
 
-    setToken: (token) => {
-      set({ token })
+    setToken: (token, refreshToken) => {
+      set({ token, refreshToken })
     },
     
-    logout: async () => set({ usuario: null, token: null }),
+    logout: async () => set({ usuario: null, token: null, primeiroAcesso: false, refreshToken: null }),
   }),
   {
     name: 'user-storage',
   }
 ));
 
-export const logout = async () => {
+export const logout = async (token: string, refreshToken: string) => {
   try {
-    await doLogout();
+    await doLogout({token: token, refreshToken: refreshToken});
   } finally {
     useUsuarioStore.getState().logout();
+    // Forçar reload completo para garantir que o estado seja limpo
+    window.location.replace('/');
   }
 };
 

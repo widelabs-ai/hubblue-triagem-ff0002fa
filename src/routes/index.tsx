@@ -1,45 +1,84 @@
-import useUsuarioStore from "@/stores/usuario";
-import LoginScreen from "@/components/LoginScreen";
-import ForgotPasswordScreen from "@/components/ForgotPasswordScreen";
-import UpdatePasswordScreen from "@/components/UpdatePasswordScreen";
-import Header from "@/components/Header";
-import PrivateRoutes from "./privateRoutes";
+/* eslint-disable react-refresh/only-export-components */
+import { lazy } from 'react';
+import { createBrowserRouter } from 'react-router-dom';
+
+import PrivatePageLayout from './privatePageLayout';
+import Index from "@/pages/Index";
+import NotFound from "@/pages/NotFound";
+import UserManagement from "@/components/UserManagement";
 import TotemScreen from "@/components/TotemScreen";
-import { useLocation } from "react-router-dom";
-import AuthRoutes from "./authRoutes";
+import TriageScreen from "@/components/TriageScreen";
+import AdminScreen from "@/components/AdminScreen";
+import DoctorScreen from "@/components/DoctorScreen";
+import MonitoringDashboard from "@/components/MonitoringDashboard";
+import ReportsScreen from "@/components/ReportsScreen";
 
-const AppRoutes = () => {
-  const { primeiroAcesso, usuario} = useUsuarioStore();
-  const location = useLocation();
-  const currentPath = location.pathname;
 
-  const routeConfig = [
-    {
-      condition: !usuario && currentPath === "/totem-atendimento",
-      component: <TotemScreen />
-    },
-    {
-      condition: !usuario,
-      component: <AuthRoutes />
-    },
-    {
-      condition: primeiroAcesso,
-      component: <UpdatePasswordScreen />
-    }
-  ];
+const LazyLoginPage = lazy(() => import('@/components/LoginScreen'));
+const LazyForgotPasswordPage = lazy(() => import('@/components/ForgotPasswordScreen'));
+const LazyResetPasswordPage = lazy(() => import('@/components/UpdatePasswordScreen'));
 
-  const matchedRoute = routeConfig.find(route => route.condition);
+export const router = createBrowserRouter([
+  {
+    path: '/',
+    Component: LazyLoginPage,
+  },
+  {
+    path: '/recuperar-senha',
+    Component: LazyForgotPasswordPage,
+  },
+  {
+    path: '/alterar-senha/:token',
+    Component: LazyResetPasswordPage,
+  },
+  {
+    path: '/primeiro-acesso',
+    Component: LazyResetPasswordPage,
+  },
 
-  if (matchedRoute) {
-    return matchedRoute.component;
-  }
+  // Private routes
+  {
+    path: '/',
+    element: <PrivatePageLayout />,
+    children: [
+      {
+        path: '/home',
+        element: <Index />,
+      },
+      {
+        path: '/usuarios',
+        element: <UserManagement />,
+      },
+      {
+        path: '/totem',
+        element: <TotemScreen />,
+      },
+      {
+        path: '/triagem',
+        element: <TriageScreen />,
+      },
+      {
+        path: '/administrativo',
+        element: <AdminScreen />,
+      },
+      {
+        path: '/medico',
+        element: <DoctorScreen />,
+      },
+      {
+        path: '/monitoramento',
+        element: <MonitoringDashboard />,
+      },
+      {
+        path: '/relatorios',
+        element: <ReportsScreen />,
+      },
+      {
+        path: '*',
+        element: <NotFound />,
+      },
+    ],
+  },
+]);
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <PrivateRoutes />
-    </div>
-  );
-};
 
-export default AppRoutes;

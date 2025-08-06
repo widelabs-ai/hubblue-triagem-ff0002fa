@@ -4,7 +4,7 @@ import { logout } from '@/stores/usuario';
 const API_BASE_URL = import.meta.env.VITE_HUBBLUE_API || 'localhost:3000/api';
 
  const fetchApi = async (url: string, options: RequestInit = {}) => {
-    const {token} = useUsuarioStore.getState()
+    const {token,refreshToken} = useUsuarioStore.getState()
   
     const baseHeaders = {
       Accept: 'application/json',
@@ -25,7 +25,7 @@ const API_BASE_URL = import.meta.env.VITE_HUBBLUE_API || 'localhost:3000/api';
         const error = await response.json().catch(() => null);
   
         if (error?.message === 'Unauthorized') {
-          logout();
+          logout(token,refreshToken);
         }
       }
       throw new Error(response.statusText);
