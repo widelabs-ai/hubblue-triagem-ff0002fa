@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { startTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -14,7 +14,7 @@ const Header = () => {
 
   const handleLogout = () => {
     logout(token, refreshToken);
-    navigate('/');
+    // Não precisa navegar aqui pois o logout já faz isso
   };
 
   const roleLabels = {

@@ -46,7 +46,8 @@ export const logout = async (token: string, refreshToken: string) => {
     await doLogout({token: token, refreshToken: refreshToken});
   } finally {
     useUsuarioStore.getState().logout();
-    window.location.href = '/';
+    // Forçar reload completo para garantir que o estado seja limpo
+    window.location.replace('/');
   }
 };
 

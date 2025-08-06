@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, startTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,7 +49,13 @@ const LoginScreen = () => {
 
   useEffect(() => {
     if (usuario && primeiroAcesso) {
-      navigate('/primeiro-acesso');
+      startTransition(() => {
+        navigate('/primeiro-acesso');
+      });
+    } else if (usuario && !primeiroAcesso) {
+      startTransition(() => {
+        navigate('/home');
+      });
     }
   }, [primeiroAcesso, usuario, navigate]);
 
@@ -89,7 +95,7 @@ const LoginScreen = () => {
               />
             </div>
             <div>
-            <span onClick={() => navigate('/recuperar-senha')} className="cursor-pointer text-sm text-blue-500">Esqueci minha senha</span>
+                            <span onClick={() => startTransition(() => navigate('/recuperar-senha'))} className="cursor-pointer text-sm text-blue-500">Esqueci minha senha</span>
             </div>
             {error && (
               <Alert variant="destructive">

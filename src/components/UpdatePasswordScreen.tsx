@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, startTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,7 +37,9 @@ const UpdatePasswordScreen = () => {
           atualizadoEm: new Date().toISOString()
         });
         }
-        window.location.href = '/home';
+        startTransition(() => {
+          navigate('/home');
+        });
       }
     } catch (err) {
       setError('Erro ao alterar senha');
@@ -50,7 +52,9 @@ const UpdatePasswordScreen = () => {
     if (token) {
       logout(token, refreshToken);
     } else {
-      window.location.href = '/';
+      startTransition(() => {
+        navigate('/');
+      });
     }
   }
 
