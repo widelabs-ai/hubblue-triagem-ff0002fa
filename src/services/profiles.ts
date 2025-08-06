@@ -4,7 +4,7 @@ import { logout } from '@/stores/usuario';
 const API_BASE_URL = import.meta.env.VITE_HUBBLUE_API || 'localhost:3000/api';
 
  const fetchApi = async (url: string, options: RequestInit = {}) => {
-    const {token,refreshToken} = useUsuarioStore.getState()
+    const {token} = useUsuarioStore.getState()
   
     const baseHeaders = {
       Accept: 'application/json',
@@ -25,7 +25,7 @@ const API_BASE_URL = import.meta.env.VITE_HUBBLUE_API || 'localhost:3000/api';
         const error = await response.json().catch(() => null);
   
         if (error?.message === 'Unauthorized') {
-          logout(token,refreshToken);
+          logout();
         }
       }
       throw new Error(response.statusText);
@@ -34,39 +34,40 @@ const API_BASE_URL = import.meta.env.VITE_HUBBLUE_API || 'localhost:3000/api';
     return response.json();
   };
   
-    export const getUser = async (request: {id: string}) => {
-      return fetchApi(`/usuarios/${request.id}`, {
+    export const listaPerfis = async () => {
+      return fetchApi('/perfis', {
         method: 'GET',
         credentials: 'include',
       });
     }
 
-   export const getAllUsers = async (page: number = 1) => {
-      return fetchApi(`/usuarios?page=${page}&limit=${7}`, {
+    export const buscaPerfil = async (id: string) => {
+      return fetchApi(`/perfis/${id}`, {
         method: 'GET',
         credentials: 'include',
       });
     }
 
-    export const deleteUser = async (request: {id: string}) => {
-      return fetchApi(`/usuarios/${request.id}`, {
-        method: 'DELETE',
+    export const atualizaPerfil = async (id: string, nome: string, permissoes: string[]) => {
+      return fetchApi(`/perfis/${id}`, {
+        method: 'PATCH',
         credentials: 'include',
+        body: JSON.stringify({nome, permissoes}),
       });
     }
 
-   export const createUser = async (request: {nome: string, email: string, perfilId: number}) => {
-    return fetchApi('/usuarios/cadastro', {
-      method: 'POST',
-      credentials: 'include',
-      body: JSON.stringify(request),
-    });
-  }
+    export const deletaPerfil = async (id: string) => {
+        return fetchApi(`/perfis/${id}`, {
+            method: 'DELETE',
+            credentials: 'include',
+        });
+    }
 
-  export const updateUser = async (request: {nome: string, email: string, perfilId: number, status: number}, id: string) => {
-    return fetchApi(`/usuarios/${id}`,{
-      method: 'PATCH',
-      credentials: 'include',
-      body: JSON.stringify(request),
-    })
-  }
+    export const criaPerfil = async (nome: string, permissoes: string[]) => {
+        return fetchApi('/perfis', {
+            method: 'POST',
+            credentials: 'include',
+            body: JSON.stringify({nome, permissoes}),
+        });
+    }
+    

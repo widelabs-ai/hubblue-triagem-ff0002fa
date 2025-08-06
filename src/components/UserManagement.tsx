@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,31 +9,33 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { useUser } from '@/contexts/UserContext';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { UserRole } from '@/types/user';
 import { Users, UserPlus, Edit, Trash2, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ProfileModal } from './PerfisModal';
+import { listaPerfis } from '@/services/profiles';
+import { createUser, deleteUser, getAllUsers, updateUser } from '@/services/user';
+import useUsuarioStore from '@/stores/usuario';
+import { UpdateUserRequest, AddUserRequest } from '@/shared/contracts/authentication';
 
 const UserManagement = () => {
-  const { users, createUser, updateUser, deleteUser, currentUser } = useUser();
+  const { usuario:currentUser } = useUsuarioStore();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreatePerfilDialogOpen, setIsCreatePerfilDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<string | null>(null);
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'enfermeiro' as UserRole,
-    isActive: true
-  });
+  const [profiles, setProfiles] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const roleLabels = {
-    enfermeiro: 'Enfermeiro',
-    administrativo: 'Administrativo',
-    medico: 'Médico',
-    administrador: 'Administrador'
-  };
+  const [formData, setFormData] = useState<AddUserRequest | UpdateUserRequest>({
+    nome: '',
+    email: '',
+    perfilId: 1,
+  });
 
   const roleColors = {
     enfermeiro: 'bg-green-100 text-green-800',
@@ -44,54 +46,117 @@ const UserManagement = () => {
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      nome: '',
       email: '',
-      password: '',
-      role: 'enfermeiro',
-      isActive: true
+      perfilId:  1,
     });
     setEditingUser(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (editingUser) {
-      updateUser(editingUser, {
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        isActive: formData.isActive
-      });
-      toast({
-        title: "Usuário atualizado",
-        description: "As informações do usuário foram atualizadas com sucesso."
-      });
+      updateRequest(formData as UpdateUserRequest);
     } else {
-      createUser(formData);
-      toast({
-        title: "Usuário criado",
-        description: "Novo usuário foi criado com sucesso."
-      });
+      createRequest(formData as AddUserRequest);
     }
     
     resetForm();
     setIsCreateDialogOpen(false);
   };
 
-  const handleEdit = (user: any) => {
-    setFormData({
-      name: user.name,
+  const updateRequest = async (user: UpdateUserRequest) => {
+   try {
+    await updateUser({
+      nome: user.nome,
       email: user.email,
-      password: '',
-      role: user.role,
-      isActive: user.isActive
+      perfilId: user.perfilId,
+      status: user.status,
+    }, editingUser);
+    toast({
+      title: "Usuário atualizado",
+      description: "As informações do usuário foram atualizadas com sucesso."
+    });
+    fetchUsers();
+   } catch (error) {
+    console.error(error);
+    toast({
+      title: "Erro ao atualizar usuário",
+      description: error.message,
+      variant: "destructive"
+    });
+   }
+  }
+
+  const createRequest = async (user: AddUserRequest ) => {
+    try{
+      const data = await createUser(user);
+      toast({
+        title: "Usuário criado",
+        description: "Novo usuário foi criado com sucesso."
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Erro ao criar usuário",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  }
+
+  const fetchProfiles = async () => {
+    const data = await listaPerfis();
+    setProfiles(data.perfis);
+  }
+
+  const fetchUsers = async (currentPage:number = 1) => {
+    const data = await getAllUsers(currentPage);
+    console.log(data);
+    setTotalPages(data.pagination.totalPages);
+    setUsers(data.usuarios);
+  }
+
+  useEffect(() => {
+    fetchProfiles();
+    fetchUsers(currentPage);
+  }, [currentPage]);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const goToPrevious = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToNext = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handleEdit = (user: any) => {
+    
+    setFormData({
+      nome: user.nome,
+      email: user.email,
+      perfilId: user.perfilId,
+      status: user.status,
+      perfil: user.perfil
     });
     setEditingUser(user.id);
     setIsCreateDialogOpen(true);
   };
 
-  const handleDelete = (userId: string) => {
+  const handleDelete = async (userId: string) => {
     if (userId === currentUser?.id) {
       toast({
         title: "Erro",
@@ -101,28 +166,21 @@ const UserManagement = () => {
       return;
     }
     
-    deleteUser(userId);
-    toast({
-      title: "Usuário excluído",
-      description: "O usuário foi removido do sistema."
-    });
-  };
-
-  const handleToggleActive = (userId: string, isActive: boolean) => {
-    if (userId === currentUser?.id) {
+    try {
+      await deleteUser({id: userId});
       toast({
-        title: "Erro",
-        description: "Você não pode desativar seu próprio usuário.",
+        title: "Usuário excluído",
+        description: "O usuário foi removido do sistema.",
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Erro ao excluir usuário",
+        description: error.message,
         variant: "destructive"
       });
-      return;
     }
-    
-    updateUser(userId, { isActive });
-    toast({
-      title: isActive ? "Usuário ativado" : "Usuário desativado",
-      description: `O usuário foi ${isActive ? 'ativado' : 'desativado'} com sucesso.`
-    });
   };
 
   return (
@@ -136,7 +194,15 @@ const UserManagement = () => {
               <p className="text-gray-600">Gerencie usuários e permissões do sistema</p>
             </div>
           </div>
-          
+          <div className='flex items-center space-x-2'>
+            <Button onClick={() => setIsCreatePerfilDialogOpen(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Gerenciar Perfis
+            </Button>
+          <ProfileModal 
+            isOpen={isCreatePerfilDialogOpen}
+            onClose={() => setIsCreatePerfilDialogOpen(false)}
+          />
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button 
@@ -158,8 +224,8 @@ const UserManagement = () => {
                   <Label htmlFor="name">Nome</Label>
                   <Input
                     id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    value={formData.nome}
+                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                     required
                   />
                 </div>
@@ -175,46 +241,37 @@ const UserManagement = () => {
                   />
                 </div>
                 
-                {!editingUser && (
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                    />
-                  </div>
-                )}
-                
                 <div className="space-y-2">
-                  <Label htmlFor="role">Perfil</Label>
+                  <Label htmlFor="perfilId">Perfil</Label>
                   <Select 
-                    value={formData.role} 
-                    onValueChange={(value: UserRole) => setFormData({ ...formData, role: value })}
+                    value={formData.perfilId.toString() || ''} 
+                    onValueChange={(value: UserRole) => setFormData({ ...formData, perfilId: parseInt(value) })}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(roleLabels).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
+                      {profiles.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.id}>
+                          {profile.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isActive"
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                  />
-                  <Label htmlFor="isActive">Usuário ativo</Label>
-                </div>
+                {
+                  editingUser && currentUser?.id !== editingUser && (
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="isActive"
+                      checked={formData.status === 1}
+                      onCheckedChange={(checked) => setFormData({ ...formData, status: checked ? 1 : 0 })}
+                    />
+                    <Label htmlFor="isActive">Usuário ativo</Label>
+                  </div>
+                  )
+                }
                 
                 <div className="flex space-x-2 pt-4">
                   <Button type="submit" className="flex-1">
@@ -231,6 +288,7 @@ const UserManagement = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <Card className="shadow-xl">
@@ -255,27 +313,22 @@ const UserManagement = () => {
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell className="font-medium">{user.nome}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Badge className={roleColors[user.role]}>
-                        {roleLabels[user.role]}
+                      <Badge className={roleColors[user.perfil.nome]}>
+                        {user.perfil.nome}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={user.isActive}
-                          onCheckedChange={(checked) => handleToggleActive(user.id, checked)}
-                          disabled={user.id === currentUser?.id}
-                        />
-                        <span className={user.isActive ? 'text-green-600' : 'text-red-600'}>
-                          {user.isActive ? 'Ativo' : 'Inativo'}
+                        <span className={user.status === 1 ? 'text-green-600' : 'text-red-600'}>
+                          {user.status === 1 ? 'Ativo' : 'Inativo'}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {new Date(user.createdAt).toLocaleDateString('pt-BR')}
+                      {new Date(user.criadoEm).toLocaleDateString('pt-BR')}
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
@@ -302,6 +355,45 @@ const UserManagement = () => {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Componente de Paginação */}
+        {totalPages > 1 && (
+          <div className="mt-6">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={goToPrevious}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => goToPage(page)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={goToNext}
+                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+            
+            <div className="text-center mt-4 text-sm text-gray-600">
+              Mostrando {startIndex + 1} a {Math.min(endIndex, users.length)} de {users.length} usuários
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

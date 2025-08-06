@@ -33,12 +33,24 @@ export interface User {
     refreshToken: string;
   }
 
-  export interface CadastroRequest {
+  export interface LogoutRequest {
+    token: string;
+    refreshToken: string;
+  }
+
+  export interface AddUserRequest {
     nome: string;
     email: string;
     perfilId: number
   }
 
+  export interface UpdateUserRequest {
+    nome: string;
+    email: string;
+    perfilId: number;
+    status: number;
+    id: string;
+  }
 
   export interface AlterarSenhaRequest {
    token: string;
