@@ -371,9 +371,9 @@ const TriageChat: React.FC<TriageChatProps> = ({
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 max-h-[600px] shadow-2xl">
+    <div className="fixed bottom-6 right-6 z-50 w-96 h-[calc(100vh-3rem)] shadow-2xl">
       <Card className="h-full flex flex-col shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-        <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white flex-row items-center justify-between py-3 rounded-t-lg">
+        <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white flex-row items-center justify-between py-3 rounded-t-lg flex-shrink-0">
           <CardTitle className="flex items-center gap-2 text-lg">
             <MessageSquare className="h-5 w-5" />
             LIA - Assistente de Triagem
@@ -390,9 +390,9 @@ const TriageChat: React.FC<TriageChatProps> = ({
           </div>
         </CardHeader>
         
-        <CardContent className="flex-1 flex flex-col p-0 max-h-[500px]">
+        <CardContent className="flex-1 flex flex-col p-0">
           {/* Área de mensagens com scroll */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[300px] bg-gradient-to-b from-white to-gray-50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-white to-gray-50">
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] p-3 rounded-lg shadow-md ${
@@ -453,7 +453,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
           </div>
 
           {/* Input de mensagem */}
-          <div className="p-4 border-t bg-white shadow-inner">
+          <div className="p-4 border-t bg-white shadow-inner flex-shrink-0">
             <div className="flex space-x-2">
               <Input
                 placeholder={waitingForAnswer ? "Digite sua resposta..." : "Digite sua pergunta..."}
