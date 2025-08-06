@@ -188,6 +188,41 @@ const HospitalFlowIndicators: React.FC = () => {
                     const count = getPatientsByStatus(item.status as any).length;
                     const itemPatients = getPatientsByStatus(item.status as any);
                     
+                    // Tratamento especial para "Em Triagem" - não calcular SLA
+                    if (item.status === 'in-triage') {
+                      let itemAvgTime = 0;
+                      
+                      if (count > 0) {
+                        let totalTime = 0;
+                        itemPatients.forEach(patient => {
+                          totalTime += getTimeElapsed(patient, 'generated');
+                        });
+                        itemAvgTime = Math.round(totalTime / count);
+                      }
+                      
+                      return (
+                        <div 
+                          key={item.status} 
+                          className="bg-white/50 rounded-lg p-3 border cursor-pointer hover:bg-white/80 transition-colors"
+                          onClick={() => handleIndicatorClick(item.status, item.label)}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{item.icon}</span>
+                              <span className="font-medium text-sm">{item.label}</span>
+                            </div>
+                            <span className="text-xl font-bold">{count}</span>
+                          </div>
+                          {count > 0 && (
+                            <div className="text-xs text-gray-600">
+                              <div>Tempo médio: {itemAvgTime} min</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    
+                    // Lógica normal para outros itens
                     let itemInSLA = 0;
                     let itemOutSLA = 0;
                     let itemAvgTime = 0;
