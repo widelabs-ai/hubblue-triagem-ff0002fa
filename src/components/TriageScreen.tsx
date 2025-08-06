@@ -13,6 +13,7 @@ import { ArrowLeft, X, MessageSquare, Lightbulb, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TriageChat from './TriageChat';
 import CancellationModal from './CancellationModal';
+import ClinicalReviewModal from './ClinicalReviewModal';
 import VitalSignInput from './VitalSignInput';
 import SearchableSelect from './SearchableSelect';
 import BloodPressureInput from './BloodPressureInput';
@@ -33,6 +34,7 @@ const TriageScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
+  const [isClinicalReviewModalOpen, setIsClinicalReviewModalOpen] = useState(false);
   const [hasPerformedAnalysis, setHasPerformedAnalysis] = useState(false);
   const [suggestedFlows, setSuggestedFlows] = useState<ManchesterFlow[]>([]);
   const [selectedFlow, setSelectedFlow] = useState<string>('');
@@ -451,12 +453,27 @@ const TriageScreen: React.FC = () => {
     }
 
     // Trigger análise completa da LIA em formato de ficha clínica
-    setHasPerformedAnalysis(true);
-    toast({
-      title: "Revisão completa iniciada",
-      description: "A LIA está realizando uma análise completa dos dados em formato de ficha clínica e identificando informações em falta.",
-      duration: 4000
-    });
+    // Caso contrário, abre o modal de ficha clínica
+    const hasIncompleteData = !isFormComplete();
+    
+    if (hasIncompleteData || !hasPerformedAnalysis) {
+      // Trigger análise completa da LIA em formato de chat
+      setHasPerformedAnalysis(true);
+      toast({
+        title: "Revisão iniciada",
+        description: "A LIA está analisando os dados e pode fazer perguntas no chat.",
+        duration: 4000
+      });
+    } else {
+      // Abrir modal de ficha clínica para confirmação
+      setIsClinicalReviewModalOpen(true);
+    }
+  };
+
+  // Nova função para concluir triagem a partir do modal
+  const handleConfirmClinicalReview = () => {
+    handleCompleteTriagem();
+    setIsClinicalReviewModalOpen(false);
   };
 
   // Função para concluir triagem (separada da revisão)
@@ -500,14 +517,11 @@ const TriageScreen: React.FC = () => {
     });
   };
 
-  const handleCloseDialog = () => {
-    if (currentPatientId) {
-      updatePatientStatus(currentPatientId, 'waiting-triage');
-      setCurrentPatientId(''); // Clear current patient ID
-    }
-    setIsDialogOpen(false);
-    setChatExpanded(false); // Reset do estado do chat
-    resetTriageData();
+  // Função para fechar o dialog
+  const handleDialogOpenChange = (open: boolean) => {
+    // Não permite fechar o dialog clicando fora ou no X
+    // Só fecha através das ações específicas
+    return;
   };
 
   const getPriorityColor = (priority: string) => {
@@ -640,18 +654,11 @@ const TriageScreen: React.FC = () => {
       </div>
 
       {/* Dialog de Triagem */}
-      <Dialog open={isDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          handleCloseDialog();
-        }
-      }}>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="max-w-[98vw] max-h-[98vh] overflow-hidden p-0">
           <DialogHeader className="p-6 pb-4">
             <div className="flex justify-between items-center">
               <DialogTitle className="text-xl">Triagem em Andamento</DialogTitle>
-              <Button variant="ghost" onClick={handleCloseDialog}>
-                <X className="h-4 w-4" />
-              </Button>
             </div>
           </DialogHeader>
           
@@ -1133,9 +1140,6 @@ const TriageScreen: React.FC = () => {
                     >
                       Cancelar Paciente
                     </Button>
-                    <Button variant="outline" onClick={handleCloseDialog} size="sm">
-                      Fechar
-                    </Button>
                     <Button 
                       onClick={handleReview}
                       className="bg-blue-600 hover:bg-blue-700"
@@ -1188,6 +1192,14 @@ const TriageScreen: React.FC = () => {
         onClose={() => setIsCancellationModalOpen(false)}
         onConfirm={handleCancelPatient}
         patientPassword={currentPatient?.password || ''}
+      />
+
+      {/* Novo Modal de Revisão Clínica */}
+      <ClinicalReviewModal
+        isOpen={isClinicalReviewModalOpen}
+        onClose={() => setIsClinicalReviewModalOpen(false)}
+        onConfirm={handleConfirmClinicalReview}
+        triageData={triageData}
       />
     </div>
   );
