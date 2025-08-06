@@ -29,7 +29,7 @@ const MonitoringDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <Card className="shadow-lg">
           <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-            <CardTitle className="text-2xl">🏥 Dashboard de Monitoramento Hospitalar Completo</CardTitle>
+            <CardTitle className="text-2xl">🏥 Painel de Monitoramento do Pronto Socorro em Tempo Real</CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-8">
             {/* Indicadores do Fluxo Completo */}
