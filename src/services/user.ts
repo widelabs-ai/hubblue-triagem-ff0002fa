@@ -47,3 +47,26 @@ const API_BASE_URL = import.meta.env.VITE_HUBBLUE_API || 'localhost:3000/api';
         credentials: 'include',
       });
     }
+
+    export const deleteUser = async (request: {id: string}) => {
+      return fetchApi(`/usuarios/${request.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+    }
+
+   export const createUser = async (request: {nome: string, email: string, perfilId: number}) => {
+    return fetchApi('/usuarios/cadastro', {
+      method: 'POST',
+      credentials: 'include',
+      body: JSON.stringify(request),
+    });
+  }
+
+  export const updateUser = async (request: {nome: string, email: string, perfilId: number, status: number}, id: string) => {
+    return fetchApi(`/usuarios/${id}`,{
+      method: 'PATCH',
+      credentials: 'include',
+      body: JSON.stringify(request),
+    })
+  }

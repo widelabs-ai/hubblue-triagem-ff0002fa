@@ -15,10 +15,12 @@ import { Users, UserPlus, Edit, Trash2, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ProfileModal } from './PerfisModal';
 import { listaPerfis } from '@/services/profiles';
-import { getAllUsers } from '@/services/user';
+import { createUser, deleteUser, getAllUsers, updateUser } from '@/services/user';
+import useUsuarioStore from '@/stores/usuario';
+import { User, CadastroRequest, UpdateUserRequest } from '@/shared/contracts/authentication';
 
 const UserManagement = () => {
-  const { createUser, updateUser, deleteUser, currentUser } = useUser();
+  const { usuario:currentUser } = useUsuarioStore();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreatePerfilDialogOpen, setIsCreatePerfilDialogOpen] = useState(false);
@@ -26,11 +28,10 @@ const UserManagement = () => {
   const [profiles, setProfiles] = useState([]);
   const [users, setUsers] = useState([]);
 
-  const [formData, setFormData] = useState({
-    name: '',
+  const [formData, setFormData] = useState<CadastroRequest | UpdateUserRequest>({
+    nome: '',
     email: '',
-    role: '',
-    isActive: true
+    perfilId: 1,
   });
 
   const roleColors = {
@@ -42,39 +43,65 @@ const UserManagement = () => {
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      nome: '',
       email: '',
-      role:  '',
-      isActive: true
+      perfilId:  1,
     });
     setEditingUser(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (editingUser) {
-      updateUser(editingUser, {
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        isActive: formData.isActive
-      });
-      toast({
-        title: "Usuário atualizado",
-        description: "As informações do usuário foram atualizadas com sucesso."
-      });
+     updateRequest(formData as UpdateUserRequest);
     } else {
-      createUser(formData);
+      addNewUser(formData);
+    }
+    
+    resetForm();
+    fetchUsers();
+    setIsCreateDialogOpen(false);
+  };
+
+  const updateRequest = async (user: UpdateUserRequest) => {
+   try {
+    await updateUser({
+      nome: user.nome,
+      email: user.email,
+      perfilId: user.perfilId,
+      status: user.status,
+    }, editingUser);
+    toast({
+      title: "Usuário atualizado",
+      description: "As informações do usuário foram atualizadas com sucesso."
+    });
+   } catch (error) {
+    console.error(error);
+    toast({
+      title: "Erro ao atualizar usuário",
+      description: error.message,
+      variant: "destructive"
+    });
+   }
+  }
+
+  const addNewUser = async (user: CadastroRequest) => {
+    try{
+      await createUser(formData as CadastroRequest);
       toast({
         title: "Usuário criado",
         description: "Novo usuário foi criado com sucesso."
       });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Erro ao criar usuário",
+        description: error.message,
+        variant: "destructive"
+      });
     }
-    
-    resetForm();
-    setIsCreateDialogOpen(false);
-  };
+  }
 
   const fetchProfiles = async () => {
     const data = await listaPerfis();
@@ -93,18 +120,18 @@ const UserManagement = () => {
     fetchUsers();
   }, []);
 
-  const handleEdit = (user: any) => {
+  const handleEdit = (user: Partial<User>) => {
     setFormData({
-      name: user.nome,
+      nome: user.nome,
       email: user.email,
-      role: user.perfil.nome,
-      isActive: user.status === 1
+      perfil: user.perfil,
+      status: user.status
     });
     setEditingUser(user.id);
     setIsCreateDialogOpen(true);
   };
 
-  const handleDelete = (userId: string) => {
+  const handleDelete = async (userId: string) => {
     if (userId === currentUser?.id) {
       toast({
         title: "Erro",
@@ -114,28 +141,21 @@ const UserManagement = () => {
       return;
     }
     
-    deleteUser(userId);
-    toast({
-      title: "Usuário excluído",
-      description: "O usuário foi removido do sistema."
-    });
-  };
-
-  const handleToggleActive = (userId: string, isActive: boolean) => {
-    if (userId === currentUser?.id) {
+    try {
+      await deleteUser({id: userId});
       toast({
-        title: "Erro",
-        description: "Você não pode desativar seu próprio usuário.",
+        title: "Usuário excluído",
+        description: "O usuário foi removido do sistema.",
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Erro ao excluir usuário",
+        description: error.message,
         variant: "destructive"
       });
-      return;
     }
-    
-    updateUser(userId, { isActive });
-    toast({
-      title: isActive ? "Usuário ativado" : "Usuário desativado",
-      description: `O usuário foi ${isActive ? 'ativado' : 'desativado'} com sucesso.`
-    });
   };
 
   return (
@@ -179,8 +199,8 @@ const UserManagement = () => {
                   <Label htmlFor="name">Nome</Label>
                   <Input
                     id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    value={formData.nome}
+                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                     required
                   />
                 </div>
@@ -196,24 +216,11 @@ const UserManagement = () => {
                   />
                 </div>
                 
-                {!editingUser && (
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                    />
-                  </div>
-                )}
-                
                 <div className="space-y-2">
-                  <Label htmlFor="role">Perfil</Label>
+                  <Label htmlFor="perfilId">Perfil</Label>
                   <Select 
-                    value={formData.role} 
-                    onValueChange={(value: UserRole) => setFormData({ ...formData, role: value })}
+                    value={formData.perfilId?.toString() || ''} 
+                    onValueChange={(value: UserRole) => setFormData({ ...formData, perfilId: parseInt(value) })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -228,14 +235,18 @@ const UserManagement = () => {
                   </Select>
                 </div>
                 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isActive"
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                  />
-                  <Label htmlFor="isActive">Usuário ativo</Label>
-                </div>
+                {
+                  editingUser && currentUser?.id !== editingUser && (
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="isActive"
+                      checked={formData.status === 1}
+                      onCheckedChange={(checked) => setFormData({ ...formData, status: checked ? 1 : 0 })}
+                    />
+                    <Label htmlFor="isActive">Usuário ativo</Label>
+                  </div>
+                  )
+                }
                 
                 <div className="flex space-x-2 pt-4">
                   <Button type="submit" className="flex-1">
