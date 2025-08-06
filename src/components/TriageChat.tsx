@@ -35,6 +35,7 @@ interface TriageChatProps {
   isFormComplete: boolean;
   hasPerformedAnalysis: boolean;
   onAnalysisPerformed: () => void;
+  onOpenClinicalModal: () => void;
 }
 
 interface Message {
@@ -51,11 +52,13 @@ const TriageChat: React.FC<TriageChatProps> = ({
   isDialogOpen,
   isFormComplete,
   hasPerformedAnalysis,
-  onAnalysisPerformed
+  onAnalysisPerformed,
+  onOpenClinicalModal
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [waitingForAnswer, setWaitingForAnswer] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -108,78 +111,127 @@ const TriageChat: React.FC<TriageChatProps> = ({
   useEffect(() => {
     if (hasPerformedAnalysis && isFormComplete && messages.length > 0) {
       setTimeout(() => {
-        analyzeTriageData();
+        askContextualQuestion();
       }, 1000);
     }
   }, [hasPerformedAnalysis]);
 
-  const analyzeTriageData = () => {
+  const generateContextualQuestion = () => {
+    const { vitals, complaints, symptoms, painScale, personalData } = triageData;
+    const heartRate = parseInt(vitals.heartRate) || 0;
+    const temp = parseFloat(vitals.temperature) || 0;
+    const saturation = parseInt(vitals.oxygenSaturation) || 100;
+    const pain = parseInt(painScale) || 0;
+    const age = calculateAge(personalData.dateOfBirth);
+    const complaintsLower = complaints.toLowerCase();
+    const symptomsLower = symptoms.toLowerCase();
+
+    // Gerar perguntas baseadas nos dados clínicos
+    const questions = [];
+
+    // Perguntas baseadas na temperatura
+    if (temp > 37.8) {
+      questions.push("O paciente apresenta sudorese associada à febre?");
+      questions.push("Há quanto tempo o paciente está com febre?");
+      questions.push("O paciente teve calafrios recentes?");
+    }
+
+    // Perguntas baseadas na frequência cardíaca
+    if (heartRate > 100) {
+      questions.push("O paciente refere palpitações ou sensação de coração acelerado?");
+      questions.push("A taquicardia está presente em repouso?");
+    }
+
+    // Perguntas baseadas nas queixas
+    if (complaintsLower.includes('dor no peito') || complaintsLower.includes('precordial')) {
+      questions.push("A dor no peito irradia para braço, mandíbula ou costas?");
+      questions.push("A dor piora com inspiração profunda ou movimento?");
+      questions.push("O paciente apresenta sudorese fria associada à dor?");
+    }
+
+    if (complaintsLower.includes('cefaleia') || complaintsLower.includes('dor de cabeça')) {
+      questions.push("A cefaleia é pulsátil ou em peso?");
+      questions.push("Há fotofobia ou fonofobia associada?");
+      questions.push("O paciente apresenta rigidez de nuca?");
+    }
+
+    if (complaintsLower.includes('dispneia') || complaintsLower.includes('falta de ar')) {
+      questions.push("A dispneia ocorre em repouso ou apenas aos esforços?");
+      questions.push("Há presença de tosse ou expectoração?");
+      questions.push("O paciente apresenta cianose de extremidades?");
+    }
+
+    if (complaintsLower.includes('dor abdominal') || complaintsLower.includes('abdome')) {
+      questions.push("A dor abdominal é localizada ou difusa?");
+      questions.push("Há náuseas ou vômitos associados?");
+      questions.push("O paciente consegue deambular normalmente?");
+    }
+
+    // Perguntas baseadas nos sintomas
+    if (symptomsLower.includes('vômito') || symptomsLower.includes('náusea')) {
+      questions.push("Os vômitos são em grande quantidade ou pequenos volumes?");
+      questions.push("Há presença de sangue nos vômitos?");
+    }
+
+    if (symptomsLower.includes('tontura') || symptomsLower.includes('vertigem')) {
+      questions.push("A tontura é rotatória ou sensação de desmaio?");
+      questions.push("Os sintomas pioram com mudança de posição?");
+    }
+
+    // Perguntas baseadas na idade
+    if (age > 65) {
+      questions.push("O paciente tem cuidador ou familiar presente?");
+      questions.push("Houve alguma alteração no padrão de sono ou apetite?");
+    }
+
+    if (age < 18) {
+      questions.push("A criança está irritadiça ou sonolenta?");
+      questions.push("Há diminuição da aceitação alimentar?");
+    }
+
+    // Perguntas baseadas na saturação
+    if (saturation < 95) {
+      questions.push("O paciente apresenta cianose visível?");
+      questions.push("Há uso de musculatura acessória para respirar?");
+    }
+
+    // Perguntas baseadas na dor
+    if (pain >= 7) {
+      questions.push("O paciente consegue se movimentar ou prefere ficar imóvel?");
+      questions.push("A dor interfere na capacidade de falar ou concentrar-se?");
+    }
+
+    // Perguntas gerais baseadas no conjunto de sintomas
+    if (temp > 37.5 && heartRate > 100) {
+      questions.push("O paciente apresenta sinais de desidratação como boca seca ou diminuição da diurese?");
+    }
+
+    // Retornar uma pergunta aleatória ou a mais relevante
+    if (questions.length > 0) {
+      return questions[Math.floor(Math.random() * questions.length)];
+    }
+
+    // Pergunta genérica se nenhuma específica for gerada
+    return "Há algum sinal ou sintoma adicional que não foi mencionado que possa ser relevante para o caso?";
+  };
+
+  const askContextualQuestion = () => {
     setIsTyping(true);
 
     setTimeout(() => {
       setIsTyping(false);
       
-      const { vitals, complaints, symptoms, painScale, personalData } = triageData;
-      const heartRate = parseInt(vitals.heartRate) || 0;
-      const temp = parseFloat(vitals.temperature) || 0;
-      const saturation = parseInt(vitals.oxygenSaturation) || 100;
-      const pain = parseInt(painScale) || 0;
-      const age = calculateAge(personalData.dateOfBirth);
+      const contextualQuestion = generateContextualQuestion();
       
-      let priority = 'azul';
-      let reasoning = '';
-      
-      // Análise baseada no protocolo Manchester
-      if (saturation < 85 || heartRate > 150 || heartRate < 40) {
-        priority = 'vermelho';
-        reasoning = 'Sinais vitais críticos detectados - requer atendimento imediato';
-      } else if (temp > 39.5 || (temp > 38.5 && (heartRate > 120 || saturation < 92))) {
-        priority = 'laranja';
-        reasoning = 'Febre alta com comprometimento de sinais vitais';
-      } else if (complaints.toLowerCase().includes('dor no peito') || complaints.toLowerCase().includes('precordial')) {
-        if (pain >= 8 || heartRate > 150 || saturation < 90) {
-          priority = 'vermelho';
-          reasoning = 'Dor torácica com sinais de alarme';
-        } else if (pain >= 6 || heartRate > 100) {
-          priority = 'laranja';
-          reasoning = 'Dor torácica significativa requer avaliação urgente';
-        } else {
-          priority = 'amarelo';
-          reasoning = 'Dor torácica requer investigação';
-        }
-      } else if (pain >= 8 || temp > 38.5 || heartRate > 120 || saturation < 92) {
-        priority = 'laranja';
-        reasoning = 'Sinais de comprometimento moderado';
-      } else if (pain >= 5 || temp > 37.8 || symptoms.toLowerCase().includes('vômito')) {
-        priority = 'amarelo';
-        reasoning = 'Sintomas que requerem avaliação em tempo adequado';
-      } else if (pain >= 2 || temp > 37.2) {
-        priority = 'verde';
-        reasoning = 'Sintomas leves que podem aguardar';
-      }
-      
-      // Considerações especiais por idade
-      if (age > 65 && priority === 'verde') {
-        priority = 'amarelo';
-        reasoning += ' (ajustado para idade avançada)';
-      }
-      
-      const analysisMessage = `Análise completa realizada!\n\n**Classificação sugerida:** ${getPriorityText(priority)}\n\n**Justificativa:** ${reasoning}\n\n**Principais achados:**\n• FC: ${heartRate} bpm\n• Temperatura: ${temp}°C\n• Sat O₂: ${saturation}%\n• Dor: ${pain}/10\n• Idade: ${age} anos\n\nAnálise concluída. Você pode finalizar a triagem agora.`;
-      
-      const newMessage: Message = {
+      const questionMessage: Message = {
         id: Date.now().toString(),
-        text: analysisMessage,
+        text: `Analisando os dados clínicos apresentados...\n\n**Pergunta para esclarecimento:**\n${contextualQuestion}\n\nPor favor, responda para que eu possa finalizar a análise e abrir a ficha clínica.`,
         sender: 'lia',
         timestamp: new Date()
       };
       
-      setMessages(prev => [...prev, newMessage]);
-      onSuggestPriority(priority, reasoning);
-      
-      // Auto-complete triage after analysis
-      setTimeout(() => {
-        onCompleteTriagem();
-      }, 2000);
+      setMessages(prev => [...prev, questionMessage]);
+      setWaitingForAnswer(true);
     }, 2000);
   };
 
@@ -221,18 +273,41 @@ const TriageChat: React.FC<TriageChatProps> = ({
     setMessages(prev => [...prev, userMessage]);
     setNewMessage('');
 
-    // Simular resposta da LIA
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      const liaResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "Obrigada pela sua pergunta! Estou aqui para ajudar com qualquer dúvida sobre a triagem. Posso esclarecer sobre os protocolos Manchester, sinais vitais ou qualquer aspecto do atendimento.",
-        sender: 'lia',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, liaResponse]);
-    }, 1500);
+    // Se estava esperando resposta da pergunta contextual
+    if (waitingForAnswer) {
+      setWaitingForAnswer(false);
+      
+      // Simular resposta da LIA e abrir modal
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        const liaResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          text: "Obrigada pela informação! Agora vou abrir a ficha clínica com todos os dados para revisão final.",
+          sender: 'lia',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, liaResponse]);
+        
+        // Abrir modal após resposta
+        setTimeout(() => {
+          onOpenClinicalModal();
+        }, 1500);
+      }, 1000);
+    } else {
+      // Resposta padrão para outras perguntas
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        const liaResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          text: "Obrigada pela sua pergunta! Estou aqui para ajudar com qualquer dúvida sobre a triagem. Posso esclarecer sobre os protocolos Manchester, sinais vitais ou qualquer aspecto do atendimento.",
+          sender: 'lia',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, liaResponse]);
+      }, 1500);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -309,7 +384,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
       <div className="p-4 border-t bg-gray-50">
         <div className="flex space-x-2">
           <Input
-            placeholder="Digite sua pergunta..."
+            placeholder={waitingForAnswer ? "Digite sua resposta..." : "Digite sua pergunta..."}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}

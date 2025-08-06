@@ -432,7 +432,7 @@ const TriageScreen: React.FC = () => {
     });
   };
 
-  // Função para revisar (agora faz análise completa no formato ficha clínica)
+  // Função para revisar (agora sempre faz pergunta contextual primeiro)
   const handleReview = () => {
     if (!currentPatientId || !triageData.priority || !triageData.complaints) {
       toast({
@@ -452,25 +452,21 @@ const TriageScreen: React.FC = () => {
       return;
     }
 
-    // Trigger análise completa da LIA em formato de ficha clínica
-    // Caso contrário, abre o modal de ficha clínica
-    const hasIncompleteData = !isFormComplete();
-    
-    if (hasIncompleteData || !hasPerformedAnalysis) {
-      // Trigger análise completa da LIA em formato de chat
-      setHasPerformedAnalysis(true);
-      toast({
-        title: "Revisão iniciada",
-        description: "A LIA está analisando os dados e pode fazer perguntas no chat.",
-        duration: 4000
-      });
-    } else {
-      // Abrir modal de ficha clínica para confirmação
-      setIsClinicalReviewModalOpen(true);
-    }
+    // Sempre trigger análise com pergunta contextual
+    setHasPerformedAnalysis(true);
+    toast({
+      title: "Revisão iniciada",
+      description: "A LIA está analisando os dados e fará uma pergunta para esclarecimento.",
+      duration: 4000
+    });
   };
 
-  // Nova função para concluir triagem a partir do modal
+  // Função para abrir o modal clínico (chamada pelo chat)
+  const handleOpenClinicalModal = () => {
+    setIsClinicalReviewModalOpen(true);
+  };
+
+  // Função para concluir triagem a partir do modal
   const handleConfirmClinicalReview = () => {
     handleCompleteTriagem();
     setIsClinicalReviewModalOpen(false);
@@ -1178,6 +1174,7 @@ const TriageScreen: React.FC = () => {
                     isFormComplete={isFormComplete()}
                     hasPerformedAnalysis={hasPerformedAnalysis}
                     onAnalysisPerformed={() => setHasPerformedAnalysis(true)}
+                    onOpenClinicalModal={handleOpenClinicalModal}
                   />
                 </div>
               </div>

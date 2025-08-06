@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -53,6 +52,23 @@ const ClinicalReviewModal: React.FC<ClinicalReviewModalProps> = ({
     }
     
     return age;
+  };
+
+  const getSpecialtyDisplay = (specialty: string) => {
+    const specialtyMap: Record<string, string> = {
+      'clinica-medica': 'Clínica Médica',
+      'cirurgia-geral': 'Cirurgia Geral',
+      'ortopedia': 'Ortopedia',
+      'pediatria': 'Pediatria',
+      'cardiologia': 'Cardiologia',
+      'pneumologia': 'Pneumologia',
+      'neurologia': 'Neurologia',
+      'gastroenterologia': 'Gastroenterologia',
+      'urologia': 'Urologia',
+      'ginecologia': 'Ginecologia'
+    };
+    
+    return specialtyMap[specialty] || specialty;
   };
 
   return (
@@ -161,7 +177,7 @@ const ClinicalReviewModal: React.FC<ClinicalReviewModalProps> = ({
                   <strong>Fluxo:</strong> {triageData.manchesterFlow}
                 </div>
                 <div>
-                  <strong>Especialidade Sugerida:</strong> {triageData.suggestedSpecialty}
+                  <strong>Especialidade Sugerida:</strong> {getSpecialtyDisplay(triageData.suggestedSpecialty)}
                 </div>
               </div>
             </CardContent>
