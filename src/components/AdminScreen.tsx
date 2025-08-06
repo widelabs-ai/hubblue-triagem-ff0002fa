@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -381,7 +381,7 @@ const AdminScreen: React.FC = () => {
         </Card>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={() => {}}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex justify-between items-center">
@@ -609,12 +609,14 @@ const AdminScreen: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 p-4 bg-yellow-50 rounded-lg">
-                  <Switch
+                <div className="flex items-center space-x-3 p-4 bg-yellow-50 rounded-lg">
+                  <Checkbox
                     checked={personalData.canBeAttended}
-                    onCheckedChange={(checked) => setPersonalData({...personalData, canBeAttended: checked})}
+                    onCheckedChange={(checked) => setPersonalData({...personalData, canBeAttended: !!checked})}
                   />
-                  <Label>Paciente pode ser atendido (documentos OK, convênio ativo)</Label>
+                  <Label className="cursor-pointer">
+                    Paciente autorizado para ser atendido (situações onde os pacientes possuem convênio particular)
+                  </Label>
                 </div>
               </div>
 
@@ -628,9 +630,6 @@ const AdminScreen: React.FC = () => {
                   className="text-red-600 border-red-200 hover:bg-red-50"
                 >
                   Cancelar Paciente
-                </Button>
-                <Button variant="outline" onClick={handleCloseDialog}>
-                  Fechar
                 </Button>
                 <Button 
                   onClick={handleCompleteAdmin}
