@@ -52,12 +52,12 @@ export const validateHeartRate = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Valor fora da referência`,
+      message: `Fora da faixa normal (${VITAL_RANGES.heartRate.min}-${VITAL_RANGES.heartRate.max} ${VITAL_RANGES.heartRate.unit})`,
       severity: 'warning'
     };
   }
   
-  return { isValid: true, isOutOfRange: false, message: 'Valor dentro da referência' };
+  return { isValid: true, isOutOfRange: false };
 };
 
 export const validateTemperature = (value: string): ValidationResult => {
@@ -78,12 +78,12 @@ export const validateTemperature = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Valor fora da referência`,
+      message: `Fora da faixa normal (${VITAL_RANGES.temperature.min}-${VITAL_RANGES.temperature.max} ${VITAL_RANGES.temperature.unit})`,
       severity: 'warning'
     };
   }
   
-  return { isValid: true, isOutOfRange: false, message: 'Valor dentro da referência' };
+  return { isValid: true, isOutOfRange: false };
 };
 
 export const validateOxygenSaturation = (value: string): ValidationResult => {
@@ -104,12 +104,12 @@ export const validateOxygenSaturation = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Valor fora da referência`,
+      message: `Fora da faixa normal (${VITAL_RANGES.oxygenSaturation.min}-${VITAL_RANGES.oxygenSaturation.max} ${VITAL_RANGES.oxygenSaturation.unit})`,
       severity: 'warning'
     };
   }
   
-  return { isValid: true, isOutOfRange: false, message: 'Valor dentro da referência' };
+  return { isValid: true, isOutOfRange: false };
 };
 
 export const validateBloodPressure = (value: string): ValidationResult => {
@@ -153,12 +153,12 @@ export const validateBloodPressure = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Valor fora da referência`,
+      message: `Fora da faixa normal (${VITAL_RANGES.systolicBP.min}-${VITAL_RANGES.systolicBP.max}/${VITAL_RANGES.diastolicBP.min}-${VITAL_RANGES.diastolicBP.max} ${VITAL_RANGES.systolicBP.unit})`,
       severity: 'warning'
     };
   }
   
-  return { isValid: true, isOutOfRange: false, message: 'Valor dentro da referência' };
+  return { isValid: true, isOutOfRange: false };
 };
 
 export const validateRespiratoryRate = (value: string): ValidationResult => {
@@ -179,12 +179,12 @@ export const validateRespiratoryRate = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Valor fora da referência`,
+      message: `Fora da faixa normal (${VITAL_RANGES.respiratoryRate.min}-${VITAL_RANGES.respiratoryRate.max} ${VITAL_RANGES.respiratoryRate.unit})`,
       severity: 'warning'
     };
   }
   
-  return { isValid: true, isOutOfRange: false, message: 'Valor dentro da referência' };
+  return { isValid: true, isOutOfRange: false };
 };
 
 export const validateGlasgow = (value: string): ValidationResult => {
@@ -205,12 +205,12 @@ export const validateGlasgow = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Valor fora da referência`,
+      message: `Abaixo do normal (${VITAL_RANGES.glasgow.min}-${VITAL_RANGES.glasgow.max} ${VITAL_RANGES.glasgow.unit})`,
       severity: 'warning'
     };
   }
   
-  return { isValid: true, isOutOfRange: false, message: 'Valor dentro da referência' };
+  return { isValid: true, isOutOfRange: false };
 };
 
 export const validateGlucose = (value: string): ValidationResult => {
@@ -231,12 +231,12 @@ export const validateGlucose = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Valor fora da referência`,
+      message: `Fora da faixa normal (${VITAL_RANGES.glucose.min}-${VITAL_RANGES.glucose.max} ${VITAL_RANGES.glucose.unit})`,
       severity: 'warning'
     };
   }
   
-  return { isValid: true, isOutOfRange: false, message: 'Valor dentro da referência' };
+  return { isValid: true, isOutOfRange: false };
 };
 
 // Função para calcular PAM (Pressão Arterial Média)
