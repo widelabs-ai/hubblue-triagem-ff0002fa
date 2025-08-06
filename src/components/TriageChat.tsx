@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, Send, Bot, User } from 'lucide-react';
+import { MessageSquare, Send, Bot, User, FileText } from 'lucide-react';
 
 interface TriageChatProps {
   triageData: {
@@ -43,6 +43,7 @@ interface Message {
   text: string;
   sender: 'user' | 'lia';
   timestamp: Date;
+  hasActionButton?: boolean;
 }
 
 const TriageChat: React.FC<TriageChatProps> = ({ 
@@ -225,9 +226,10 @@ const TriageChat: React.FC<TriageChatProps> = ({
       
       const questionMessage: Message = {
         id: Date.now().toString(),
-        text: `Analisando os dados clínicos apresentados...\n\n**Pergunta para esclarecimento:**\n${contextualQuestion}\n\nApós responder e atualizar o formulário se necessário, eu abrirei a ficha clínica para revisão final.`,
+        text: `Analisando os dados clínicos apresentados...\n\n**Pergunta para esclarecimento:**\n${contextualQuestion}\n\nVocê pode responder à pergunta e atualizar o formulário se necessário, ou seguir diretamente para a revisão da ficha clínica.`,
         sender: 'lia',
-        timestamp: new Date()
+        timestamp: new Date(),
+        hasActionButton: true
       };
       
       setMessages(prev => [...prev, questionMessage]);
@@ -258,6 +260,28 @@ const TriageChat: React.FC<TriageChatProps> = ({
       case 'azul': return '🔵 Azul - Não urgente';
       default: return priority;
     }
+  };
+
+  const handleOpenClinicalModal = () => {
+    setWaitingForAnswer(false);
+    
+    // Simular resposta da LIA
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      const liaResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "Entendido! Vou abrir a ficha clínica com todos os dados coletados para revisão final.",
+        sender: 'lia',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, liaResponse]);
+      
+      // Abrir modal após resposta
+      setTimeout(() => {
+        onOpenClinicalModal();
+      }, 1000);
+    }, 1000);
   };
 
   const handleSendMessage = () => {
@@ -358,6 +382,21 @@ const TriageChat: React.FC<TriageChatProps> = ({
                   minute: '2-digit' 
                 })}
               </div>
+              
+              {/* Botão de ação para mensagens da LIA com pergunta contextual */}
+              {message.sender === 'lia' && message.hasActionButton && waitingForAnswer && (
+                <div className="mt-3 pt-2 border-t border-gray-200">
+                  <Button
+                    onClick={handleOpenClinicalModal}
+                    size="sm"
+                    variant="outline"
+                    className="w-full text-purple-600 border-purple-200 hover:bg-purple-50"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Seguir para Ficha Clínica
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         ))}
