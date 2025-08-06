@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, X, Speaker, ExternalLink, Stethoscope, Route } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CancellationModal from './CancellationModal';
+import { getPatientName, getPatientAge } from '@/utils/patientUtils';
 
 const DoctorScreen: React.FC = () => {
   const { getPatientsByStatus, updatePatientStatus, cancelPatient, getTimeElapsed, isOverSLA } = useHospital();
@@ -56,26 +56,6 @@ const DoctorScreen: React.FC = () => {
   const readyForReassessmentPatients = getPatientsByStatus('waiting-inter-consultation');
 
   const currentPatient = getPatientsByStatus('in-consultation')[0];
-
-  const getPatientName = (patient: any) => {
-    if (patient.personalData?.name) {
-      return patient.personalData.name;
-    }
-    if (patient.triageData?.personalData?.name) {
-      return patient.triageData.personalData.name;
-    }
-    return 'Nome não coletado';
-  };
-
-  const getPatientAge = (patient: any) => {
-    if (patient.personalData?.age) {
-      return patient.personalData.age;
-    }
-    if (patient.triageData?.personalData?.age) {
-      return patient.triageData.personalData.age;
-    }
-    return 'N/A';
-  };
 
   const handleCallPanel = (patientPassword: string) => {
     toast({
@@ -344,7 +324,6 @@ const DoctorScreen: React.FC = () => {
                       <TableRow>
                         <TableHead className="w-20">Senha</TableHead>
                         <TableHead>Paciente</TableHead>
-                        <TableHead>Convênio</TableHead>
                         <TableHead>Tipo</TableHead>
                         <TableHead>Classificação</TableHead>
                         <TableHead className="w-32">Tempo Aguardando</TableHead>
@@ -374,9 +353,6 @@ const DoctorScreen: React.FC = () => {
                                 <div className="font-medium">{getPatientName(patient)}</div>
                                 <div className="text-gray-600">{getPatientAge(patient)} anos</div>
                               </div>
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {patient.personalData?.healthInsurance || 'Particular'}
                             </TableCell>
                             <TableCell className="capitalize">
                               {patient.specialty === 'prioritario' ? 'Prioritário' : 'Não prioritário'}
@@ -430,7 +406,7 @@ const DoctorScreen: React.FC = () => {
                       })}
                       {waitingPatients.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                          <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                             Nenhum paciente aguardando consulta
                           </TableCell>
                         </TableRow>
