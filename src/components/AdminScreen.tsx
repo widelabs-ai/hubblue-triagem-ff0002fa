@@ -222,8 +222,8 @@ const AdminScreen: React.FC = () => {
       healthInsurance: personalData.linkType,
     };
 
-    const nextStatus = personalData.canBeAttended ? 'waiting-doctor' : 'completed';
-    updatePatientStatus(currentPatientId, nextStatus, { personalData: dataToSave });
+    // Always go to waiting-doctor regardless of checkbox
+    updatePatientStatus(currentPatientId, 'waiting-doctor', { personalData: dataToSave });
     
     setCurrentPatientId('');
     resetPersonalData();
@@ -231,9 +231,7 @@ const AdminScreen: React.FC = () => {
     
     toast({
       title: "Dados coletados",
-      description: personalData.canBeAttended ? 
-        "Paciente encaminhado para consulta médica." : 
-        "Paciente não pode ser atendido - processo finalizado.",
+      description: "Paciente encaminhado para consulta médica.",
     });
   };
 
@@ -633,13 +631,9 @@ const AdminScreen: React.FC = () => {
                 </Button>
                 <Button 
                   onClick={handleCompleteAdmin}
-                  className={`${
-                    personalData.canBeAttended ? 
-                    'bg-green-600 hover:bg-green-700' : 
-                    'bg-red-600 hover:bg-red-700'
-                  }`}
+                  className="bg-green-600 hover:bg-green-700"
                 >
-                  {personalData.canBeAttended ? 'Encaminhar para Consulta' : 'Finalizar (Não Atendido)'}
+                  Encaminhar para Consulta
                 </Button>
               </div>
             </div>
