@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useHospital } from '@/contexts/HospitalContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, X, Speaker, ExternalLink, Stethoscope } from 'lucide-react';
+import { ArrowLeft, X, Speaker, ExternalLink, Stethoscope, Route } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CancellationModal from './CancellationModal';
 
@@ -331,8 +331,8 @@ const DoctorScreen: React.FC = () => {
                   Consultas
                 </TabsTrigger>
                 <TabsTrigger value="processos" className="flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  Exames e Medicamentos
+                  <Route className="h-4 w-4" />
+                  Jornada do Paciente
                 </TabsTrigger>
               </TabsList>
               
@@ -441,9 +441,9 @@ const DoctorScreen: React.FC = () => {
               </TabsContent>
 
               <TabsContent value="processos" className="space-y-6">
+                {renderProcessTable(readyForReassessmentPatients, "✅ Prontos para Reavaliação", true)}
                 {renderProcessTable(waitingProcessPatients, "🕒 Aguardando Processo (Exames/Medicamentos)", false)}
                 {renderProcessTable(partiallyReadyPatients, "🔄 Processos em Andamento", false)}
-                {renderProcessTable(readyForReassessmentPatients, "✅ Prontos para Reavaliação", true)}
               </TabsContent>
             </Tabs>
           </CardContent>
