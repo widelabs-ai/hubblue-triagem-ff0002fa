@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, Send, Bot, User, FileText } from 'lucide-react';
+import { MessageSquare, Send, Bot, User, FileText, Minus, Maximize2 } from 'lucide-react';
 
 interface TriageChatProps {
   triageData: {
@@ -60,6 +60,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [waitingForAnswer, setWaitingForAnswer] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -346,98 +347,132 @@ const TriageChat: React.FC<TriageChatProps> = ({
     if (!isDialogOpen) {
       setMessages([]);
       setIsTyping(false);
+      setIsMinimized(false);
     }
   }, [isDialogOpen]);
 
+  // Não renderizar se o dialog não estiver aberto
+  if (!isDialogOpen) {
+    return null;
+  }
+
+  // Versão minimizada - botão flutuante
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button
+          onClick={() => setIsMinimized(false)}
+          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full w-16 h-16 shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110"
+        >
+          <MessageSquare className="h-7 w-7" />
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-full flex flex-col bg-white">
-      <div className="p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-        <div className="flex items-center space-x-2">
-          <MessageSquare className="h-5 w-5" />
-          <h3 className="font-semibold">LIA - Assistente de Triagem</h3>
-        </div>
-      </div>
-
-      {/* Área de mensagens com scroll */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[calc(100vh-200px)]">
-        {messages.map((message) => (
-          <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] p-3 rounded-lg ${
-              message.sender === 'user' 
-                ? 'bg-blue-600 text-white ml-4' 
-                : 'bg-gray-100 text-gray-800 mr-4'
-            }`}>
-              <div className="flex items-start space-x-2">
-                {message.sender === 'lia' && (
-                  <Bot className="h-4 w-4 mt-1 text-purple-600 flex-shrink-0" />
-                )}
-                <div className="text-sm whitespace-pre-wrap">{message.text}</div>
-                {message.sender === 'user' && (
-                  <User className="h-4 w-4 mt-1 flex-shrink-0" />
-                )}
-              </div>
-              <div className="text-xs opacity-70 mt-1">
-                {message.timestamp.toLocaleTimeString('pt-BR', { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </div>
-              
-              {/* Botão de ação para mensagens da LIA com pergunta contextual */}
-              {message.sender === 'lia' && message.hasActionButton && waitingForAnswer && (
-                <div className="mt-3 pt-2 border-t border-gray-200">
-                  <Button
-                    onClick={handleOpenClinicalModal}
-                    size="sm"
-                    variant="outline"
-                    className="w-full text-purple-600 border-purple-200 hover:bg-purple-50"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Seguir para Ficha Clínica
-                  </Button>
+    <div className="fixed bottom-6 right-6 z-50 w-96 max-h-[600px] shadow-2xl">
+      <Card className="h-full flex flex-col shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+        <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white flex-row items-center justify-between py-3 rounded-t-lg">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <MessageSquare className="h-5 w-5" />
+            LIA - Assistente de Triagem
+          </CardTitle>
+          <div className="flex items-center gap-1">
+            <Button
+              onClick={() => setIsMinimized(true)}
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/20 p-1 transition-colors"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="flex-1 flex flex-col p-0 max-h-[500px]">
+          {/* Área de mensagens com scroll */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[300px] bg-gradient-to-b from-white to-gray-50">
+            {messages.map((message) => (
+              <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] p-3 rounded-lg shadow-md ${
+                  message.sender === 'user' 
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white ml-4' 
+                    : 'bg-white text-gray-800 mr-4 border border-gray-100'
+                }`}>
+                  <div className="flex items-start space-x-2">
+                    {message.sender === 'lia' && (
+                      <Bot className="h-4 w-4 mt-1 text-purple-600 flex-shrink-0" />
+                    )}
+                    <div className="text-sm whitespace-pre-wrap">{message.text}</div>
+                    {message.sender === 'user' && (
+                      <User className="h-4 w-4 mt-1 flex-shrink-0" />
+                    )}
+                  </div>
+                  <div className="text-xs opacity-70 mt-1">
+                    {message.timestamp.toLocaleTimeString('pt-BR', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </div>
+                  
+                  {/* Botão de ação para mensagens da LIA com pergunta contextual */}
+                  {message.sender === 'lia' && message.hasActionButton && waitingForAnswer && (
+                    <div className="mt-3 pt-2 border-t border-gray-200">
+                      <Button
+                        onClick={handleOpenClinicalModal}
+                        size="sm"
+                        variant="outline"
+                        className="w-full text-purple-600 border-purple-200 hover:bg-purple-50 shadow-sm"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Seguir para Ficha Clínica
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+            ))}
+
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="bg-white text-gray-800 max-w-[80%] p-3 rounded-lg mr-4 shadow-md border border-gray-100">
+                  <div className="flex items-center space-x-2">
+                    <Bot className="h-4 w-4 text-purple-600" />
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    </div>
+                    <span className="text-sm text-gray-600">Digitando...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input de mensagem */}
+          <div className="p-4 border-t bg-white shadow-inner">
+            <div className="flex space-x-2">
+              <Input
+                placeholder={waitingForAnswer ? "Digite sua resposta..." : "Digite sua pergunta..."}
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="flex-1 border-gray-200 focus:border-purple-300 focus:ring-purple-200"
+              />
+              <Button 
+                onClick={handleSendMessage}
+                size="sm"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-        ))}
-
-        {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 text-gray-800 max-w-[80%] p-3 rounded-lg mr-4">
-              <div className="flex items-center space-x-2">
-                <Bot className="h-4 w-4 text-purple-600" />
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                </div>
-                <span className="text-sm text-gray-600">Digitando...</span>
-              </div>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input de mensagem */}
-      <div className="p-4 border-t bg-gray-50">
-        <div className="flex space-x-2">
-          <Input
-            placeholder={waitingForAnswer ? "Digite sua resposta..." : "Digite sua pergunta..."}
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="flex-1"
-          />
-          <Button 
-            onClick={handleSendMessage}
-            size="sm"
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
