@@ -35,6 +35,8 @@ const VitalSignInput: React.FC<VitalSignInputProps> = ({
       baseClass += ' border-red-500 bg-red-50';
     } else if (validation.isOutOfRange) {
       baseClass += ' border-yellow-500 bg-yellow-50';
+    } else if (value && validation.message === 'Valor dentro da referência') {
+      baseClass += ' border-green-500 bg-green-50';
     }
     
     return baseClass;
@@ -69,7 +71,12 @@ const VitalSignInput: React.FC<VitalSignInputProps> = ({
       )}
       {validation.isValid && validation.isOutOfRange && validation.message && (
         <div className={`${size === 'sm' ? 'text-xs' : 'text-sm'} text-yellow-600 mt-1`}>
-          ⚠️ Valor fora da referência - {validation.message}
+          ⚠️ {validation.message}
+        </div>
+      )}
+      {validation.isValid && !validation.isOutOfRange && validation.message === 'Valor dentro da referência' && value && (
+        <div className={`${size === 'sm' ? 'text-xs' : 'text-sm'} text-green-600 mt-1`}>
+          ✓ {validation.message}
         </div>
       )}
     </div>
