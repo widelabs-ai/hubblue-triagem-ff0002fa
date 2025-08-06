@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -33,8 +32,7 @@ const AdminScreen: React.FC = () => {
     fullAddress: '',
     phone: '',
     emergencyContactName: '',
-    emergencyContactPhone: '',
-    canBeAttended: true
+    emergencyContactPhone: ''
   });
 
   const navigate = useNavigate();
@@ -96,8 +94,7 @@ const AdminScreen: React.FC = () => {
         fullAddress: existingPersonalData?.address || existingPersonalData?.fullAddress || '',
         phone: existingPersonalData?.phone || currentPatient.phone || '',
         emergencyContactName: existingPersonalData?.emergencyContact || existingPersonalData?.emergencyContactName || '',
-        emergencyContactPhone: existingPersonalData?.emergencyPhone || existingPersonalData?.emergencyContactPhone || '',
-        canBeAttended: existingPersonalData?.canBeAttended ?? true
+        emergencyContactPhone: existingPersonalData?.emergencyPhone || existingPersonalData?.emergencyContactPhone || ''
       });
     }
   }, [currentPatient, isDialogOpen]);
@@ -179,8 +176,7 @@ const AdminScreen: React.FC = () => {
       fullAddress: '',
       phone: '',
       emergencyContactName: '',
-      emergencyContactPhone: '',
-      canBeAttended: true
+      emergencyContactPhone: ''
     });
   };
 
@@ -605,16 +601,6 @@ const AdminScreen: React.FC = () => {
                       />
                     </div>
                   </div>
-                </div>
-
-                <div className="flex items-center space-x-3 p-4 bg-yellow-50 rounded-lg">
-                  <Checkbox
-                    checked={personalData.canBeAttended}
-                    onCheckedChange={(checked) => setPersonalData({...personalData, canBeAttended: !!checked})}
-                  />
-                  <Label className="cursor-pointer">
-                    Paciente autorizado para ser atendido (situações onde os pacientes possuem convênio particular)
-                  </Label>
                 </div>
               </div>
 
