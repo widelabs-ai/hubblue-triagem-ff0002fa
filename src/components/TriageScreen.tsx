@@ -42,7 +42,7 @@ const TriageScreen: React.FC = () => {
   const [showCustomFlowInput, setShowCustomFlowInput] = useState(false);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>('');
   const [chatExpanded, setChatExpanded] = useState(false);
-  const [currentPatientId, setCurrentPatientId] = useState<string>(''); // Add state to track current patient
+  const [currentPatientId, setCurrentPatientId] = useState<string>('');
   const [triageData, setTriageData] = useState({
     priority: '',
     vitals: {
@@ -1143,14 +1143,6 @@ const TriageScreen: React.FC = () => {
                       size="sm"
                     >
                       Revisar com LIA
-                    </Button>
-                    <Button 
-                      onClick={handleCompleteTriagem}
-                      className="bg-green-600 hover:bg-green-700"
-                      disabled={hasValidationErrors || !isFormComplete()}
-                      size="sm"
-                    >
-                      Concluir Triagem
                     </Button>
                   </div>
                 </div>

@@ -77,7 +77,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
       const typingTimer = setTimeout(() => {
         setIsTyping(false);
         
-        const welcomeText = "Olá! Eu sou Lia. Sua Assistente pessoal de triagem Manchester. Preencha todos os campos do formulário e clique em 'Revisar e Concluir' para que eu possa fazer a análise completa do paciente.";
+        const welcomeText = "Olá! Eu sou Lia. Sua Assistente pessoal de triagem Manchester. Preencha todos os campos do formulário e clique em 'Revisar com LIA' para que eu possa fazer a análise completa do paciente.";
         let currentText = "";
         let charIndex = 0;
         
@@ -126,84 +126,84 @@ const TriageChat: React.FC<TriageChatProps> = ({
     const complaintsLower = complaints.toLowerCase();
     const symptomsLower = symptoms.toLowerCase();
 
-    // Gerar perguntas baseadas nos dados clínicos
+    // Gerar perguntas baseadas nos dados clínicos com orientações para atualizar o formulário
     const questions = [];
 
     // Perguntas baseadas na temperatura
     if (temp > 37.8) {
-      questions.push("O paciente apresenta sudorese associada à febre?");
-      questions.push("Há quanto tempo o paciente está com febre?");
-      questions.push("O paciente teve calafrios recentes?");
+      questions.push("O paciente apresenta sudorese associada à febre? **Se sim, adicione essa informação nos sintomas ou observações do formulário antes de revisá-lo.**");
+      questions.push("Há quanto tempo o paciente está com febre? **Atualize as observações do formulário com essa informação temporal antes de concluir a análise.**");
+      questions.push("O paciente teve calafrios recentes? **Se houver calafrios, inclua essa informação nos sintomas do formulário.**");
     }
 
     // Perguntas baseadas na frequência cardíaca
     if (heartRate > 100) {
-      questions.push("O paciente refere palpitações ou sensação de coração acelerado?");
-      questions.push("A taquicardia está presente em repouso?");
+      questions.push("O paciente refere palpitações ou sensação de coração acelerado? **Se confirmar palpitações, adicione aos sintomas no formulário.**");
+      questions.push("A taquicardia está presente em repouso? **Atualize as observações do formulário com essa informação contextual.**");
     }
 
     // Perguntas baseadas nas queixas
     if (complaintsLower.includes('dor no peito') || complaintsLower.includes('precordial')) {
-      questions.push("A dor no peito irradia para braço, mandíbula ou costas?");
-      questions.push("A dor piora com inspiração profunda ou movimento?");
-      questions.push("O paciente apresenta sudorese fria associada à dor?");
+      questions.push("A dor no peito irradia para braço, mandíbula ou costas? **Se houver irradiação, atualize a descrição das queixas principais no formulário.**");
+      questions.push("A dor piora com inspiração profunda ou movimento? **Adicione essa característica da dor nas observações do formulário.**");
+      questions.push("O paciente apresenta sudorese fria associada à dor? **Se confirmar sudorese, inclua nos sintomas do formulário.**");
     }
 
     if (complaintsLower.includes('cefaleia') || complaintsLower.includes('dor de cabeça')) {
-      questions.push("A cefaleia é pulsátil ou em peso?");
-      questions.push("Há fotofobia ou fonofobia associada?");
-      questions.push("O paciente apresenta rigidez de nuca?");
+      questions.push("A cefaleia é pulsátil ou em peso? **Atualize a descrição da cefaleia nas queixas principais do formulário com essa característica.**");
+      questions.push("Há fotofobia ou fonofobia associada? **Se houver, adicione esses sintomas no campo apropriado do formulário.**");
+      questions.push("O paciente apresenta rigidez de nuca? **Se confirmar rigidez de nuca, inclua essa informação crítica nos sintomas do formulário.**");
     }
 
     if (complaintsLower.includes('dispneia') || complaintsLower.includes('falta de ar')) {
-      questions.push("A dispneia ocorre em repouso ou apenas aos esforços?");
-      questions.push("Há presença de tosse ou expectoração?");
-      questions.push("O paciente apresenta cianose de extremidades?");
+      questions.push("A dispneia ocorre em repouso ou apenas aos esforços? **Atualize as queixas principais com essa especificação antes de continuar.**");
+      questions.push("Há presença de tosse ou expectoração? **Se houver, adicione esses sintomas no formulário.**");
+      questions.push("O paciente apresenta cianose de extremidades? **Se observar cianose, inclua essa informação nos sintomas do formulário.**");
     }
 
     if (complaintsLower.includes('dor abdominal') || complaintsLower.includes('abdome')) {
-      questions.push("A dor abdominal é localizada ou difusa?");
-      questions.push("Há náuseas ou vômitos associados?");
-      questions.push("O paciente consegue deambular normalmente?");
+      questions.push("A dor abdominal é localizada ou difusa? **Especifique a localização da dor nas queixas principais do formulário.**");
+      questions.push("Há náuseas ou vômitos associados? **Se houver, adicione aos sintomas no formulário.**");
+      questions.push("O paciente consegue deambular normalmente? **Inclua essa informação funcional nas observações do formulário.**");
     }
 
     // Perguntas baseadas nos sintomas
     if (symptomsLower.includes('vômito') || symptomsLower.includes('náusea')) {
-      questions.push("Os vômitos são em grande quantidade ou pequenos volumes?");
-      questions.push("Há presença de sangue nos vômitos?");
+      questions.push("Os vômitos são em grande quantidade ou pequenos volumes? **Atualize a descrição dos vômitos nos sintomas do formulário.**");
+      questions.push("Há presença de sangue nos vômitos? **Se houver sangue, essa informação crítica deve ser adicionada aos sintomas do formulário.**");
     }
 
     if (symptomsLower.includes('tontura') || symptomsLower.includes('vertigem')) {
-      questions.push("A tontura é rotatória ou sensação de desmaio?");
-      questions.push("Os sintomas pioram com mudança de posição?");
+      questions.push("A tontura é rotatória ou sensação de desmaio? **Especifique o tipo de tontura nos sintomas do formulário.**");
+      questions.push("Os sintomas pioram com mudança de posição? **Adicione essa informação contextual nas observações do formulário.**");
     }
 
     // Perguntas baseadas na idade
     if (age > 65) {
-      questions.push("O paciente tem cuidador ou familiar presente?");
-      questions.push("Houve alguma alteração no padrão de sono ou apetite?");
+      questions.push("O paciente tem cuidador ou familiar presente? **Inclua essa informação social nas observações do formulário.**");
+      questions.push("Houve alguma alteração no padrão de sono ou apetite? **Se houver alterações, adicione essas informações nos sintomas do formulário.**");
     }
 
     if (age < 18) {
-      questions.push("A criança está irritadiça ou sonolenta?");
-      questions.push("Há diminuição da aceitação alimentar?");
+      questions.push("A criança está irritadiça ou sonolenta? **Atualize os sintomas do formulário com essas características comportamentais.**");
+      questions.push("Há diminuição da aceitação alimentar? **Se houver, inclua essa informação nos sintomas do formulário.**");
     }
 
     // Perguntas baseadas na saturação
     if (saturation < 95) {
-      questions.push("O paciente apresenta cianose visível?");
-      questions.push("Há uso de musculatura acessória para respirar?");
+      questions.push("O paciente apresenta cianose visível? **Se observar cianose, adicione essa informação crítica nos sintomas do formulário.**");
+      questions.push("Há uso de musculatura acessória para respirar? **Inclua essa observação clínica nos sintomas do formulário.**");
     }
 
     // Perguntas baseadas na dor
     if (pain >= 7) {
-      questions.push("O paciente consegue se movimentar ou prefere ficar imóvel?");
-      questions.push("A dor interfere na capacidade de falar ou concentrar-se?");
+      questions.push("O paciente consegue se movimentar ou prefere ficar imóvel? **Adicione essa informação funcional nas observações do formulário.**");
+      questions.push("A dor interfere na capacidade de falar ou concentrar-se? **Inclua essa característica da dor nas observações do formulário.**");
     }
 
     // Perguntas gerais baseadas no conjunto de sintomas
     if (temp > 37.5 && heartRate > 100) {
-      questions.push("O paciente apresenta sinais de desidratação como boca seca ou diminuição da diurese?");
+      questions.push("O paciente apresenta sinais de desidratação como boca seca ou diminuição da diurese? **Se houver sinais de desidratação, adicione aos sintomas do formulário.**");
     }
 
     // Retornar uma pergunta aleatória ou a mais relevante
@@ -212,7 +212,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
     }
 
     // Pergunta genérica se nenhuma específica for gerada
-    return "Há algum sinal ou sintoma adicional que não foi mencionado que possa ser relevante para o caso?";
+    return "Há algum sinal ou sintoma adicional que não foi mencionado que possa ser relevante para o caso? **Se houver informações adicionais, atualize o formulário antes de concluir a análise.**";
   };
 
   const askContextualQuestion = () => {
@@ -225,7 +225,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
       
       const questionMessage: Message = {
         id: Date.now().toString(),
-        text: `Analisando os dados clínicos apresentados...\n\n**Pergunta para esclarecimento:**\n${contextualQuestion}\n\nPor favor, responda para que eu possa finalizar a análise e abrir a ficha clínica.`,
+        text: `Analisando os dados clínicos apresentados...\n\n**Pergunta para esclarecimento:**\n${contextualQuestion}\n\nApós responder e atualizar o formulário se necessário, eu abrirei a ficha clínica para revisão final.`,
         sender: 'lia',
         timestamp: new Date()
       };
@@ -283,7 +283,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
         setIsTyping(false);
         const liaResponse: Message = {
           id: (Date.now() + 1).toString(),
-          text: "Obrigada pela informação! Agora vou abrir a ficha clínica com todos os dados para revisão final.",
+          text: "Obrigada pela informação! Certifique-se de que todas as informações relevantes estão atualizadas no formulário. Agora vou abrir a ficha clínica com todos os dados para revisão final.",
           sender: 'lia',
           timestamp: new Date()
         };
