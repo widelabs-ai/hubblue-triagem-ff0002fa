@@ -376,31 +376,11 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         specialty: 'nao-prioritario',
         phone: '11999999019',
         status: 'waiting-exam',
-        medicalSpecialty: 'clinica-medica',
         timestamps: {
           generated: new Date(now.getTime() - 150 * 60 * 1000), // 2h30 ago
           triageCompleted: new Date(now.getTime() - 145 * 60 * 1000),
           adminCompleted: new Date(now.getTime() - 140 * 60 * 1000),
           consultationCompleted: new Date(now.getTime() - 30 * 60 * 1000)
-        },
-        personalData: {
-          fullName: 'João Silva Santos',
-          age: 45,
-          biologicalSex: 'masculino',
-          cpf: '123.456.789-01',
-          linkType: 'SUS'
-        },
-        triageData: {
-          priority: 'verde',
-          complaints: 'Dor no peito',
-          symptoms: 'Dor torácica leve',
-          painScale: '4',
-          vitals: {
-            bloodPressure: '130/80',
-            heartRate: '85',
-            temperature: '36.5',
-            oxygenSaturation: '98'
-          }
         }
       },
       // Em Exame (1 paciente - dentro do prazo)
@@ -410,33 +390,12 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         specialty: 'nao-prioritario',
         phone: '11999999020',
         status: 'in-exam',
-        medicalSpecialty: 'ortopedia',
         timestamps: {
           generated: new Date(now.getTime() - 100 * 60 * 1000), // 1h40 ago
           triageCompleted: new Date(now.getTime() - 95 * 60 * 1000),
           adminCompleted: new Date(now.getTime() - 90 * 60 * 1000),
           consultationCompleted: new Date(now.getTime() - 45 * 60 * 1000),
           examStarted: new Date(now.getTime() - 10 * 60 * 1000)
-        },
-        personalData: {
-          fullName: 'Maria Oliveira Costa',
-          age: 32,
-          biologicalSex: 'feminino',
-          cpf: '987.654.321-00',
-          linkType: 'Convênio',
-          healthInsurance: 'Unimed'
-        },
-        triageData: {
-          priority: 'amarelo',
-          complaints: 'Dor no joelho após queda',
-          symptoms: 'Dor e inchaço no joelho direito',
-          painScale: '6',
-          vitals: {
-            bloodPressure: '120/70',
-            heartRate: '78',
-            temperature: '36.2',
-            oxygenSaturation: '99'
-          }
         }
       },
       // Aguardando Medicação (1 paciente - dentro do prazo)
@@ -446,32 +405,12 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         specialty: 'prioritario',
         phone: '11999999021',
         status: 'waiting-medication',
-        medicalSpecialty: 'pediatria',
         timestamps: {
           generated: new Date(now.getTime() - 90 * 60 * 1000), // 1h30 ago
           triageCompleted: new Date(now.getTime() - 85 * 60 * 1000),
           adminCompleted: new Date(now.getTime() - 80 * 60 * 1000),
           consultationCompleted: new Date(now.getTime() - 40 * 60 * 1000),
           examCompleted: new Date(now.getTime() - 15 * 60 * 1000)
-        },
-        personalData: {
-          fullName: 'Ana Clara Pereira',
-          age: 8,
-          biologicalSex: 'feminino',
-          cpf: '456.789.123-45',
-          linkType: 'Particular'
-        },
-        triageData: {
-          priority: 'laranja',
-          complaints: 'Febre alta e dor de cabeça',
-          symptoms: 'Febre 39°C, cefaleia intensa',
-          painScale: '7',
-          vitals: {
-            bloodPressure: '100/60',
-            heartRate: '110',
-            temperature: '39.2',
-            oxygenSaturation: '97'
-          }
         }
       },
       // Em Medicação (1 paciente - dentro do prazo)
@@ -481,7 +420,6 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         specialty: 'nao-prioritario',
         phone: '11999999022',
         status: 'in-medication',
-        medicalSpecialty: 'cirurgia-geral',
         timestamps: {
           generated: new Date(now.getTime() - 120 * 60 * 1000), // 2h ago
           triageCompleted: new Date(now.getTime() - 115 * 60 * 1000),
@@ -489,103 +427,12 @@ export const HospitalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           consultationCompleted: new Date(now.getTime() - 70 * 60 * 1000),
           examCompleted: new Date(now.getTime() - 30 * 60 * 1000),
           medicationStarted: new Date(now.getTime() - 5 * 60 * 1000)
-        },
-        personalData: {
-          fullName: 'Carlos Eduardo Lima',
-          age: 58,
-          biologicalSex: 'masculino',
-          cpf: '789.123.456-78',
-          linkType: 'SUS'
-        },
-        triageData: {
-          priority: 'verde',
-          complaints: 'Dor abdominal',
-          symptoms: 'Dor em região epigástrica',
-          painScale: '5',
-          vitals: {
-            bloodPressure: '140/90',
-            heartRate: '88',
-            temperature: '36.8',
-            oxygenSaturation: '98'
-          }
-        }
-      },
-      // Aguardando Interconsulta/Reavaliação (2 pacientes)
-      {
-        id: 'mock-23',
-        password: 'NP023',
-        specialty: 'nao-prioritario',
-        phone: '11999999023',
-        status: 'waiting-inter-consultation',
-        medicalSpecialty: 'clinica-medica',
-        timestamps: {
-          generated: new Date(now.getTime() - 180 * 60 * 1000), // 3h ago
-          triageCompleted: new Date(now.getTime() - 175 * 60 * 1000),
-          adminCompleted: new Date(now.getTime() - 170 * 60 * 1000),
-          consultationCompleted: new Date(now.getTime() - 120 * 60 * 1000),
-          examCompleted: new Date(now.getTime() - 80 * 60 * 1000),
-          medicationCompleted: new Date(now.getTime() - 20 * 60 * 1000)
-        },
-        personalData: {
-          fullName: 'Fernanda Rodrigues Alves',
-          age: 41,
-          biologicalSex: 'feminino',
-          cpf: '321.654.987-12',
-          linkType: 'Convênio',
-          healthInsurance: 'Bradesco Saúde'
-        },
-        triageData: {
-          priority: 'amarelo',
-          complaints: 'Dificuldade para respirar',
-          symptoms: 'Dispneia e tosse seca',
-          painScale: '3',
-          vitals: {
-            bloodPressure: '125/75',
-            heartRate: '92',
-            temperature: '36.7',
-            oxygenSaturation: '95'
-          }
-        }
-      },
-      {
-        id: 'mock-24',
-        password: 'PR024',
-        specialty: 'prioritario',
-        phone: '11999999024',
-        status: 'waiting-inter-consultation',
-        medicalSpecialty: 'ortopedia',
-        timestamps: {
-          generated: new Date(now.getTime() - 200 * 60 * 1000), // 3h20 ago
-          triageCompleted: new Date(now.getTime() - 195 * 60 * 1000),
-          adminCompleted: new Date(now.getTime() - 190 * 60 * 1000),
-          consultationCompleted: new Date(now.getTime() - 140 * 60 * 1000),
-          examCompleted: new Date(now.getTime() - 100 * 60 * 1000),
-          medicationCompleted: new Date(now.getTime() - 25 * 60 * 1000)
-        },
-        personalData: {
-          fullName: 'Roberto Silva Nunes',
-          age: 65,
-          biologicalSex: 'masculino',
-          cpf: '654.321.987-55',
-          linkType: 'SUS'
-        },
-        triageData: {
-          priority: 'vermelho',
-          complaints: 'Fratura exposta no braço',
-          symptoms: 'Fratura com exposição óssea',
-          painScale: '9',
-          vitals: {
-            bloodPressure: '110/70',
-            heartRate: '105',
-            temperature: '37.1',
-            oxygenSaturation: '96'
-          }
         }
       }
     ];
 
     setPatients(mockPatients);
-    setCurrentPasswordNumber(25);
+    setCurrentPasswordNumber(23);
   }, []);
 
   const generatePassword = (specialty: Patient['specialty'], phone: string): string => {
