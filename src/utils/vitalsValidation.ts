@@ -52,7 +52,7 @@ export const validateHeartRate = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Fora da faixa normal (${VITAL_RANGES.heartRate.min}-${VITAL_RANGES.heartRate.max} ${VITAL_RANGES.heartRate.unit})`,
+      message: `(${VITAL_RANGES.heartRate.min}-${VITAL_RANGES.heartRate.max} ${VITAL_RANGES.heartRate.unit})`,
       severity: 'warning'
     };
   }
@@ -78,7 +78,7 @@ export const validateTemperature = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Fora da faixa normal (${VITAL_RANGES.temperature.min}-${VITAL_RANGES.temperature.max} ${VITAL_RANGES.temperature.unit})`,
+      message: `(${VITAL_RANGES.temperature.min}-${VITAL_RANGES.temperature.max} ${VITAL_RANGES.temperature.unit})`,
       severity: 'warning'
     };
   }
@@ -104,7 +104,7 @@ export const validateOxygenSaturation = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Fora da faixa normal (${VITAL_RANGES.oxygenSaturation.min}-${VITAL_RANGES.oxygenSaturation.max} ${VITAL_RANGES.oxygenSaturation.unit})`,
+      message: `(${VITAL_RANGES.oxygenSaturation.min}-${VITAL_RANGES.oxygenSaturation.max} ${VITAL_RANGES.oxygenSaturation.unit})`,
       severity: 'warning'
     };
   }
@@ -153,7 +153,7 @@ export const validateBloodPressure = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Fora da faixa normal (${VITAL_RANGES.systolicBP.min}-${VITAL_RANGES.systolicBP.max}/${VITAL_RANGES.diastolicBP.min}-${VITAL_RANGES.diastolicBP.max} ${VITAL_RANGES.systolicBP.unit})`,
+      message: `(${VITAL_RANGES.systolicBP.min}-${VITAL_RANGES.systolicBP.max}/${VITAL_RANGES.diastolicBP.min}-${VITAL_RANGES.diastolicBP.max} ${VITAL_RANGES.systolicBP.unit})`,
       severity: 'warning'
     };
   }
@@ -179,7 +179,7 @@ export const validateRespiratoryRate = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Fora da faixa normal (${VITAL_RANGES.respiratoryRate.min}-${VITAL_RANGES.respiratoryRate.max} ${VITAL_RANGES.respiratoryRate.unit})`,
+      message: `(${VITAL_RANGES.respiratoryRate.min}-${VITAL_RANGES.respiratoryRate.max} ${VITAL_RANGES.respiratoryRate.unit})`,
       severity: 'warning'
     };
   }
@@ -205,7 +205,7 @@ export const validateGlasgow = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Abaixo do normal (${VITAL_RANGES.glasgow.min}-${VITAL_RANGES.glasgow.max} ${VITAL_RANGES.glasgow.unit})`,
+      message: `(${VITAL_RANGES.glasgow.min}-${VITAL_RANGES.glasgow.max} ${VITAL_RANGES.glasgow.unit})`,
       severity: 'warning'
     };
   }
@@ -231,7 +231,7 @@ export const validateGlucose = (value: string): ValidationResult => {
     return {
       isValid: true,
       isOutOfRange: true,
-      message: `Fora da faixa normal (${VITAL_RANGES.glucose.min}-${VITAL_RANGES.glucose.max} ${VITAL_RANGES.glucose.unit})`,
+      message: `(${VITAL_RANGES.glucose.min}-${VITAL_RANGES.glucose.max} ${VITAL_RANGES.glucose.unit})`,
       severity: 'warning'
     };
   }

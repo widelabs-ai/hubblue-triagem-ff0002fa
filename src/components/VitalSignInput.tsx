@@ -72,6 +72,11 @@ const VitalSignInput: React.FC<VitalSignInputProps> = ({
           ⚠️ Valor fora da referência - {validation.message}
         </div>
       )}
+      {validation.isValid && !validation.isOutOfRange && value && (
+        <div className={`${size === 'sm' ? 'text-xs' : 'text-sm'} text-green-600 mt-1`}>
+          ✓ Valor dentro da referência
+        </div>
+      )}
     </div>
   );
 };
