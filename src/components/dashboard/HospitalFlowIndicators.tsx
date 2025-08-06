@@ -280,7 +280,7 @@ const HospitalFlowIndicators: React.FC = () => {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <span className="text-2xl">👨‍⚕️</span>
-              <span className="text-lg">Aguardando Consultório Médico</span>
+              <span className="text-lg">Aguardando Atendimento Médico</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
