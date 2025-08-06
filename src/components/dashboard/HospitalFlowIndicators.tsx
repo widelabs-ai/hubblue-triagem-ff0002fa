@@ -106,7 +106,7 @@ const HospitalFlowIndicators: React.FC = () => {
   // Grupo especial para Consultório Médico com especialidades
   const medicalSpecialties = [
     { key: 'clinica-medica', name: 'Clínica Médica', icon: '🩺', color: 'bg-green-100 border-green-200' },
-    { key: 'cirurgia-geral', name: 'Cirurgia Geral', icon: '✂️', color: 'bg-red-100 border-red-200' },
+    { key: 'cirurgia-geral', name: 'Cirurgia Geral', icon: '💉', color: 'bg-red-100 border-red-200' },
     { key: 'ortopedia', name: 'Ortopedia', icon: '🦴', color: 'bg-yellow-100 border-yellow-200' },
     { key: 'pediatria', name: 'Pediatria', icon: '👶', color: 'bg-pink-100 border-pink-200' }
   ];
