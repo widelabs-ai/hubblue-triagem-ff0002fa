@@ -15,7 +15,6 @@ const HospitalFlowIndicators: React.FC = () => {
   const { patients, getPatientsByStatus, getPatientsByStatusAndSpecialty, getTimeElapsed, isOverSLA } = useHospital();
   const [selectedPatientGroup, setSelectedPatientGroup] = useState<PatientModalData | null>(null);
 
-  // Função para calcular estatísticas de um grupo de status
   const calculateGroupStats = (statuses: string[]) => {
     const groupPatients = statuses.flatMap(status => getPatientsByStatus(status as any));
     const total = groupPatients.length;
@@ -41,7 +40,6 @@ const HospitalFlowIndicators: React.FC = () => {
     };
   };
 
-  // Função para calcular estatísticas por especialidade
   const calculateSpecialtyStats = (status: string, specialty: any) => {
     const specialtyPatients = getPatientsByStatusAndSpecialty(status as any, specialty);
     const total = specialtyPatients.length;
@@ -79,7 +77,6 @@ const HospitalFlowIndicators: React.FC = () => {
     });
   };
 
-  // Definir os grupos (mantendo os existentes)
   const groups = [
     {
       title: "Aguardando Classificação de Risco (Triagem)",
@@ -103,18 +100,16 @@ const HospitalFlowIndicators: React.FC = () => {
     }
   ];
 
-  // Grupo especial para Consultório Médico com especialidades
   const medicalSpecialties = [
     { key: 'clinica-medica', name: 'Clínica Médica', icon: '🩺', color: 'bg-green-100 border-green-200' },
-    { key: 'cirurgia-geral', name: 'Cirurgia Geral', icon: '💉', color: 'bg-red-100 border-red-200' },
+    { key: 'cirurgia-geral', name: 'Cirurgia Geral', icon: '🔪', color: 'bg-red-100 border-red-200' },
     { key: 'ortopedia', name: 'Ortopedia', icon: '🦴', color: 'bg-yellow-100 border-yellow-200' },
     { key: 'pediatria', name: 'Pediatria', icon: '👶', color: 'bg-pink-100 border-pink-200' }
   ];
 
-  // Grupo outros (mantendo)
   const otherGroups = [
     {
-      title: "Outros",
+      title: "Solicitações",
       icon: "🔄",
       color: "bg-gray-100 border-gray-200",
       statuses: ['waiting-exam', 'in-exam', 'waiting-medication', 'in-medication', 'waiting-hospitalization', 'in-hospitalization', 'waiting-transfer'],
@@ -123,14 +118,13 @@ const HospitalFlowIndicators: React.FC = () => {
         { status: 'in-exam', label: 'Em Exame', icon: '🧪' },
         { status: 'waiting-medication', label: 'Aguardando Medicação', icon: '💊' },
         { status: 'in-medication', label: 'Em Medicação', icon: '💉' },
-        { status: 'waiting-hospitalization', label: 'Aguard. Repouso no Leito', icon: '🛏️' },
+        { status: 'waiting-hospitalization', label: 'Aguardando Internação', icon: '🛏️' },
         { status: 'in-hospitalization', label: 'Internado', icon: '🛏️' },
         { status: 'waiting-transfer', label: 'Aguardando Transferência', icon: '🚑' }
       ]
     }
   ];
 
-  // Nova seção de Desfechos
   const outcomesGroup = {
     title: "Desfechos",
     icon: "📊",
@@ -149,7 +143,6 @@ const HospitalFlowIndicators: React.FC = () => {
       <div className="space-y-6">
         <h3 className="text-xl font-semibold text-gray-800"></h3>
         
-        {/* Grupos existentes (Triagem e Administrativo) */}
         {groups.map((group, index) => {
           const groupStats = calculateGroupStats(group.statuses);
           const hasAlert = groupStats.outSLA > 0;
@@ -188,7 +181,6 @@ const HospitalFlowIndicators: React.FC = () => {
                     const count = getPatientsByStatus(item.status as any).length;
                     const itemPatients = getPatientsByStatus(item.status as any);
                     
-                    // Tratamento especial para "Em Triagem" - não calcular SLA
                     if (item.status === 'in-triage') {
                       let itemAvgTime = 0;
                       
@@ -222,7 +214,6 @@ const HospitalFlowIndicators: React.FC = () => {
                       );
                     }
                     
-                    // Lógica normal para outros itens
                     let itemInSLA = 0;
                     let itemOutSLA = 0;
                     let itemAvgTime = 0;
@@ -275,7 +266,6 @@ const HospitalFlowIndicators: React.FC = () => {
           );
         })}
 
-        {/* Seção de Consultório Médico por Especialidades - Layout em uma linha */}
         <Card className="bg-teal-50 border-teal-200 border-2">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
@@ -292,7 +282,6 @@ const HospitalFlowIndicators: React.FC = () => {
                 const totalOutSLA = waitingStats.outSLA + consultationStats.outSLA;
                 const specialtyHasAlert = totalOutSLA > 0;
                 
-                // Só exibe a especialidade se tiver pacientes
                 if (totalSpecialtyPatients === 0) return null;
 
                 return (
@@ -318,7 +307,6 @@ const HospitalFlowIndicators: React.FC = () => {
                     )}
 
                     <div className="space-y-2">
-                      {/* Aguardando Médico */}
                       {waitingStats.total > 0 && (
                         <div 
                           className={`bg-white/50 rounded-lg p-2 border cursor-pointer hover:bg-white/80 transition-colors ${waitingStats.outSLA > 0 ? 'border-red-300 bg-red-50/50 animate-pulse' : ''}`}
@@ -342,7 +330,6 @@ const HospitalFlowIndicators: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Em Atendimento */}
                       {consultationStats.total > 0 && (
                         <div 
                           className={`bg-white/50 rounded-lg p-2 border cursor-pointer hover:bg-white/80 transition-colors ${consultationStats.outSLA > 0 ? 'border-red-300 bg-red-50/50 animate-pulse' : ''}`}
@@ -373,7 +360,6 @@ const HospitalFlowIndicators: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Grupos outros (mantendo) */}
         {otherGroups.map((group, index) => {
           const groupStats = calculateGroupStats(group.statuses);
           const hasAlert = groupStats.outSLA > 0;
@@ -464,7 +450,6 @@ const HospitalFlowIndicators: React.FC = () => {
           );
         })}
 
-        {/* Nova Seção de Desfechos */}
         <Card className={`${outcomesGroup.color} border-2`}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
@@ -519,7 +504,6 @@ const HospitalFlowIndicators: React.FC = () => {
         </Card>
       </div>
 
-      {/* Modal para exibir pacientes - mantendo o existente */}
       <Dialog open={!!selectedPatientGroup} onOpenChange={() => setSelectedPatientGroup(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
