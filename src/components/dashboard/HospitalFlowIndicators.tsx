@@ -217,7 +217,9 @@ const HospitalFlowIndicators: React.FC = () => {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <span className="text-lg">{item.icon}</span>
-                            <span className="font-medium text-sm">{item.label}</span>
+                            <span className="font-medium text-sm">
+                              {item.status === 'in-triage' ? 'Em atendimento' : item.label}
+                            </span>
                             {itemHasAlert && <span className="text-sm animate-pulse">🚨</span>}
                           </div>
                           <span className="text-xl font-bold">{count}</span>
@@ -225,10 +227,12 @@ const HospitalFlowIndicators: React.FC = () => {
                         {count > 0 && (
                           <div className="text-xs text-gray-600">
                             <div>Tempo médio: {itemAvgTime} min</div>
-                            <div className="mt-1">
-                              <span className="text-green-600">{itemInSLA} dentro</span> | 
-                              <span className="text-red-600 ml-1">{itemOutSLA} fora</span>
-                            </div>
+                            {item.status !== 'in-triage' && (
+                              <div className="mt-1">
+                                <span className="text-green-600">{itemInSLA} dentro</span> | 
+                                <span className="text-red-600 ml-1">{itemOutSLA} fora</span>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
