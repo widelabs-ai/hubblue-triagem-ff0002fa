@@ -371,7 +371,7 @@ const TriageChat: React.FC<TriageChatProps> = ({
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 h-[600px] shadow-2xl">
+    <div className="fixed bottom-6 right-6 z-50 w-96 h-[700px] shadow-2xl">
       <Card className="h-full flex flex-col shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
         <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white flex-row items-center justify-between py-3 rounded-t-lg flex-shrink-0">
           <CardTitle className="flex items-center gap-2 text-lg">
