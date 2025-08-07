@@ -17,19 +17,6 @@ const Header = () => {
     // Não precisa navegar aqui pois o logout já faz isso
   };
 
-  const roleLabels = {
-    enfermeiro: 'Enfermeiro',
-    administrativo: 'Administrativo',
-    medico: 'Médico',
-    administrador: 'Administrador'
-  };
-
-  const roleColors = {
-    enfermeiro: 'bg-green-100 text-green-800',
-    administrativo: 'bg-blue-100 text-blue-800',
-    medico: 'bg-purple-100 text-purple-800',
-    administrador: 'bg-red-100 text-red-800'
-  };
 
   if (!usuario) return null;
 
@@ -52,8 +39,8 @@ const Header = () => {
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">Bem-vindo,</span>
               <span className="font-medium">{usuario.nome}</span>
-              <Badge className={roleColors[usuario.perfil?.nome.toLowerCase()]}>
-                {roleLabels[usuario.perfil?.nome.toLowerCase()]}
+              <Badge className='bg-purple-100 text-purple-800'>
+                {usuario.perfil?.nome}
               </Badge>
             </div>
 

@@ -94,7 +94,7 @@ const UserManagement = () => {
       const data = await createUser(user);
       toast({
         title: "Usuário criado",
-        description: "Novo usuário foi criado com sucesso."
+        description: data.message
       });
       fetchUsers();
     } catch (error) {
