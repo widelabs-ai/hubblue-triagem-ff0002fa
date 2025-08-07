@@ -496,25 +496,21 @@ const TriageScreen: React.FC = () => {
       </div>
 
       {/* Dialog de Triagem */}
-      <Dialog open={isDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          handleCloseDialog();
-        }
+      <Dialog open={isDialogOpen} onOpenChange={() => {
+        return;
       }}>
-        <DialogContent className="max-w-[98vw] max-h-[98vh] overflow-hidden p-0">
+        <DialogContent className="max-w-[98vw] max-h-[98vh] overflow-hidden p-0" showClose={false}>
           <DialogHeader className="p-6 pb-4">
             <div className="flex justify-between items-center">
               <DialogTitle className="text-xl">Triagem em Andamento</DialogTitle>
-              <Button variant="ghost" onClick={handleCloseDialog}>
-                <X className="h-4 w-4" />
-              </Button>
             </div>
           </DialogHeader>
           
           {currentPatient && (
             <div className="flex h-[calc(98vh-120px)]">
+             
               {/* Formulário de Triagem - layout melhorado */}
-              <div className="w-2/3 overflow-y-auto p-6 pt-0">
+              <div className="w-2/3 overflow-y-auto p-6 pt-0 max-h-[calc(98vh-200px)]">
                 <div className="space-y-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="font-bold text-xl">{currentPatient.password}</div>
@@ -841,31 +837,6 @@ const TriageScreen: React.FC = () => {
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex justify-end space-x-3 pt-4 border-t">
-                    <Button variant="outline" onClick={handleReturnToQueue} size="sm">
-                      Voltar à Fila
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setIsCancellationModalOpen(true)}
-                      className="text-red-600 border-red-200 hover:bg-red-50"
-                      size="sm"
-                    >
-                      Cancelar Paciente
-                    </Button>
-                    <Button variant="outline" onClick={handleCloseDialog} size="sm">
-                      Fechar
-                    </Button>
-                    <Button 
-                      onClick={handleCompleteTriagem}
-                      className="bg-green-600 hover:bg-green-700"
-                      disabled={hasValidationErrors}
-                      size="sm"
-                    >
-                      Concluir Triagem
-                    </Button>
-                  </div>
                 </div>
               </div>
 
@@ -881,6 +852,32 @@ const TriageScreen: React.FC = () => {
                   onAnalysisPerformed={() => setHasPerformedAnalysis(true)}
                 />
               </div>
+              <div className='bg-white fixed bottom-0 w-[65%] z-50'>
+                    <div className="flex justify-start space-x-3 p-3 border-t">
+                      <Button variant="outline" onClick={handleReturnToQueue} size="sm">
+                        Voltar à Fila
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsCancellationModalOpen(true)}
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                        size="sm"
+                      >
+                        Cancelar Paciente
+                      </Button>
+                      <Button variant="outline" onClick={handleCloseDialog} size="sm">
+                        Fechar
+                      </Button>
+                      <Button 
+                        onClick={handleCompleteTriagem}
+                        className="bg-green-600 hover:bg-green-700"
+                        disabled={hasValidationErrors}
+                        size="sm"
+                      >
+                        Concluir Triagem
+                      </Button>
+                    </div>
+                  </div>
             </div>
           )}
         </DialogContent>
