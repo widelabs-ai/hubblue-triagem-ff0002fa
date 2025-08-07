@@ -46,7 +46,7 @@ export const ProfileModal = ({
     } else {
       setProfileName("");
       setSelectedPermissions([]);
-      setIsCreating(false);
+      setPerfilEdicao(null);
     }
   }, [perfilEdicao, availablePermissions]);
   
@@ -74,6 +74,10 @@ export const ProfileModal = ({
     
 
   const handlePermissionChange = (permission: {id: string, nome: string}, checked: boolean) => {
+    if (permission.nome === 'Acesso Total' && checked) {
+      setSelectedPermissions([permission]);
+      return;
+    }
     if (checked) {
       setSelectedPermissions([...selectedPermissions, permission]);
     } else {
@@ -132,11 +136,14 @@ export const ProfileModal = ({
     setIsCreating(true);
     setProfileName("");
     setSelectedPermissions([]);
+    setPerfilEdicao(null);
   };
+  
   const onEditClick = async (profile: Profile) => {
     const perfil = await buscaPerfil(profile.id);
     setPerfilEdicao(perfil);
   };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -182,15 +189,6 @@ export const ProfileModal = ({
                       </div>
                     </div>
                   </CardHeader>
-                  {/* <CardContent>
-                    <div className="flex flex-wrap gap-1">
-                      {profile.permissions.map((permission) => (
-                        <Badge key={permission} variant="secondary" className="text-xs">
-                          {permission}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent> */}
                 </Card>
               ))}
             </div>
@@ -230,6 +228,7 @@ export const ProfileModal = ({
                       {availablePermissions.map((permission, index) => (
                         <div key={index} className="flex items-center space-x-2">
                           <Checkbox
+                            disabled={selectedPermissions.some(p => p.nome === 'Acesso Total') && permission.nome !== 'Acesso Total'}
                             id={permission.id}
                             checked={selectedPermissions.some(p => p.id === permission.id)}
                             onCheckedChange={(checked) => 
